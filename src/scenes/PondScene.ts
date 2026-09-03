@@ -125,11 +125,16 @@ export class PondScene extends Phaser.Scene {
     // Nenúfares: uno de salida en la misma posición de siempre, y el resto
     // se generan sin parar según Lumi sube. Tocar cualquiera da un boost.
     this.lilyPadSpawner = new LilyPadSpawner(this, WORLD_WIDTH, 562, START_Y - 158);
-    this.physics.add.overlap(this.lumi.sprite, this.lilyPadSpawner.group, () => {
-      this.lumi.triggerBoost();
-      this.boostBurst.explode(6, this.lumi.sprite.x, this.lumi.sprite.y);
-      this.boostBurstSmall.explode(9, this.lumi.sprite.x, this.lumi.sprite.y);
-    });
+    this.physics.add.overlap(
+      this.lumi.sprite,
+      this.lilyPadSpawner.group,
+      (_lumiObj, padObj) => {
+        this.lumi.triggerBoost();
+        this.boostBurst.explode(6, this.lumi.sprite.x, this.lumi.sprite.y);
+        this.boostBurstSmall.explode(9, this.lumi.sprite.x, this.lumi.sprite.y);
+        this.lilyPadSpawner.consume(padObj as Phaser.Physics.Arcade.Image);
+      },
+    );
 
     // foreground_plants es la capa más cercana a cámara: va delante de
     // Lumi (como su nombre indica), no detrás.
@@ -216,7 +221,7 @@ export class PondScene extends Phaser.Scene {
 
     this.skyLayer.update(cam);
     this.fishField.update(time, delta, cam.scrollY, cam.height);
-    this.lilyPadSpawner.update(cam.scrollY, cam.scrollY + cam.height);
+    this.lilyPadSpawner.update(cam.scrollY, cam.scrollY + cam.height, time);
     this.decorSpawner.update(cam.scrollY, cam.scrollY + cam.height);
 
     this.bestHeight = Math.max(this.bestHeight, START_Y - this.lumi.sprite.y);

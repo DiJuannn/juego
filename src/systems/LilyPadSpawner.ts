@@ -35,7 +35,7 @@ export class LilyPadSpawner {
     if (y < this.highestY) this.highestY = y;
   }
 
-  update(cameraTopY: number, cameraBottomY: number) {
+  update(cameraTopY: number, cameraBottomY: number, time: number) {
     while (this.highestY > cameraTopY - SPAWN_LOOKAHEAD) {
       this.highestY -= Phaser.Math.Between(LILY_PAD_MIN_GAP, LILY_PAD_MAX_GAP);
       const x = Phaser.Math.Between(PAD_MARGIN_X, this.worldWidth - PAD_MARGIN_X);
@@ -43,9 +43,23 @@ export class LilyPadSpawner {
     }
 
     this.pads = this.pads.filter((pad) => {
-      if (pad.sprite.y <= cameraBottomY + DESPAWN_MARGIN) return true;
-      this.group.remove(pad.sprite, true, true);
-      return false;
+      if (pad.sprite.y > cameraBottomY + DESPAWN_MARGIN) {
+        this.group.remove(pad.sprite, true, true);
+        return false;
+      }
+      pad.update(time);
+      return true;
     });
+  }
+
+  /** Al usarlo, el nenúfar hace un pop y desaparece en vez de quedarse ahí
+   * para siempre — se retira del grupo de físicas de inmediato para que no
+   * pueda volver a disparar el boost mientras se anima. */
+  consume(padSprite: Phaser.Physics.Arcade.Image) {
+    const pad = this.pads.find((p) => p.sprite === padSprite);
+    if (!pad) return;
+    this.group.remove(pad.sprite, false, false);
+    this.pads = this.pads.filter((p) => p !== pad);
+    pad.playUseAnimationAndDestroy(this.scene, () => {});
   }
 }
