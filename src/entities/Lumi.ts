@@ -46,7 +46,10 @@ export class Lumi {
 
     if (this.boostRemainingMs > 0) {
       this.boostRemainingMs -= deltaMs;
-      body.setVelocity(0, -BOOST_SPEED);
+      // El empuje vertical del propulsor manda, pero el jugador sigue
+      // pudiendo dirigirse a los lados mientras dura — no es una pérdida
+      // de control, es un impulso hacia arriba con dirección libre.
+      body.setVelocity(direction.x * LUMI_SWIM_SPEED, -BOOST_SPEED);
       // La pose "boost" dedicada no convencía visualmente: el impulso
       // reutiliza la propia animación de nadar hacia arriba (más partículas
       // de por medio, ver PondScene), no un pose nuevo.

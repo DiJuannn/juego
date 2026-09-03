@@ -16,7 +16,7 @@ export class LumiBubbleTrail {
       speedX: { min: -8, max: 8 },
       scale: { start: 0.18, end: 0.05 },
       alpha: { start: 0.8, end: 0 },
-      frequency: 220,
+      frequency: 400,
       quantity: 1,
     });
     this.emitter.setDepth(depth);

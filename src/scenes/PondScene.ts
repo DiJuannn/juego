@@ -117,28 +117,27 @@ export class PondScene extends Phaser.Scene {
     };
     this.boostBurst = this.add
       .particles(0, 0, "bubble_big", { ...burstConfig, scale: { start: 0.4, end: 0.05 } })
-      .setDepth(6);
+      .setDepth(4.7);
     this.boostBurstSmall = this.add
       .particles(0, 0, "bubble_small", { ...burstConfig, scale: { start: 0.35, end: 0.05 } })
-      .setDepth(6);
+      .setDepth(4.7);
 
     // Nenúfares: uno de salida en la misma posición de siempre, y el resto
     // se generan sin parar según Lumi sube. Tocar cualquiera da un boost.
     this.lilyPadSpawner = new LilyPadSpawner(this, WORLD_WIDTH, 562, START_Y - 158);
     this.physics.add.overlap(this.lumi.sprite, this.lilyPadSpawner.group, () => {
       this.lumi.triggerBoost();
-      this.boostBurst.explode(10, this.lumi.sprite.x, this.lumi.sprite.y);
-      this.boostBurstSmall.explode(16, this.lumi.sprite.x, this.lumi.sprite.y);
+      this.boostBurst.explode(6, this.lumi.sprite.x, this.lumi.sprite.y);
+      this.boostBurstSmall.explode(9, this.lumi.sprite.x, this.lumi.sprite.y);
     });
 
-    // foreground_plants queda detrás de Lumi por ahora: es una franja
-    // continua de un borde a otro del mundo, así que delante la taparía
-    // casi todo el rato en vez de solo "pasar por delante" ocasionalmente.
+    // foreground_plants es la capa más cercana a cámara: va delante de
+    // Lumi (como su nombre indica), no detrás.
     this.add
       .image(WORLD_WIDTH / 2, START_Y + cam.height * 0.42, pondLayerKey("foreground_plants"))
       .setOrigin(0.5, 1)
       .setScrollFactor(1)
-      .setDepth(4);
+      .setDepth(6);
 
     new BubbleField(this, cam.width, cam.height, 4.5, this.lumi.sprite);
 
