@@ -20,4 +20,16 @@ export function registerLumiAnimations(scene: Phaser.Scene) {
       repeat: -1,
     });
   }
+
+  // Nado en diagonal: reutiliza swim_up_02 (la pose ya inclinada hacia un
+  // lado) como única pose base para las 4 diagonales, combinando flips en
+  // Lumi.ts — mismo criterio que swim_down/swim_left, ningún frame nuevo.
+  if (!scene.anims.exists("swim_diagonal")) {
+    scene.anims.create({
+      key: "swim_diagonal",
+      frames: [{ key: frameKey("swim_up", 2) }],
+      frameRate: LUMI_FPS,
+      repeat: -1,
+    });
+  }
 }

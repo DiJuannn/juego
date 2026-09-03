@@ -3,13 +3,24 @@ import { LUMI_SCALE, LUMI_SWIM_SPEED } from "@/config/GameConfig";
 import { frameKey } from "@/config/LumiAnimConfig";
 import type { DirectionVector } from "@/systems/InputController";
 
-type LumiState = "idle" | "swim_up" | "swim_down" | "swim_left" | "swim_right";
+type LumiState =
+  | "idle"
+  | "swim_up"
+  | "swim_down"
+  | "swim_left"
+  | "swim_right"
+  | "swim_up_right"
+  | "swim_up_left"
+  | "swim_down_right"
+  | "swim_down_left";
 
 /**
  * Envuelve el sprite físico de Lumi y decide qué animación reproducir
  * según el input. swim_down y swim_left no tienen asset propio: se
  * reproducen como swim_up/swim_right con flip (decisión explícita del
- * proyecto), nunca se genera un frame nuevo para ellas.
+ * proyecto), nunca se genera un frame nuevo para ellas. Las 4 diagonales
+ * tampoco tienen asset propio: reutilizan swim_up_02 (ya inclinada) con
+ * flips, ver AnimationRegistry.ts.
  */
 export class Lumi {
   readonly sprite: Phaser.Physics.Arcade.Sprite;
@@ -35,9 +46,16 @@ export class Lumi {
     const velocity = new Phaser.Math.Vector2(direction.x, direction.y).normalize().scale(LUMI_SWIM_SPEED);
     body.setVelocity(velocity.x, velocity.y);
 
-    // Anima según el eje dominante del input (permite nadar en diagonal
-    // mientras la animación muestra la dirección principal del movimiento).
-    if (Math.abs(direction.y) > Math.abs(direction.x)) {
+    // Con teclado, una diagonal real (dos flechas a la vez) da x e y no
+    // nulos simultáneamente: se anima con la pose diagonal. Si solo hay
+    // una flecha pulsada, es un eje puro (arriba/abajo/izq/dcha).
+    if (direction.x !== 0 && direction.y !== 0) {
+      if (direction.y < 0) {
+        this.setState(direction.x > 0 ? "swim_up_right" : "swim_up_left");
+      } else {
+        this.setState(direction.x > 0 ? "swim_down_right" : "swim_down_left");
+      }
+    } else if (direction.y !== 0) {
       this.setState(direction.y < 0 ? "swim_up" : "swim_down");
     } else {
       this.setState(direction.x < 0 ? "swim_left" : "swim_right");
@@ -70,6 +88,25 @@ export class Lumi {
         this.sprite.setFlipY(true);
         this.sprite.setFlipX(false);
         this.sprite.play("swim_up");
+        break;
+      // Las 4 diagonales reutilizan swim_up_02 (ya inclinada hacia la
+      // derecha-arriba en el arte original) combinando flips, igual que
+      // swim_down/swim_left reutilizan swim_up/swim_right.
+      case "swim_up_right":
+        this.sprite.setFlip(false, false);
+        this.sprite.play("swim_diagonal");
+        break;
+      case "swim_up_left":
+        this.sprite.setFlip(true, false);
+        this.sprite.play("swim_diagonal");
+        break;
+      case "swim_down_right":
+        this.sprite.setFlip(false, true);
+        this.sprite.play("swim_diagonal");
+        break;
+      case "swim_down_left":
+        this.sprite.setFlip(true, true);
+        this.sprite.play("swim_diagonal");
         break;
     }
   }

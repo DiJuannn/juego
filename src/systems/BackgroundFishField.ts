@@ -16,6 +16,8 @@ interface FishState {
   bobPhase: number;
   bobSpeed: number;
   bobAmplitude: number;
+  wagPhase: number;
+  wagSpeed: number;
 }
 
 export class BackgroundFishField {
@@ -57,6 +59,8 @@ export class BackgroundFishField {
         bobPhase: Phaser.Math.FloatBetween(0, Math.PI * 2),
         bobSpeed: Phaser.Math.FloatBetween(0.6, 1.1),
         bobAmplitude: Phaser.Math.FloatBetween(6, 14),
+        wagPhase: Phaser.Math.FloatBetween(0, Math.PI * 2),
+        wagSpeed: Phaser.Math.FloatBetween(2.5, 4),
       });
     }
   }
@@ -73,6 +77,10 @@ export class BackgroundFishField {
       }
 
       f.sprite.y = f.baseY + Math.sin(time / 1000 * f.bobSpeed + f.bobPhase) * f.bobAmplitude;
+
+      // Balanceo leve del cuerpo (rotación) para dar sensación de nado sin
+      // necesitar frames nuevos: solo transforma la imagen existente.
+      f.sprite.rotation = Math.sin(time / 1000 * f.wagSpeed + f.wagPhase) * 0.09;
     }
   }
 
