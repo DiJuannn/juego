@@ -1,5 +1,5 @@
 import Phaser from "phaser";
-import { GAME_OVER_MARGIN, START_Y, WORLD_HEIGHT, WORLD_WIDTH } from "@/config/GameConfig";
+import { CAMERA_AUTO_RISE_SPEED, GAME_OVER_MARGIN, START_Y, WORLD_HEIGHT, WORLD_WIDTH } from "@/config/GameConfig";
 import { Lumi } from "@/entities/Lumi";
 import { BackgroundDecorSpawner } from "@/systems/BackgroundDecorSpawner";
 import { BackgroundFishField } from "@/systems/BackgroundFishField";
@@ -34,6 +34,11 @@ export class PondScene extends Phaser.Scene {
   private gameOverText!: Phaser.GameObjects.Text;
   private bestHeight = 0;
   private isGameOver = false;
+  private isDying = false;
+  /** Techo que la cámara persigue: solo puede bajar de valor (=subir en
+   * pantalla), nunca sube. Se mueve sola a CAMERA_AUTO_RISE_SPEED y además
+   * sigue a Lumi si ella sube más rápido — ver update(). */
+  private cameraCeiling = 0;
 
   constructor() {
     super("Pond");
@@ -41,6 +46,7 @@ export class PondScene extends Phaser.Scene {
 
   create() {
     this.isGameOver = false;
+    this.isDying = false;
     this.bestHeight = 0;
 
     // El mundo no es infinito de verdad (evitamos rehacer coordenadas),
@@ -118,7 +124,7 @@ export class PondScene extends Phaser.Scene {
     );
 
     this.lumi = new Lumi(this, WORLD_WIDTH / 2, START_Y);
-    this.lumi.sprite.setDepth(5);
+    this.lumi.setDepth(5);
     new LumiBubbleTrail(this, this.lumi.sprite, 4.6);
 
     // Explosión de burbujas al tocar un nenúfar: vende el impulso mucho
@@ -156,7 +162,7 @@ export class PondScene extends Phaser.Scene {
     // salida (no justo donde arranca la partida) y tocarlas es game over.
     this.jellyfishSpawner = new JellyfishSpawner(this, WORLD_WIDTH, START_Y - 600);
     this.physics.add.overlap(this.lumi.sprite, this.jellyfishSpawner.group, () => {
-      this.triggerGameOver("medusa");
+      this.startDeathSequence("medusa");
     });
 
     // foreground_plants es la capa más cercana a cámara: va delante de
@@ -187,6 +193,7 @@ export class PondScene extends Phaser.Scene {
     // retroceder — ver el comentario ahí).
     cam.scrollX = this.clampScrollX(cam);
     cam.scrollY = START_Y - cam.height * 0.6;
+    this.cameraCeiling = cam.scrollY;
 
     // Tinte de profundidad a pantalla completa: por debajo de la UI (100+)
     // pero por encima de todo lo demás, para oscurecer/aclarar la escena
@@ -246,6 +253,32 @@ export class PondScene extends Phaser.Scene {
     return Phaser.Math.Clamp(this.lumi.sprite.x - cam.width / 2, 0, Math.max(0, WORLD_WIDTH - cam.width));
   }
 
+  /** Antes de mostrar la pantalla de "has perdido", una animación breve de
+   * Lumi (gira y se hunde encogiéndose) para que el golpe de la medusa se
+   * sienta, en vez de cortar directo al texto de game over. */
+  private startDeathSequence(reason: "atras" | "medusa") {
+    if (this.isDying || this.isGameOver) return;
+    this.isDying = true;
+
+    const sprite = this.lumi.sprite;
+    const body = sprite.body as Phaser.Physics.Arcade.Body;
+    body.setVelocity(0, 0);
+    body.setAllowGravity(false);
+    body.enable = false;
+
+    this.tweens.add({
+      targets: sprite,
+      angle: sprite.flipX ? -360 : 360,
+      scaleX: sprite.scaleX * 0.15,
+      scaleY: sprite.scaleY * 0.15,
+      y: sprite.y + 40,
+      alpha: 0,
+      duration: 700,
+      ease: "Cubic.easeIn",
+      onComplete: () => this.triggerGameOver(reason),
+    });
+  }
+
   private triggerGameOver(reason: "atras" | "medusa" = "atras") {
     if (this.isGameOver) return;
     this.isGameOver = true;
@@ -257,17 +290,21 @@ export class PondScene extends Phaser.Scene {
   }
 
   update(time: number, delta: number) {
-    if (this.isGameOver) return;
+    if (this.isGameOver || this.isDying) return;
 
     this.lumi.update(this.inputController.getVector(), delta);
 
     const cam = this.cameras.main;
 
-    // La cámara solo puede subir (scrollY solo puede bajar de valor):
-    // quedarse atrás no se perdona dejando que la cámara "espere" — es
-    // justo lo que crea la presión de un juego de escalada infinita.
+    // El techo de cámara sube solo (a CAMERA_AUTO_RISE_SPEED) y además
+    // sigue a Lumi si ella sube más rápido — lo que vaya "más arriba" (más
+    // negativo) manda. La cámara solo puede subir (scrollY solo baja de
+    // valor): quedarse atrás no se perdona dejando que la cámara "espere",
+    // es justo lo que crea la presión de un juego de escalada infinita.
+    this.cameraCeiling -= CAMERA_AUTO_RISE_SPEED * (delta / 1000);
     const desiredScrollY = this.lumi.sprite.y - cam.height * 0.6;
-    cam.scrollY = Math.min(cam.scrollY, desiredScrollY);
+    this.cameraCeiling = Math.min(this.cameraCeiling, desiredScrollY);
+    cam.scrollY = Math.min(cam.scrollY, this.cameraCeiling);
     cam.scrollX = this.clampScrollX(cam);
 
     this.skyLayer.update(cam);

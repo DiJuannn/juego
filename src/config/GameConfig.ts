@@ -35,9 +35,9 @@ export const LUMI_SWIM_SPEED = 220; // px/seg
 export const LUMI_DRIFT_SPEED = 55; // px/seg, hacia abajo
 
 // Nenúfares: separación vertical entre uno y el siguiente al generarlos
-// según Lumi sube.
-export const LILY_PAD_MIN_GAP = 180;
-export const LILY_PAD_MAX_GAP = 320;
+// según Lumi sube. Pedido explícito: que no salgan tan seguido.
+export const LILY_PAD_MIN_GAP = 320;
+export const LILY_PAD_MAX_GAP = 520;
 
 // Pedido explícito: 70% más pequeños que el tamaño nativo del recorte.
 export const LILY_PAD_SCALE = 0.3;
@@ -52,3 +52,9 @@ export const GAME_OVER_MARGIN = 200;
 export const JELLYFISH_MIN_GAP = 700;
 export const JELLYFISH_MAX_GAP = 1300;
 export const JELLYFISH_SCALE = 0.16;
+
+// La cámara ya no espera solo a que Lumi suba: sube ella sola a este ritmo
+// (px/seg) sin parar, mucho más despacio que nadar a tope, para que exista
+// presión incluso si el jugador va despacio. Si Lumi sube más rápido que
+// esto, manda su propia velocidad (ver PondScene.update).
+export const CAMERA_AUTO_RISE_SPEED = 22;

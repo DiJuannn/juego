@@ -4,8 +4,15 @@ const BOB_AMPLITUDE = 10;
 const BOB_SPEED = 0.55;
 const DRIFT_AMPLITUDE = 35;
 const DRIFT_SPEED = 0.35;
-const PULSE_AMOUNT = 0.06;
+// La campana "respira": se estrecha en horizontal justo cuando se estira en
+// vertical (y viceversa), como el pulso real de nado de una medusa, en vez
+// de un escalado uniforme que se siente más como un simple latido.
+const PULSE_AMOUNT = 0.09;
 const PULSE_SPEED = 1.1;
+// Balanceo de rotación leve: da sensación de ir a la deriva, no clavada en
+// el sitio.
+const ROTATION_AMOUNT = 0.05;
+const ROTATION_SPEED = 0.4;
 
 /**
  * Primer enemigo: una medusa que flota con un vaivén suave (arriba/abajo,
@@ -37,7 +44,12 @@ export class Jellyfish {
     const t = time / 1000;
     this.sprite.y = this.baseY + Math.sin(t * BOB_SPEED + this.phase) * BOB_AMPLITUDE;
     this.sprite.x = this.baseX + Math.sin(t * DRIFT_SPEED + this.phase) * DRIFT_AMPLITUDE;
-    const pulse = 1 + Math.sin(t * PULSE_SPEED + this.phase) * PULSE_AMOUNT;
-    this.sprite.setScale(this.baseScale * pulse);
+
+    const pulse = Math.sin(t * PULSE_SPEED + this.phase);
+    this.sprite.setScale(
+      this.baseScale * (1 + pulse * PULSE_AMOUNT),
+      this.baseScale * (1 - pulse * PULSE_AMOUNT * 0.6),
+    );
+    this.sprite.rotation = Math.sin(t * ROTATION_SPEED + this.phase) * ROTATION_AMOUNT;
   }
 }

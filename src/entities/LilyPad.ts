@@ -21,6 +21,8 @@ export class LilyPad {
     this.sprite = scene.physics.add.staticImage(x, y, "lily_pad_01");
     this.sprite.setScale(LILY_PAD_SCALE);
     this.sprite.setDepth(4);
+    // Pedido explícito: un verde un poco más oscuro que el original.
+    this.sprite.setTint(0xcfe3ad);
     // Los cuerpos estáticos no recalculan su hitbox solos al escalar.
     this.sprite.refreshBody();
 

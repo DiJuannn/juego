@@ -15,7 +15,8 @@ type LumiState =
   | "swim_down_left";
 
 const BOOST_DURATION_MS = 550;
-const BOOST_SPEED = LUMI_SWIM_SPEED * 2.2;
+// Pedido explícito: que el nenúfar impulse más hacia arriba.
+const BOOST_SPEED = LUMI_SWIM_SPEED * 2.9;
 
 /**
  * Envuelve el sprite físico de Lumi y decide qué animación reproducir
@@ -29,7 +30,19 @@ export class Lumi {
   private state: LumiState = "idle";
   private boostRemainingMs = 0;
 
-  constructor(scene: Phaser.Scene, x: number, y: number) {
+  // La pose diagonal solo tiene 2 frames (swim_diagonal_01/02) y el salto
+  // duro de Phaser.Animation entre ellos se notaba mucho ("muy brusco").
+  // En vez de generar más frames intermedios con Gemini, se resuelve igual
+  // que el balanceo de las algas: dos imágenes superpuestas que funden
+  // lentamente de una a otra, en vez de saltar en seco. Normalmente
+  // invisibles; solo se muestran (y se ocultan `sprite`) mientras el estado
+  // es alguna de las 4 diagonales.
+  private readonly diagonalA: Phaser.GameObjects.Image;
+  private readonly diagonalB: Phaser.GameObjects.Image;
+  private readonly diagonalFade = { t: 0 };
+  private diagonalTween?: Phaser.Tweens.Tween;
+
+  constructor(private scene: Phaser.Scene, x: number, y: number) {
     this.sprite = scene.physics.add.sprite(x, y, frameKey("idle", 1));
     this.sprite.setScale(LUMI_SCALE);
     this.sprite.setCollideWorldBounds(true);
@@ -43,6 +56,17 @@ export class Lumi {
     body.setSize(360, 460);
     body.setOffset(343, 300);
     this.sprite.play("idle");
+
+    this.diagonalA = scene.add.image(x, y, frameKey("swim_diagonal", 1)).setScale(LUMI_SCALE).setVisible(false);
+    this.diagonalB = scene.add.image(x, y, frameKey("swim_diagonal", 2)).setScale(LUMI_SCALE).setVisible(false);
+  }
+
+  /** Mismo depth para el sprite físico y las dos imágenes de fundido
+   * diagonal — deben quedar siempre en la misma capa. */
+  setDepth(depth: number) {
+    this.sprite.setDepth(depth);
+    this.diagonalA.setDepth(depth);
+    this.diagonalB.setDepth(depth);
   }
 
   /** Impulso al tocar un nenúfar: un empujón hacia arriba, tipo "jump". */
@@ -94,11 +118,53 @@ export class Lumi {
     } else {
       this.setState(direction.x < 0 ? "swim_left" : "swim_right");
     }
+
+    // Las dos imágenes del fundido diagonal no tienen cuerpo físico: hay
+    // que llevarlas a mano a donde esté el sprite real cada frame. Barato
+    // hacerlo siempre, aunque ahora mismo estén ocultas.
+    this.diagonalA.setPosition(this.sprite.x, this.sprite.y);
+    this.diagonalB.setPosition(this.sprite.x, this.sprite.y);
+  }
+
+  private static isDiagonal(state: LumiState): boolean {
+    return state === "swim_up_right" || state === "swim_up_left" || state === "swim_down_right" || state === "swim_down_left";
+  }
+
+  /** Arranca (una sola vez) el fundido cruzado infinito entre las dos
+   * imágenes diagonales. Se queda corriendo de fondo aunque no se vea. */
+  private ensureDiagonalFade() {
+    if (this.diagonalTween) return;
+    this.diagonalTween = this.scene.tweens.add({
+      targets: this.diagonalFade,
+      t: 1,
+      duration: 450,
+      yoyo: true,
+      repeat: -1,
+      ease: "Sine.easeInOut",
+      onUpdate: () => {
+        this.diagonalA.setAlpha(1 - this.diagonalFade.t);
+        this.diagonalB.setAlpha(this.diagonalFade.t);
+      },
+    });
+  }
+
+  private setDiagonalFlip(flipX: boolean, flipY: boolean) {
+    this.ensureDiagonalFade();
+    this.sprite.setVisible(false);
+    this.diagonalA.setVisible(true).setFlip(flipX, flipY);
+    this.diagonalB.setVisible(true).setFlip(flipX, flipY);
   }
 
   private setState(next: LumiState) {
     if (this.state === next) return;
+    const wasDiagonal = Lumi.isDiagonal(this.state);
     this.state = next;
+
+    if (!Lumi.isDiagonal(next) && wasDiagonal) {
+      this.sprite.setVisible(true);
+      this.diagonalA.setVisible(false);
+      this.diagonalB.setVisible(false);
+    }
 
     switch (next) {
       case "idle":
@@ -125,24 +191,23 @@ export class Lumi {
         this.sprite.setFlipX(false);
         this.sprite.play("swim_up");
         break;
-      // Las 4 diagonales combinan flips sobre "swim_diagonal" (pose propia
-      // orientada arriba-derecha), igual que swim_down/swim_left combinan
-      // flips sobre swim_up/swim_right.
+      // Las 4 diagonales combinan flips sobre las dos imágenes de fundido
+      // (pose "swim_diagonal" orientada arriba-derecha), igual que
+      // swim_down/swim_left combinan flips sobre swim_up/swim_right. Ya no
+      // usan Phaser.Animation: el salto duro entre los 2 únicos frames se
+      // notaba demasiado, así que se funden lentamente (ver
+      // ensureDiagonalFade) en vez de saltar en seco.
       case "swim_up_right":
-        this.sprite.setFlip(false, false);
-        this.sprite.play("swim_diagonal");
+        this.setDiagonalFlip(false, false);
         break;
       case "swim_up_left":
-        this.sprite.setFlip(true, false);
-        this.sprite.play("swim_diagonal");
+        this.setDiagonalFlip(true, false);
         break;
       case "swim_down_right":
-        this.sprite.setFlip(false, true);
-        this.sprite.play("swim_diagonal");
+        this.setDiagonalFlip(false, true);
         break;
       case "swim_down_left":
-        this.sprite.setFlip(true, true);
-        this.sprite.play("swim_diagonal");
+        this.setDiagonalFlip(true, true);
         break;
     }
   }
