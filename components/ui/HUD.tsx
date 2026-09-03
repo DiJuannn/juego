@@ -17,15 +17,15 @@ export function HUD({ onPause }: { onPause: () => void }) {
   return (
     <div className="pointer-events-none absolute inset-0 flex flex-col justify-between p-4 sm:p-6 font-sans select-none">
       <div className="flex items-start justify-between gap-3">
-        <div className="flex flex-col gap-2 w-48 sm:w-64">
+        <div className="flex flex-col gap-2 w-48 sm:w-64 bg-white/70 backdrop-blur rounded-2xl p-3 shadow-sm border border-white/80">
           <Bar
             label="Oxígeno"
             pct={oxygenPct}
-            colorClass={low ? "bg-red-500 animate-pulse" : "bg-sky-300"}
-            trackClass="bg-slate-900/50"
+            colorClass={low ? "bg-rose-400 animate-pulse" : "bg-sky-300"}
+            trackClass="bg-slate-900/10"
           />
-          <Bar label="Profundidad" pct={depthPct} colorClass="bg-amber-300" trackClass="bg-slate-900/50" />
-          <div className="flex gap-3 text-xs sm:text-sm text-white/90 drop-shadow">
+          <Bar label="Profundidad" pct={depthPct} colorClass="bg-amber-300" trackClass="bg-slate-900/10" />
+          <div className="flex gap-3 text-xs sm:text-sm text-slate-600 font-medium">
             <span>🫧 {Math.floor(pearlsThisRun)}</span>
             <span>⭐ {Math.floor(score)}</span>
             <span>{Math.floor(depth)}m</span>
@@ -34,7 +34,7 @@ export function HUD({ onPause }: { onPause: () => void }) {
         <button
           type="button"
           onClick={onPause}
-          className="pointer-events-auto rounded-full bg-black/40 hover:bg-black/60 text-white w-10 h-10 flex items-center justify-center text-lg backdrop-blur"
+          className="pointer-events-auto rounded-full bg-white/80 hover:bg-white text-slate-600 w-10 h-10 flex items-center justify-center text-lg shadow-sm border border-white"
           aria-label="Pausa"
         >
           ⏸
@@ -43,7 +43,7 @@ export function HUD({ onPause }: { onPause: () => void }) {
 
       {combo > 1 && (
         <div className="self-center text-center">
-          <div className="text-2xl sm:text-3xl font-bold text-amber-200 drop-shadow-lg animate-bounce">
+          <div className="text-2xl sm:text-3xl font-bold text-rose-400 drop-shadow-[0_2px_0_white] animate-bounce">
             Combo x{combo}
           </div>
         </div>
@@ -53,12 +53,12 @@ export function HUD({ onPause }: { onPause: () => void }) {
         <button
           type="button"
           data-boost-button
-          className="pointer-events-auto select-none rounded-full bg-gradient-to-b from-sky-300 to-sky-500 active:from-sky-400 active:to-sky-600 text-slate-900 font-bold w-20 h-20 sm:hidden shadow-lg shadow-sky-500/40 flex items-center justify-center text-sm border-2 border-white/40"
+          className="pointer-events-auto select-none rounded-full bg-gradient-to-b from-sky-200 to-sky-400 active:from-sky-300 active:to-sky-500 text-slate-700 font-bold w-20 h-20 sm:hidden shadow-lg shadow-sky-400/40 flex items-center justify-center text-sm border-4 border-white"
         >
           IMPULSO
         </button>
       </div>
-      <p className="hidden sm:block text-center text-white/70 text-xs">
+      <p className="hidden sm:block text-center text-slate-500 text-xs bg-white/60 backdrop-blur rounded-full py-1 px-3 w-fit mx-auto">
         Flechas / WASD para nadar · Espacio para impulso
       </p>
     </div>
@@ -78,10 +78,10 @@ function Bar({
 }) {
   return (
     <div>
-      <div className="flex justify-between text-[10px] sm:text-xs text-white/80 mb-0.5">
+      <div className="flex justify-between text-[10px] sm:text-xs text-slate-500 mb-0.5">
         <span>{label}</span>
       </div>
-      <div className={`h-2.5 sm:h-3 w-full rounded-full overflow-hidden ${trackClass} backdrop-blur`}>
+      <div className={`h-2.5 sm:h-3 w-full rounded-full overflow-hidden ${trackClass}`}>
         <div
           className={`h-full rounded-full transition-[width] duration-150 ${colorClass}`}
           style={{ width: `${pct}%` }}
@@ -93,18 +93,18 @@ function Bar({
 
 export function PauseOverlay({ onResume, onQuit }: { onResume: () => void; onQuit: () => void }) {
   return (
-    <div className="absolute inset-0 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-      <div className="bg-slate-900/90 border border-white/10 rounded-2xl p-6 flex flex-col gap-3 items-center w-64">
-        <h2 className="text-white text-xl font-bold">Pausa</h2>
+    <div className="absolute inset-0 flex items-center justify-center bg-slate-900/30 backdrop-blur-sm">
+      <div className="bg-white rounded-3xl p-6 flex flex-col gap-3 items-center w-64 shadow-xl border-4 border-white">
+        <h2 className="text-slate-700 text-xl font-bold">Pausa</h2>
         <button
           onClick={onResume}
-          className="w-full rounded-xl bg-sky-400 hover:bg-sky-300 text-slate-900 font-semibold py-2.5"
+          className="w-full rounded-2xl bg-gradient-to-b from-sky-200 to-sky-400 hover:brightness-105 text-slate-700 font-semibold py-2.5 shadow"
         >
           Continuar
         </button>
         <button
           onClick={onQuit}
-          className="w-full rounded-xl bg-white/10 hover:bg-white/20 text-white font-semibold py-2.5"
+          className="w-full rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-600 font-semibold py-2.5"
         >
           Salir al menú
         </button>

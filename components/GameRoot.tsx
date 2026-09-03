@@ -1,7 +1,6 @@
 "use client";
 
-import { GameCanvas, useGameRefs } from "./GameCanvas";
-import { useSteering } from "@/hooks/useSteering";
+import { GameStage } from "./GameStage";
 import { useGameStore } from "@/lib/store";
 import { HUD, PauseOverlay } from "./ui/HUD";
 import { MainMenu, EndScreen } from "./ui/MenuScreens";
@@ -11,12 +10,10 @@ export default function GameRoot() {
   const startRun = useGameStore((s) => s.startRun);
   const resumeMenu = useGameStore((s) => s.resumeMenu);
   const setPaused = useGameStore((s) => s.setPaused);
-  const refs = useGameRefs();
-  const steering = useSteering();
 
   return (
-    <div className="relative w-full h-dvh overflow-hidden bg-black touch-none">
-      <GameCanvas refs={refs} steering={steering} />
+    <div className="relative w-full h-dvh overflow-hidden touch-none">
+      <GameStage />
 
       {phase === "playing" && <HUD onPause={() => setPaused(true)} />}
       {phase === "paused" && (

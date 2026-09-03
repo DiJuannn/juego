@@ -1,8 +1,8 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #eaf6ff;
+  --foreground: #2f2a3a;
 }
 
 @theme inline {
@@ -12,15 +12,102 @@
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans), Arial, Helvetica, sans-serif;
+}
+
+.axolotl-bob {
+  animation: axolotl-bob calc(1.8s / var(--swim-speed, 1)) ease-in-out infinite;
+}
+
+.axolotl-tail {
+  animation: axolotl-tailwag calc(0.9s / var(--swim-speed, 1)) ease-in-out infinite;
+}
+
+.axolotl-eyes {
+  animation: axolotl-blink 4.2s ease-in-out infinite;
+}
+
+.axolotl-shield {
+  animation: axolotl-shield-pulse 1.4s ease-in-out infinite;
+}
+
+@keyframes axolotl-bob {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-6%);
+  }
+}
+
+@keyframes axolotl-tailwag {
+  0%,
+  100% {
+    transform: rotate(-16deg);
+  }
+  50% {
+    transform: rotate(16deg);
+  }
+}
+
+@keyframes axolotl-blink {
+  0%,
+  92%,
+  100% {
+    transform: scaleY(1);
+  }
+  96% {
+    transform: scaleY(0.1);
+  }
+}
+
+@keyframes axolotl-shield-pulse {
+  0%,
+  100% {
+    opacity: 0.45;
+    stroke-width: 5;
+  }
+  50% {
+    opacity: 0.8;
+    stroke-width: 7;
+  }
+}
+
+@keyframes bubble-rise {
+  0% {
+    transform: translateY(0) translateX(0);
+    opacity: 0;
+  }
+  10% {
+    opacity: 0.9;
+  }
+  90% {
+    opacity: 0.6;
+  }
+  100% {
+    transform: translateY(-115vh) translateX(var(--drift, 12px));
+    opacity: 0;
+  }
+}
+
+@keyframes fish-swim {
+  0% {
+    transform: translateX(-10vw) scaleX(1);
+  }
+  49% {
+    transform: translateX(60vw) scaleX(1);
+  }
+  50% {
+    transform: translateX(60vw) scaleX(-1);
+  }
+  99% {
+    transform: translateX(-10vw) scaleX(-1);
+  }
+  100% {
+    transform: translateX(-10vw) scaleX(1);
+  }
 }
