@@ -1,0 +1,15 @@
+import Phaser from "phaser";
+
+/**
+ * Nenúfar interactivo: un cuerpo estático que, al tocarlo Lumi, dispara un
+ * impulso hacia arriba (ver Lumi.triggerBoost). El overlap se registra
+ * desde PondScene, aquí solo se coloca el sprite.
+ */
+export class LilyPad {
+  readonly sprite: Phaser.Physics.Arcade.Image;
+
+  constructor(scene: Phaser.Scene, x: number, y: number) {
+    this.sprite = scene.physics.add.staticImage(x, y, "lily_pad_01");
+    this.sprite.setDepth(2.5);
+  }
+}

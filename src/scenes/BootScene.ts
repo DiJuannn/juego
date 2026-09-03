@@ -5,8 +5,9 @@ import { FISH_KEYS } from "@/systems/BackgroundFishField";
 
 // Capas de fondo que existen ahora mismo en /assets/backgrounds/pond/.
 // water_overlay.png no se ha generado todavía — se omite y se reporta,
-// no se inventa un reemplazo.
-const POND_LAYERS = ["background_far", "rocks_back", "distant_plants", "lily_pads", "foreground_plants"];
+// no se inventa un reemplazo. lily_pads.png ya no se usa como capa fija:
+// se sustituyó por el nenúfar interactivo (LilyPad), ver PondScene.
+const POND_LAYERS = ["background_far", "rocks_back", "distant_plants", "foreground_plants"];
 const MISSING_POND_LAYERS = ["water_overlay"];
 
 // Recortes de las burbujas ya dibujadas en idle_01.png (mismo arte, no
@@ -40,6 +41,8 @@ export class BootScene extends Phaser.Scene {
     for (const fishKey of FISH_KEYS) {
       this.load.image(fishKey, `/objects/fish/${fishKey}.png`);
     }
+
+    this.load.image("lily_pad_01", "/objects/lily_pad/lily_pad_01.png");
   }
 
   create() {

@@ -12,7 +12,11 @@ type LumiState =
   | "swim_up_right"
   | "swim_up_left"
   | "swim_down_right"
-  | "swim_down_left";
+  | "swim_down_left"
+  | "boost";
+
+const BOOST_DURATION_MS = 550;
+const BOOST_SPEED = LUMI_SWIM_SPEED * 2.2;
 
 /**
  * Envuelve el sprite físico de Lumi y decide qué animación reproducir
@@ -24,6 +28,7 @@ type LumiState =
 export class Lumi {
   readonly sprite: Phaser.Physics.Arcade.Sprite;
   private state: LumiState = "idle";
+  private boostRemainingMs = 0;
 
   constructor(scene: Phaser.Scene, x: number, y: number) {
     this.sprite = scene.physics.add.sprite(x, y, frameKey("idle", 1));
@@ -32,8 +37,21 @@ export class Lumi {
     this.sprite.play("idle");
   }
 
-  update(direction: DirectionVector) {
+  /** Impulso al tocar un nenúfar: un empujón hacia arriba, tipo "jump". */
+  triggerBoost() {
+    this.boostRemainingMs = BOOST_DURATION_MS;
+  }
+
+  update(direction: DirectionVector, deltaMs: number) {
     const body = this.sprite.body as Phaser.Physics.Arcade.Body;
+
+    if (this.boostRemainingMs > 0) {
+      this.boostRemainingMs -= deltaMs;
+      body.setVelocity(0, -BOOST_SPEED);
+      this.setState("boost");
+      return;
+    }
+
     const moving = direction.x !== 0 || direction.y !== 0;
 
     if (!moving) {
@@ -108,6 +126,10 @@ export class Lumi {
       case "swim_down_left":
         this.sprite.setFlip(true, true);
         this.sprite.play("swim_diagonal");
+        break;
+      case "boost":
+        this.sprite.setFlip(false, false);
+        this.sprite.play("boost");
         break;
     }
   }

@@ -1,5 +1,6 @@
 import Phaser from "phaser";
 import { WORLD_HEIGHT, WORLD_WIDTH } from "@/config/GameConfig";
+import { LilyPad } from "@/entities/LilyPad";
 import { Lumi } from "@/entities/Lumi";
 import { BackgroundFishField } from "@/systems/BackgroundFishField";
 import { BubbleField } from "@/systems/BubbleField";
@@ -44,12 +45,6 @@ export class PondScene extends Phaser.Scene {
       .setDepth(1);
 
     this.add
-      .image(WORLD_WIDTH / 2, 420, pondLayerKey("lily_pads"))
-      .setOrigin(0.5, 0.5)
-      .setScrollFactor(0.6)
-      .setDepth(2);
-
-    this.add
       .image(WORLD_WIDTH / 2, WORLD_HEIGHT, pondLayerKey("distant_plants"))
       .setOrigin(0.5, 1)
       .setScrollFactor(0.55)
@@ -58,6 +53,14 @@ export class PondScene extends Phaser.Scene {
     this.lumi = new Lumi(this, WORLD_WIDTH / 2, WORLD_HEIGHT / 2);
     this.lumi.sprite.setDepth(5);
     new LumiBubbleTrail(this, this.lumi.sprite, 4.6);
+
+    // Nenúfar interactivo: al tocarlo, empuja a Lumi hacia arriba (como un
+    // salto). Posición heredada de donde estaba el nenúfar pequeño dentro
+    // de la antigua ilustración compuesta lily_pads.png.
+    const lilyPad = new LilyPad(this, 562, 542);
+    this.physics.add.overlap(this.lumi.sprite, lilyPad.sprite, () => {
+      this.lumi.triggerBoost();
+    });
 
     // foreground_plants queda detrás de Lumi por ahora: es una franja
     // continua de un borde a otro del mundo, así que delante la taparía
@@ -83,7 +86,7 @@ export class PondScene extends Phaser.Scene {
   }
 
   update(time: number, delta: number) {
-    this.lumi.update(this.inputController.getVector());
+    this.lumi.update(this.inputController.getVector(), delta);
     this.skyLayer.update(this.cameras.main);
     this.fishField.update(time, delta);
   }
