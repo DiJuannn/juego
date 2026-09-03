@@ -61,6 +61,13 @@ export class PondScene extends Phaser.Scene {
     this.cameras.main.startFollow(this.lumi.sprite, true, 0.08, 0.08);
 
     this.inputController = new InputController(this);
+
+    // Con Scale.RESIZE el canvas cambia de tamaño (p.ej. al rotar el
+    // móvil): la cámara y la franja de cielo tienen que seguirle el paso.
+    this.scale.on(Phaser.Scale.Events.RESIZE, (gameSize: Phaser.Structs.Size) => {
+      this.cameras.main.setSize(gameSize.width, gameSize.height);
+      this.skyLayer.resize(gameSize.width, gameSize.height);
+    });
   }
 
   update() {

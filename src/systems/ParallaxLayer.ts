@@ -23,4 +23,10 @@ export class ParallaxLayer {
     this.tile.tilePositionX = camera.scrollX * this.factor;
     this.tile.tilePositionY = camera.scrollY * this.factor;
   }
+
+  /** Al cambiar el tamaño del canvas (p.ej. rotar el móvil) hay que
+   * redimensionar la franja para que siga cubriendo toda la pantalla. */
+  resize(width: number, height: number) {
+    this.tile.setSize(width, height);
+  }
 }
