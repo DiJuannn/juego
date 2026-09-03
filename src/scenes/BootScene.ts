@@ -8,6 +8,10 @@ import { registerLumiAnimations } from "@/systems/AnimationRegistry";
 const POND_LAYERS = ["background_far", "rocks_back", "distant_plants", "lily_pads", "foreground_plants"];
 const MISSING_POND_LAYERS = ["water_overlay"];
 
+// Recortes de las burbujas ya dibujadas en idle_01.png (mismo arte, no
+// asset nuevo) para la animación ambiental de burbujas.
+const PARTICLES = ["bubble_big", "bubble_small"];
+
 export function pondLayerKey(name: string) {
   return `pond_${name}`;
 }
@@ -26,6 +30,10 @@ export class BootScene extends Phaser.Scene {
 
     for (const layer of POND_LAYERS) {
       this.load.image(pondLayerKey(layer), `/backgrounds/pond/${layer}.png`);
+    }
+
+    for (const particle of PARTICLES) {
+      this.load.image(particle, `/backgrounds/pond/particles/${particle}.png`);
     }
   }
 

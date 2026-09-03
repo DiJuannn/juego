@@ -1,6 +1,7 @@
 import Phaser from "phaser";
 import { WORLD_HEIGHT, WORLD_WIDTH } from "@/config/GameConfig";
 import { Lumi } from "@/entities/Lumi";
+import { BubbleField } from "@/systems/BubbleField";
 import { InputController } from "@/systems/InputController";
 import { ParallaxLayer } from "@/systems/ParallaxLayer";
 import { pondLayerKey } from "./BootScene";
@@ -57,6 +58,8 @@ export class PondScene extends Phaser.Scene {
       .setOrigin(0.5, 1)
       .setScrollFactor(1)
       .setDepth(4);
+
+    new BubbleField(this, WORLD_WIDTH, WORLD_HEIGHT, 4.5);
 
     this.cameras.main.startFollow(this.lumi.sprite, true, 0.08, 0.08);
 

@@ -12,9 +12,9 @@ export const GAME_HEIGHT = 640;
 export const WORLD_WIDTH = 1376;
 export const WORLD_HEIGHT = 1400;
 
-// Pedido explícito del usuario: mucho más grande que antes (~3x el
-// tamaño base de 0.075). Esto ya supera bastante el "10-15% de la
+// Pedido explícito del usuario: tamaño final, un 20% más sobre el "mucho
+// más grande" anterior (0.075*3). Supera bastante el "10-15% de la
 // pantalla" de STYLE_GUIDE.md — avisado, no es un descuido.
-export const LUMI_SCALE = 0.075 * 3;
+export const LUMI_SCALE = 0.075 * 3 * 1.2;
 
 export const LUMI_SWIM_SPEED = 220; // px/seg
