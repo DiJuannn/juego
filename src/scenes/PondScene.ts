@@ -1,6 +1,7 @@
 import Phaser from "phaser";
 import { GAME_OVER_MARGIN, START_Y, WORLD_HEIGHT, WORLD_WIDTH } from "@/config/GameConfig";
 import { Lumi } from "@/entities/Lumi";
+import { BackgroundDecorSpawner } from "@/systems/BackgroundDecorSpawner";
 import { BackgroundFishField } from "@/systems/BackgroundFishField";
 import { BubbleField } from "@/systems/BubbleField";
 import { InputController } from "@/systems/InputController";
@@ -20,6 +21,9 @@ export class PondScene extends Phaser.Scene {
   private skyLayer!: ParallaxLayer;
   private fishField!: BackgroundFishField;
   private lilyPadSpawner!: LilyPadSpawner;
+  private decorSpawner!: BackgroundDecorSpawner;
+  private boostBurst!: Phaser.GameObjects.Particles.ParticleEmitter;
+  private boostBurstSmall!: Phaser.GameObjects.Particles.ParticleEmitter;
   private scoreText!: Phaser.GameObjects.Text;
   private gameOverText!: Phaser.GameObjects.Text;
   private bestHeight = 0;
@@ -41,9 +45,33 @@ export class PondScene extends Phaser.Scene {
 
     const cam = this.cameras.main;
 
+    // El PNG de background_far no está pensado para repetirse verticalmente
+    // sin fin (tiene una única fuente de luz arriba): al tilearlo tal cual
+    // se nota mucho la costura entre una copia y la siguiente. Se
+    // construye una textura "espejada" (original + copia volteada debajo)
+    // una sola vez: al repetir ESA textura, el borde de una copia siempre
+    // conecta con su propio reflejo, así que no hay corte visible en
+    // ningún punto de la repetición.
+    const bgKey = pondLayerKey("background_far");
+    const seamlessKey = "background_far_seamless";
+    if (!this.textures.exists(seamlessKey)) {
+      const bgImg = this.textures.get(bgKey).getSourceImage() as HTMLImageElement;
+      const w = bgImg.width;
+      const h = bgImg.height;
+      const canvasTex = this.textures.createCanvas(seamlessKey, w, h * 2)!;
+      const ctx = canvasTex.getContext();
+      ctx.drawImage(bgImg, 0, 0);
+      ctx.save();
+      ctx.translate(0, h * 2);
+      ctx.scale(1, -1);
+      ctx.drawImage(bgImg, 0, 0);
+      ctx.restore();
+      canvasTex.refresh();
+    }
+
     // El cielo/agua de fondo es un degradado continuo: tilearlo cubre
     // cualquier tamaño de mundo sin huecos ni costuras visibles.
-    this.skyLayer = new ParallaxLayer(this, pondLayerKey("background_far"), 0.15, 0);
+    this.skyLayer = new ParallaxLayer(this, seamlessKey, 0.15, 0);
 
     // Peces de fondo, muy detrás de las rocas/plantas (parallax lento,
     // escala pequeña, teñido suave) para dar sensación de profundidad sin
@@ -51,17 +79,24 @@ export class PondScene extends Phaser.Scene {
     // BackgroundFishField.update), no dependen de una altura de mundo fija.
     this.fishField = new BackgroundFishField(this, WORLD_WIDTH, cam.height, 0.5, 0.25);
 
-    // Rocas/plantas son decoración de la zona de salida: se ven al empezar
-    // y quedan atrás para siempre al subir (como el suelo en Doodle Jump),
-    // ya no se anclan al fondo de un mundo ahora gigante.
+    // Objetos de fondo (piedras, conchas, estrellas): decoración pura, sin
+    // colisión, para que la subida no se sienta tan vacía entre nenúfares.
+    this.decorSpawner = new BackgroundDecorSpawner(this, WORLD_WIDTH, START_Y, 1.8, 0.4);
+
+    // Rocas/plantas son decoración de la zona de salida — el "fondo del
+    // estanque" de verdad. Se anclan cerca de START_Y (no del viejo fondo
+    // de un mundo ahora gigante) para que se vean desde el primer
+    // fotograma: la partida arranca literalmente en el fondo del
+    // estanque, y esa decoración queda atrás para siempre al subir (como
+    // el suelo en Doodle Jump).
     this.add
-      .image(WORLD_WIDTH / 2, START_Y + 550, pondLayerKey("rocks_back"))
+      .image(WORLD_WIDTH / 2, START_Y + cam.height * 0.3, pondLayerKey("rocks_back"))
       .setOrigin(0.5, 1)
       .setScrollFactor(0.35)
       .setDepth(1);
 
     this.add
-      .image(WORLD_WIDTH / 2, START_Y + 700, pondLayerKey("distant_plants"))
+      .image(WORLD_WIDTH / 2, START_Y + cam.height * 0.38, pondLayerKey("distant_plants"))
       .setOrigin(0.5, 1)
       .setScrollFactor(0.55)
       .setDepth(3);
@@ -70,18 +105,37 @@ export class PondScene extends Phaser.Scene {
     this.lumi.sprite.setDepth(5);
     new LumiBubbleTrail(this, this.lumi.sprite, 4.6);
 
+    // Explosión de burbujas al tocar un nenúfar: vende el impulso mucho
+    // mejor que una pose nueva. "emitting: false" porque solo se disparan
+    // a mano (explode) en el momento del boost, no de forma continua.
+    const burstConfig: Phaser.Types.GameObjects.Particles.ParticleEmitterConfig = {
+      speed: { min: 90, max: 240 },
+      angle: { min: 200, max: 340 },
+      lifespan: { min: 350, max: 700 },
+      alpha: { start: 0.9, end: 0 },
+      emitting: false,
+    };
+    this.boostBurst = this.add
+      .particles(0, 0, "bubble_big", { ...burstConfig, scale: { start: 0.4, end: 0.05 } })
+      .setDepth(6);
+    this.boostBurstSmall = this.add
+      .particles(0, 0, "bubble_small", { ...burstConfig, scale: { start: 0.35, end: 0.05 } })
+      .setDepth(6);
+
     // Nenúfares: uno de salida en la misma posición de siempre, y el resto
     // se generan sin parar según Lumi sube. Tocar cualquiera da un boost.
     this.lilyPadSpawner = new LilyPadSpawner(this, WORLD_WIDTH, 562, START_Y - 158);
     this.physics.add.overlap(this.lumi.sprite, this.lilyPadSpawner.group, () => {
       this.lumi.triggerBoost();
+      this.boostBurst.explode(10, this.lumi.sprite.x, this.lumi.sprite.y);
+      this.boostBurstSmall.explode(16, this.lumi.sprite.x, this.lumi.sprite.y);
     });
 
     // foreground_plants queda detrás de Lumi por ahora: es una franja
     // continua de un borde a otro del mundo, así que delante la taparía
     // casi todo el rato en vez de solo "pasar por delante" ocasionalmente.
     this.add
-      .image(WORLD_WIDTH / 2, START_Y + 700, pondLayerKey("foreground_plants"))
+      .image(WORLD_WIDTH / 2, START_Y + cam.height * 0.42, pondLayerKey("foreground_plants"))
       .setOrigin(0.5, 1)
       .setScrollFactor(1)
       .setDepth(4);
@@ -164,6 +218,7 @@ export class PondScene extends Phaser.Scene {
     this.skyLayer.update(cam);
     this.fishField.update(time, delta, cam.scrollY, cam.height);
     this.lilyPadSpawner.update(cam.scrollY, cam.scrollY + cam.height);
+    this.decorSpawner.update(cam.scrollY, cam.scrollY + cam.height);
 
     this.bestHeight = Math.max(this.bestHeight, START_Y - this.lumi.sprite.y);
     this.scoreText.setText(`Altura: ${Math.round(this.bestHeight / 10)}`);

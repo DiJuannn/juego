@@ -2,6 +2,7 @@ import Phaser from "phaser";
 import { LUMI_FRAME_COUNT, frameKey, framePath } from "@/config/LumiAnimConfig";
 import { registerLumiAnimations } from "@/systems/AnimationRegistry";
 import { FISH_KEYS } from "@/systems/BackgroundFishField";
+import { DECOR_KEYS } from "@/systems/BackgroundDecorSpawner";
 
 // Capas de fondo que existen ahora mismo en /assets/backgrounds/pond/.
 // water_overlay.png no se ha generado todavía — se omite y se reporta,
@@ -43,6 +44,10 @@ export class BootScene extends Phaser.Scene {
     }
 
     this.load.image("lily_pad_01", "/objects/lily_pad/lily_pad_01.png");
+
+    this.load.image("decor_pebble", "/objects/decor/pebble.png");
+    this.load.image("decor_shell", "/objects/decor/shell.png");
+    this.load.image("decor_starfish", "/objects/decor/starfish.png");
   }
 
   create() {

@@ -8,13 +8,16 @@
 // del proyecto se derivan por código (flip) de swim_up y swim_right. Las
 // diagonales usan su propia carpeta swim_diagonal (pose dedicada, ya no un
 // flip reciclado de swim_up), y también se derivan entre sí por flip.
+//
+// boost/ ya no se usa: la pose dedicada no convencía, el impulso del
+// nenúfar ahora reutiliza la animación swim_up (ver Lumi.ts). El archivo
+// se queda en disco por si se retoma más adelante, solo se quitó de aquí.
 export const LUMI_FRAME_COUNT: Record<string, number> = {
   idle: 4,
   sleep: 3,
   swim_right: 4,
   swim_up: 4,
   swim_diagonal: 2,
-  boost: 1,
 };
 
 export const LUMI_FPS = 8; // pedido en el ejemplo de STYLE_GUIDE.md

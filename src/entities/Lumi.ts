@@ -12,8 +12,7 @@ type LumiState =
   | "swim_up_right"
   | "swim_up_left"
   | "swim_down_right"
-  | "swim_down_left"
-  | "boost";
+  | "swim_down_left";
 
 const BOOST_DURATION_MS = 550;
 const BOOST_SPEED = LUMI_SWIM_SPEED * 2.2;
@@ -48,7 +47,10 @@ export class Lumi {
     if (this.boostRemainingMs > 0) {
       this.boostRemainingMs -= deltaMs;
       body.setVelocity(0, -BOOST_SPEED);
-      this.setState("boost");
+      // La pose "boost" dedicada no convencía visualmente: el impulso
+      // reutiliza la propia animación de nadar hacia arriba (más partículas
+      // de por medio, ver PondScene), no un pose nuevo.
+      this.setState("swim_up");
       return;
     }
 
@@ -129,10 +131,6 @@ export class Lumi {
       case "swim_down_left":
         this.sprite.setFlip(true, true);
         this.sprite.play("swim_diagonal");
-        break;
-      case "boost":
-        this.sprite.setFlip(false, false);
-        this.sprite.play("boost");
         break;
     }
   }

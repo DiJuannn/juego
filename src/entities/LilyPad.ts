@@ -1,4 +1,5 @@
 import Phaser from "phaser";
+import { LILY_PAD_SCALE } from "@/config/GameConfig";
 
 /**
  * Nenúfar interactivo: un cuerpo estático que, al tocarlo Lumi, dispara un
@@ -10,6 +11,9 @@ export class LilyPad {
 
   constructor(scene: Phaser.Scene, x: number, y: number) {
     this.sprite = scene.physics.add.staticImage(x, y, "lily_pad_01");
+    this.sprite.setScale(LILY_PAD_SCALE);
     this.sprite.setDepth(2.5);
+    // Los cuerpos estáticos no recalculan su hitbox solos al escalar.
+    this.sprite.refreshBody();
   }
 }

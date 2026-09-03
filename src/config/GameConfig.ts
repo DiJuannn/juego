@@ -39,6 +39,9 @@ export const LUMI_DRIFT_SPEED = 55; // px/seg, hacia abajo
 export const LILY_PAD_MIN_GAP = 180;
 export const LILY_PAD_MAX_GAP = 320;
 
+// Pedido explícito: 70% más pequeños que el tamaño nativo del recorte.
+export const LILY_PAD_SCALE = 0.3;
+
 // Si Lumi cae más allá de esto por debajo del borde inferior de la
 // cámara, se considera que ha caído del todo: game over.
 export const GAME_OVER_MARGIN = 200;
