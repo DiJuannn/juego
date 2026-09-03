@@ -7,9 +7,10 @@ const BOB_SPEED = 1.4;
 /**
  * Nenúfar interactivo: cuerpo estático que, al tocarlo Lumi, dispara un
  * impulso hacia arriba (ver Lumi.triggerBoost). Es una pequeña ayuda para
- * ganar altura más rápido, no un objeto protagonista — va detrás de Lumi,
- * pequeño, flotando siempre recto (sin girar), solo con un balanceo
- * vertical suave para sentirse vivo en el agua.
+ * ganar altura más rápido, no un objeto protagonista — pequeño, flotando
+ * siempre recto (sin girar), solo con un balanceo vertical suave. En
+ * capas va delante de las algas de fondo (rocas/distant_plants) pero
+ * detrás de Lumi.
  */
 export class LilyPad {
   readonly sprite: Phaser.Physics.Arcade.Image;
@@ -19,7 +20,7 @@ export class LilyPad {
   constructor(scene: Phaser.Scene, x: number, y: number) {
     this.sprite = scene.physics.add.staticImage(x, y, "lily_pad_01");
     this.sprite.setScale(LILY_PAD_SCALE);
-    this.sprite.setDepth(2.5);
+    this.sprite.setDepth(4);
     // Los cuerpos estáticos no recalculan su hitbox solos al escalar.
     this.sprite.refreshBody();
 
