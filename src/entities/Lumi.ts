@@ -18,9 +18,8 @@ type LumiState =
  * Envuelve el sprite físico de Lumi y decide qué animación reproducir
  * según el input. swim_down y swim_left no tienen asset propio: se
  * reproducen como swim_up/swim_right con flip (decisión explícita del
- * proyecto), nunca se genera un frame nuevo para ellas. Las 4 diagonales
- * tampoco tienen asset propio: reutilizan swim_up_02 (ya inclinada) con
- * flips, ver AnimationRegistry.ts.
+ * proyecto). Las 4 diagonales usan su propia pose ("swim_diagonal",
+ * orientada hacia arriba-derecha) combinando flips para cubrir las otras 3.
  */
 export class Lumi {
   readonly sprite: Phaser.Physics.Arcade.Sprite;
@@ -71,13 +70,15 @@ export class Lumi {
         this.sprite.setFlip(false, false);
         this.sprite.play("idle");
         break;
+      // El arte de swim_right_01 mira hacia la izquierda por defecto, así
+      // que es swim_right quien necesita el flip, no swim_left.
       case "swim_right":
-        this.sprite.setFlip(false, false);
+        this.sprite.setFlipX(true);
+        this.sprite.setFlipY(false);
         this.sprite.play("swim_right");
         break;
       case "swim_left":
-        this.sprite.setFlipX(true);
-        this.sprite.setFlipY(false);
+        this.sprite.setFlip(false, false);
         this.sprite.play("swim_right");
         break;
       case "swim_up":
@@ -89,9 +90,9 @@ export class Lumi {
         this.sprite.setFlipX(false);
         this.sprite.play("swim_up");
         break;
-      // Las 4 diagonales reutilizan swim_up_02 (ya inclinada hacia la
-      // derecha-arriba en el arte original) combinando flips, igual que
-      // swim_down/swim_left reutilizan swim_up/swim_right.
+      // Las 4 diagonales combinan flips sobre "swim_diagonal" (pose propia
+      // orientada arriba-derecha), igual que swim_down/swim_left combinan
+      // flips sobre swim_up/swim_right.
       case "swim_up_right":
         this.sprite.setFlip(false, false);
         this.sprite.play("swim_diagonal");

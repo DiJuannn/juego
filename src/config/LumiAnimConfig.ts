@@ -5,12 +5,15 @@
 // contenido en el código.
 //
 // swim_down y swim_left NO tienen carpeta propia: por decisión explícita
-// del proyecto se derivan por código (flip) de swim_up y swim_right.
+// del proyecto se derivan por código (flip) de swim_up y swim_right. Las
+// diagonales usan su propia carpeta swim_diagonal (pose dedicada, ya no un
+// flip reciclado de swim_up), y también se derivan entre sí por flip.
 export const LUMI_FRAME_COUNT: Record<string, number> = {
   idle: 4,
   sleep: 3,
   swim_right: 4,
-  swim_up: 2,
+  swim_up: 4,
+  swim_diagonal: 2,
   boost: 1,
 };
 

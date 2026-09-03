@@ -4,6 +4,7 @@ import { Lumi } from "@/entities/Lumi";
 import { BackgroundFishField } from "@/systems/BackgroundFishField";
 import { BubbleField } from "@/systems/BubbleField";
 import { InputController } from "@/systems/InputController";
+import { LumiBubbleTrail } from "@/systems/LumiBubbleTrail";
 import { ParallaxLayer } from "@/systems/ParallaxLayer";
 import { pondLayerKey } from "./BootScene";
 
@@ -56,6 +57,7 @@ export class PondScene extends Phaser.Scene {
 
     this.lumi = new Lumi(this, WORLD_WIDTH / 2, WORLD_HEIGHT / 2);
     this.lumi.sprite.setDepth(5);
+    new LumiBubbleTrail(this, this.lumi.sprite, 4.6);
 
     // foreground_plants queda detrás de Lumi por ahora: es una franja
     // continua de un borde a otro del mundo, así que delante la taparía
