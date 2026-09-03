@@ -1,6 +1,7 @@
 import Phaser from "phaser";
 import { WORLD_HEIGHT, WORLD_WIDTH } from "@/config/GameConfig";
 import { Lumi } from "@/entities/Lumi";
+import { BackgroundFishField } from "@/systems/BackgroundFishField";
 import { BubbleField } from "@/systems/BubbleField";
 import { InputController } from "@/systems/InputController";
 import { ParallaxLayer } from "@/systems/ParallaxLayer";
@@ -10,6 +11,7 @@ export class PondScene extends Phaser.Scene {
   private lumi!: Lumi;
   private inputController!: InputController;
   private skyLayer!: ParallaxLayer;
+  private fishField!: BackgroundFishField;
 
   constructor() {
     super("Pond");
@@ -22,6 +24,11 @@ export class PondScene extends Phaser.Scene {
     // El cielo/agua de fondo es un degradado continuo: tilearlo cubre
     // cualquier tamaño de mundo sin huecos ni costuras visibles.
     this.skyLayer = new ParallaxLayer(this, pondLayerKey("background_far"), 0.15, 0);
+
+    // Peces de fondo, muy detrás de las rocas/plantas (parallax lento,
+    // escala pequeña, teñido suave) para dar sensación de profundidad sin
+    // competir visualmente con Lumi.
+    this.fishField = new BackgroundFishField(this, WORLD_WIDTH, WORLD_HEIGHT, 0.5, 0.25);
 
     // El resto de capas son ilustraciones de una escena concreta (un
     // grupo de rocas, unos nenúfares…), no texturas repetibles. Se
@@ -73,8 +80,9 @@ export class PondScene extends Phaser.Scene {
     });
   }
 
-  update() {
+  update(time: number, delta: number) {
     this.lumi.update(this.inputController.getVector());
     this.skyLayer.update(this.cameras.main);
+    this.fishField.update(time, delta);
   }
 }

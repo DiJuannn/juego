@@ -1,6 +1,7 @@
 import Phaser from "phaser";
 import { LUMI_FRAME_COUNT, frameKey, framePath } from "@/config/LumiAnimConfig";
 import { registerLumiAnimations } from "@/systems/AnimationRegistry";
+import { FISH_KEYS } from "@/systems/BackgroundFishField";
 
 // Capas de fondo que existen ahora mismo en /assets/backgrounds/pond/.
 // water_overlay.png no se ha generado todavía — se omite y se reporta,
@@ -34,6 +35,10 @@ export class BootScene extends Phaser.Scene {
 
     for (const particle of PARTICLES) {
       this.load.image(particle, `/backgrounds/pond/particles/${particle}.png`);
+    }
+
+    for (const fishKey of FISH_KEYS) {
+      this.load.image(fishKey, `/objects/fish/${fishKey}.png`);
     }
   }
 
