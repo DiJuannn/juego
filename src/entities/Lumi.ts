@@ -33,6 +33,15 @@ export class Lumi {
     this.sprite = scene.physics.add.sprite(x, y, frameKey("idle", 1));
     this.sprite.setScale(LUMI_SCALE);
     this.sprite.setCollideWorldBounds(true);
+    // Por defecto el cuerpo físico ocupa el lienzo entero del frame (mucho
+    // más grande que la silueta real de Lumi, que varía de pose a pose
+    // pero siempre deja bastante margen vacío alrededor). Eso hacía que un
+    // nenúfar se activara "desde lejos". Un cuerpo más ajustado al torso
+    // (coordenadas en el espacio del frame sin escalar, 1047x1024) hace
+    // que el contacto se sienta real.
+    const body = this.sprite.body as Phaser.Physics.Arcade.Body;
+    body.setSize(360, 460);
+    body.setOffset(343, 300);
     this.sprite.play("idle");
   }
 
