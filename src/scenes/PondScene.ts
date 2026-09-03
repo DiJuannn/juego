@@ -9,8 +9,7 @@ import { JellyfishSpawner } from "@/systems/JellyfishSpawner";
 import { LilyPadSpawner } from "@/systems/LilyPadSpawner";
 import { LumiBubbleTrail } from "@/systems/LumiBubbleTrail";
 import { ParallaxLayer } from "@/systems/ParallaxLayer";
-import { SwayingLayer } from "@/systems/SwayingLayer";
-import { pondLayerKey } from "./BootScene";
+import { pondLayerKey, pondPlantSwayAnimKey } from "./BootScene";
 
 /**
  * Escalada infinita: la cámara solo sube (nunca retrocede) siguiendo a
@@ -25,8 +24,6 @@ export class PondScene extends Phaser.Scene {
   private lilyPadSpawner!: LilyPadSpawner;
   private jellyfishSpawner!: JellyfishSpawner;
   private decorSpawner!: BackgroundDecorSpawner;
-  private distantPlantsSway!: SwayingLayer;
-  private foregroundPlantsSway!: SwayingLayer;
   private boostBurst!: Phaser.GameObjects.Particles.ParticleEmitter;
   private boostBurstSmall!: Phaser.GameObjects.Particles.ParticleEmitter;
   private scoreText!: Phaser.GameObjects.Text;
@@ -100,14 +97,15 @@ export class PondScene extends Phaser.Scene {
       .setScrollFactor(0.35)
       .setDepth(1);
 
-    const distantPlants = this.add
-      .image(WORLD_WIDTH / 2, START_Y + cam.height * 0.38, pondLayerKey("distant_plants"))
+    // Balanceo real: cada hoja se mueve de forma independiente entre
+    // frames (generados con Gemini a partir del mismo dibujo), en vez de
+    // rotar toda la imagen de golpe — eso se veía artificial.
+    this.add
+      .sprite(WORLD_WIDTH / 2, START_Y + cam.height * 0.38, "pond_distant_plants_1")
+      .play(pondPlantSwayAnimKey("distant_plants"))
       .setOrigin(0.5, 1)
       .setScrollFactor(0.55)
       .setDepth(3);
-    // Balanceo suave como si las moviera la corriente — solo transforma la
-    // imagen ya existente, ningún asset nuevo.
-    this.distantPlantsSway = new SwayingLayer(distantPlants, 1.5, 0.35);
 
     this.lumi = new Lumi(this, WORLD_WIDTH / 2, START_Y);
     this.lumi.sprite.setDepth(5);
@@ -152,14 +150,14 @@ export class PondScene extends Phaser.Scene {
     });
 
     // foreground_plants es la capa más cercana a cámara: va delante de
-    // Lumi (como su nombre indica), no detrás.
-    const foregroundPlants = this.add
-      .image(WORLD_WIDTH / 2, START_Y + cam.height * 0.42, pondLayerKey("foreground_plants"))
+    // Lumi (como su nombre indica), no detrás. Mismo balanceo por frames
+    // que distant_plants.
+    this.add
+      .sprite(WORLD_WIDTH / 2, START_Y + cam.height * 0.42, "pond_foreground_plants_1")
+      .play(pondPlantSwayAnimKey("foreground_plants"))
       .setOrigin(0.5, 1)
       .setScrollFactor(1)
       .setDepth(6);
-    // Más cerca de cámara → balanceo un poco más notorio que el de fondo.
-    this.foregroundPlantsSway = new SwayingLayer(foregroundPlants, 2.2, 0.45);
 
     new BubbleField(this, cam.width, cam.height, 4.5, this.lumi.sprite);
 
@@ -239,8 +237,6 @@ export class PondScene extends Phaser.Scene {
     cam.scrollX = this.clampScrollX(cam);
 
     this.skyLayer.update(cam);
-    this.distantPlantsSway.update(time);
-    this.foregroundPlantsSway.update(time);
     this.fishField.update(time, delta, cam.scrollY, cam.height);
     this.lilyPadSpawner.update(cam.scrollY, cam.scrollY + cam.height, time);
     this.jellyfishSpawner.update(cam.scrollY, cam.scrollY + cam.height, time);

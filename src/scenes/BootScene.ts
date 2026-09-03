@@ -4,12 +4,21 @@ import { registerLumiAnimations } from "@/systems/AnimationRegistry";
 import { FISH_KEYS } from "@/systems/BackgroundFishField";
 import { DECOR_KEYS } from "@/systems/BackgroundDecorSpawner";
 
-// Capas de fondo que existen ahora mismo en /assets/backgrounds/pond/.
-// water_overlay.png no se ha generado todavía — se omite y se reporta,
-// no se inventa un reemplazo. lily_pads.png ya no se usa como capa fija:
-// se sustituyó por el nenúfar interactivo (LilyPad), ver PondScene.
-const POND_LAYERS = ["background_far", "rocks_back", "distant_plants", "foreground_plants"];
+// Capas de fondo fijas (una sola imagen). water_overlay.png no se ha
+// generado todavía — se omite y se reporta, no se inventa un reemplazo.
+// lily_pads.png ya no se usa como capa fija: se sustituyó por el nenúfar
+// interactivo (LilyPad), ver PondScene.
+const POND_LAYERS = ["background_far", "rocks_back"];
 const MISSING_POND_LAYERS = ["water_overlay"];
+
+// Algas con balanceo real: varios frames que muestran cada hoja moviéndose
+// de forma independiente (no toda la imagen rotando de golpe, que se veía
+// artificial). Mismo patrón de carpetas/numeración que las animaciones de
+// Lumi.
+export const POND_PLANT_FRAME_COUNT: Record<string, number> = {
+  distant_plants: 2,
+  foreground_plants: 3,
+};
 
 // Recortes de las burbujas ya dibujadas en idle_01.png (mismo arte, no
 // asset nuevo) para la animación ambiental de burbujas.
@@ -17,6 +26,19 @@ const PARTICLES = ["bubble_big", "bubble_small"];
 
 export function pondLayerKey(name: string) {
   return `pond_${name}`;
+}
+
+export function pondPlantFrameKey(folder: string, index: number) {
+  return `pond_${folder}_${index}`;
+}
+
+function pondPlantFramePath(folder: string, index: number) {
+  const n = String(index).padStart(2, "0");
+  return `/backgrounds/pond/${folder}/${folder}_${n}.png`;
+}
+
+export function pondPlantSwayAnimKey(folder: string) {
+  return `pond_sway_${folder}`;
 }
 
 export class BootScene extends Phaser.Scene {
@@ -33,6 +55,12 @@ export class BootScene extends Phaser.Scene {
 
     for (const layer of POND_LAYERS) {
       this.load.image(pondLayerKey(layer), `/backgrounds/pond/${layer}.png`);
+    }
+
+    for (const [folder, count] of Object.entries(POND_PLANT_FRAME_COUNT)) {
+      for (let i = 1; i <= count; i++) {
+        this.load.image(pondPlantFrameKey(folder, i), pondPlantFramePath(folder, i));
+      }
     }
 
     for (const particle of PARTICLES) {
@@ -59,6 +87,23 @@ export class BootScene extends Phaser.Scene {
     }
 
     registerLumiAnimations(this);
+
+    // Balanceo lento ida-y-vuelta entre los frames (yoyo): así no hace
+    // falta que el último frame conecte a la perfección con el primero
+    // para que el loop se sienta natural.
+    for (const [folder, count] of Object.entries(POND_PLANT_FRAME_COUNT)) {
+      const key = pondPlantSwayAnimKey(folder);
+      if (this.anims.exists(key)) continue;
+      const frames = Array.from({ length: count }, (_, i) => ({ key: pondPlantFrameKey(folder, i + 1) }));
+      this.anims.create({
+        key,
+        frames,
+        frameRate: 1.2,
+        yoyo: true,
+        repeat: -1,
+      });
+    }
+
     this.scene.start("Pond");
   }
 }
