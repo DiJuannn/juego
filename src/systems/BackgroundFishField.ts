@@ -6,7 +6,14 @@ import Phaser from "phaser";
  * matting ML; aquí solo se anima su nado (movimiento + balanceo), que es
  * lógica de juego, no arte nuevo.
  */
-export const FISH_KEYS = Array.from({ length: 16 }, (_, i) => `fish_${String(i + 1).padStart(2, "0")}`);
+// fish_14 y fish_16 se descartaron: su aleta dorsal queda cortada en seco
+// (el dibujo original se sale del recuadro de su celda en la hoja de
+// referencia), no es un artefacto de recorte que se pueda arreglar sin
+// inventar el trozo que falta.
+const EXCLUDED_FISH = new Set([14, 16]);
+export const FISH_KEYS = Array.from({ length: 16 }, (_, i) => i + 1)
+  .filter((n) => !EXCLUDED_FISH.has(n))
+  .map((n) => `fish_${String(n).padStart(2, "0")}`);
 
 interface FishState {
   sprite: Phaser.GameObjects.Image;
