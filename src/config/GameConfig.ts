@@ -45,3 +45,10 @@ export const LILY_PAD_SCALE = 0.3;
 // Si Lumi cae más allá de esto por debajo del borde inferior de la
 // cámara, se considera que ha caído del todo: game over.
 export const GAME_OVER_MARGIN = 200;
+
+// Medusas: primer enemigo, introducido "poco a poco" — mucho más
+// espaciadas que los nenúfares para que sea una amenaza ocasional, no una
+// pared de peligros.
+export const JELLYFISH_MIN_GAP = 700;
+export const JELLYFISH_MAX_GAP = 1300;
+export const JELLYFISH_SCALE = 0.16;

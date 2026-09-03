@@ -5,6 +5,7 @@ import { BackgroundDecorSpawner } from "@/systems/BackgroundDecorSpawner";
 import { BackgroundFishField } from "@/systems/BackgroundFishField";
 import { BubbleField } from "@/systems/BubbleField";
 import { InputController } from "@/systems/InputController";
+import { JellyfishSpawner } from "@/systems/JellyfishSpawner";
 import { LilyPadSpawner } from "@/systems/LilyPadSpawner";
 import { LumiBubbleTrail } from "@/systems/LumiBubbleTrail";
 import { ParallaxLayer } from "@/systems/ParallaxLayer";
@@ -21,6 +22,7 @@ export class PondScene extends Phaser.Scene {
   private skyLayer!: ParallaxLayer;
   private fishField!: BackgroundFishField;
   private lilyPadSpawner!: LilyPadSpawner;
+  private jellyfishSpawner!: JellyfishSpawner;
   private decorSpawner!: BackgroundDecorSpawner;
   private boostBurst!: Phaser.GameObjects.Particles.ParticleEmitter;
   private boostBurstSmall!: Phaser.GameObjects.Particles.ParticleEmitter;
@@ -136,6 +138,13 @@ export class PondScene extends Phaser.Scene {
       },
     );
 
+    // Medusas: primer enemigo. Empiezan a aparecer algo por encima de la
+    // salida (no justo donde arranca la partida) y tocarlas es game over.
+    this.jellyfishSpawner = new JellyfishSpawner(this, WORLD_WIDTH, START_Y - 600);
+    this.physics.add.overlap(this.lumi.sprite, this.jellyfishSpawner.group, () => {
+      this.triggerGameOver("medusa");
+    });
+
     // foreground_plants es la capa más cercana a cámara: va delante de
     // Lumi (como su nombre indica), no detrás.
     this.add
@@ -197,11 +206,13 @@ export class PondScene extends Phaser.Scene {
     return Phaser.Math.Clamp(this.lumi.sprite.x - cam.width / 2, 0, Math.max(0, WORLD_WIDTH - cam.width));
   }
 
-  private triggerGameOver() {
+  private triggerGameOver(reason: "atras" | "medusa" = "atras") {
+    if (this.isGameOver) return;
     this.isGameOver = true;
     this.physics.pause();
     const altura = Math.round(this.bestHeight / 10);
-    this.gameOverText.setText(`Te has quedado atrás...\n\nAltura: ${altura}\n\nToca la pantalla para volver a intentarlo`);
+    const motivo = reason === "medusa" ? "Te ha tocado una medusa..." : "Te has quedado atrás...";
+    this.gameOverText.setText(`${motivo}\n\nAltura: ${altura}\n\nToca la pantalla para volver a intentarlo`);
     this.gameOverText.setVisible(true);
   }
 
@@ -222,6 +233,7 @@ export class PondScene extends Phaser.Scene {
     this.skyLayer.update(cam);
     this.fishField.update(time, delta, cam.scrollY, cam.height);
     this.lilyPadSpawner.update(cam.scrollY, cam.scrollY + cam.height, time);
+    this.jellyfishSpawner.update(cam.scrollY, cam.scrollY + cam.height, time);
     this.decorSpawner.update(cam.scrollY, cam.scrollY + cam.height);
 
     this.bestHeight = Math.max(this.bestHeight, START_Y - this.lumi.sprite.y);

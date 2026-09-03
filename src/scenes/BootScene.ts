@@ -48,6 +48,8 @@ export class BootScene extends Phaser.Scene {
     this.load.image("decor_pebble", "/objects/decor/pebble.png");
     this.load.image("decor_shell", "/objects/decor/shell.png");
     this.load.image("decor_starfish", "/objects/decor/starfish.png");
+
+    this.load.image("jellyfish", "/objects/enemies/jellyfish.png");
   }
 
   create() {
