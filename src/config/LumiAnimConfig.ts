@@ -7,9 +7,9 @@
 // swim_down y swim_left NO tienen carpeta propia: por decisión explícita
 // del proyecto se derivan por código (flip) de swim_up y swim_right.
 export const LUMI_FRAME_COUNT: Record<string, number> = {
-  idle: 1,
-  sleep: 1,
-  swim_right: 1,
+  idle: 4,
+  sleep: 3,
+  swim_right: 4,
   swim_up: 2,
   boost: 1,
 };
