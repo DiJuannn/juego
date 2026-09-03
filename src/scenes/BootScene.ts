@@ -37,10 +37,6 @@ function pondPlantFramePath(folder: string, index: number) {
   return `/backgrounds/pond/${folder}/${folder}_${n}.png`;
 }
 
-export function pondPlantSwayAnimKey(folder: string) {
-  return `pond_sway_${folder}`;
-}
-
 export class BootScene extends Phaser.Scene {
   constructor() {
     super("Boot");
@@ -87,23 +83,6 @@ export class BootScene extends Phaser.Scene {
     }
 
     registerLumiAnimations(this);
-
-    // Balanceo lento ida-y-vuelta entre los frames (yoyo): así no hace
-    // falta que el último frame conecte a la perfección con el primero
-    // para que el loop se sienta natural.
-    for (const [folder, count] of Object.entries(POND_PLANT_FRAME_COUNT)) {
-      const key = pondPlantSwayAnimKey(folder);
-      if (this.anims.exists(key)) continue;
-      const frames = Array.from({ length: count }, (_, i) => ({ key: pondPlantFrameKey(folder, i + 1) }));
-      this.anims.create({
-        key,
-        frames,
-        frameRate: 1.2,
-        yoyo: true,
-        repeat: -1,
-      });
-    }
-
     this.scene.start("Pond");
   }
 }

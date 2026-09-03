@@ -4,12 +4,13 @@ import { Lumi } from "@/entities/Lumi";
 import { BackgroundDecorSpawner } from "@/systems/BackgroundDecorSpawner";
 import { BackgroundFishField } from "@/systems/BackgroundFishField";
 import { BubbleField } from "@/systems/BubbleField";
+import { CrossfadePlant } from "@/systems/CrossfadePlant";
 import { InputController } from "@/systems/InputController";
 import { JellyfishSpawner } from "@/systems/JellyfishSpawner";
 import { LilyPadSpawner } from "@/systems/LilyPadSpawner";
 import { LumiBubbleTrail } from "@/systems/LumiBubbleTrail";
 import { ParallaxLayer } from "@/systems/ParallaxLayer";
-import { pondLayerKey, pondPlantSwayAnimKey } from "./BootScene";
+import { pondLayerKey, pondPlantFrameKey } from "./BootScene";
 
 /**
  * Escalada infinita: la cámara solo sube (nunca retrocede) siguiendo a
@@ -98,14 +99,20 @@ export class PondScene extends Phaser.Scene {
       .setDepth(1);
 
     // Balanceo real: cada hoja se mueve de forma independiente entre
-    // frames (generados con Gemini a partir del mismo dibujo), en vez de
-    // rotar toda la imagen de golpe — eso se veía artificial.
-    this.add
-      .sprite(WORLD_WIDTH / 2, START_Y + cam.height * 0.38, "pond_distant_plants_1")
-      .play(pondPlantSwayAnimKey("distant_plants"))
-      .setOrigin(0.5, 1)
-      .setScrollFactor(0.55)
-      .setDepth(3);
+    // frames (generados con Gemini a partir del mismo dibujo), fundiendo
+    // muy lento de uno a otro — nada de saltar de golpe entre poses, que
+    // se veía artificial y brusco.
+    new CrossfadePlant(
+      this,
+      WORLD_WIDTH / 2,
+      START_Y + cam.height * 0.38,
+      [pondPlantFrameKey("distant_plants", 1), pondPlantFrameKey("distant_plants", 2)],
+      { x: 0.5, y: 1 },
+      0.55,
+      3,
+      4000,
+      4500,
+    );
 
     this.lumi = new Lumi(this, WORLD_WIDTH / 2, START_Y);
     this.lumi.sprite.setDepth(5);
@@ -150,14 +157,23 @@ export class PondScene extends Phaser.Scene {
     });
 
     // foreground_plants es la capa más cercana a cámara: va delante de
-    // Lumi (como su nombre indica), no detrás. Mismo balanceo por frames
+    // Lumi (como su nombre indica), no detrás. Mismo balanceo por fundido
     // que distant_plants.
-    this.add
-      .sprite(WORLD_WIDTH / 2, START_Y + cam.height * 0.42, "pond_foreground_plants_1")
-      .play(pondPlantSwayAnimKey("foreground_plants"))
-      .setOrigin(0.5, 1)
-      .setScrollFactor(1)
-      .setDepth(6);
+    new CrossfadePlant(
+      this,
+      WORLD_WIDTH / 2,
+      START_Y + cam.height * 0.42,
+      [
+        pondPlantFrameKey("foreground_plants", 1),
+        pondPlantFrameKey("foreground_plants", 2),
+        pondPlantFrameKey("foreground_plants", 3),
+      ],
+      { x: 0.5, y: 1 },
+      1,
+      6,
+      3500,
+      4000,
+    );
 
     new BubbleField(this, cam.width, cam.height, 4.5, this.lumi.sprite);
 
