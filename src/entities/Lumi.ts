@@ -1,5 +1,5 @@
 import Phaser from "phaser";
-import { LUMI_SCALE, LUMI_SWIM_SPEED } from "@/config/GameConfig";
+import { LUMI_DRIFT_SPEED, LUMI_SCALE, LUMI_SWIM_SPEED } from "@/config/GameConfig";
 import { frameKey } from "@/config/LumiAnimConfig";
 import type { DirectionVector } from "@/systems/InputController";
 
@@ -55,7 +55,10 @@ export class Lumi {
     const moving = direction.x !== 0 || direction.y !== 0;
 
     if (!moving) {
-      body.setVelocity(0, 0);
+      // Hundimiento suave: en un juego de escalada infinita, quedarse
+      // quieta no puede ser gratis o no habría ninguna presión para seguir
+      // subiendo.
+      body.setVelocity(0, LUMI_DRIFT_SPEED);
       this.setState("idle");
       return;
     }

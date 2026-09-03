@@ -11,13 +11,21 @@ import Phaser from "phaser";
 export class BubbleField {
   private emitters: Phaser.GameObjects.Particles.ParticleEmitter[];
 
-  constructor(scene: Phaser.Scene, worldWidth: number, worldHeight: number, depth: number) {
+  constructor(
+    scene: Phaser.Scene,
+    viewWidth: number,
+    viewHeight: number,
+    depth: number,
+    followTarget: Phaser.GameObjects.Sprite,
+  ) {
+    // El mundo de un juego de escalada infinita no tiene una altura fija:
+    // en vez de repartir burbujas en un rango absoluto (que dejaría de
+    // tener sentido en cuanto Lumi suba), el emisor sigue a Lumi y las
+    // posiciones son un desplazamiento relativo del tamaño de la pantalla,
+    // así siempre hay burbujas cerca sea cual sea la altura alcanzada.
     const baseConfig: Phaser.Types.GameObjects.Particles.ParticleEmitterConfig = {
-      x: { min: 0, max: worldWidth },
-      // Se reparten por toda la columna de agua (no solo desde el fondo)
-      // para que siempre haya alguna burbuja visible cerca de Lumi, esté
-      // donde esté nadando, en vez de tardar en "llegar" desde abajo.
-      y: { min: 0, max: worldHeight },
+      x: { min: -viewWidth / 2, max: viewWidth / 2 },
+      y: { min: -viewHeight, max: viewHeight * 0.6 },
       lifespan: { min: 9000, max: 16000 },
       speedY: { min: -35, max: -75 },
       speedX: { min: -12, max: 12 },
@@ -37,7 +45,10 @@ export class BubbleField {
       }),
     ];
 
-    for (const emitter of this.emitters) emitter.setDepth(depth);
+    for (const emitter of this.emitters) {
+      emitter.setDepth(depth);
+      emitter.startFollow(followTarget);
+    }
   }
 
   destroy() {

@@ -30,22 +30,24 @@ interface FishState {
 export class BackgroundFishField {
   private fish: FishState[] = [];
   private worldWidth: number;
+  private scrollFactor: number;
 
   constructor(
     scene: Phaser.Scene,
     worldWidth: number,
-    worldHeight: number,
+    initialViewHeight: number,
     depth: number,
     scrollFactor: number,
     count = 10,
   ) {
     this.worldWidth = worldWidth;
+    this.scrollFactor = scrollFactor;
 
     for (let i = 0; i < count; i++) {
       const key = Phaser.Utils.Array.GetRandom(FISH_KEYS);
       const direction: 1 | -1 = Math.random() < 0.5 ? 1 : -1;
       const x = Phaser.Math.Between(0, worldWidth);
-      const baseY = Phaser.Math.Between(worldHeight * 0.15, worldHeight * 0.75);
+      const baseY = Phaser.Math.Between(initialViewHeight * 0.15, initialViewHeight * 0.85);
       const scale = Phaser.Math.FloatBetween(0.12, 0.22);
 
       const sprite = scene.add
@@ -72,7 +74,7 @@ export class BackgroundFishField {
     }
   }
 
-  update(time: number, delta: number) {
+  update(time: number, delta: number, cameraScrollY: number, viewHeight: number) {
     const margin = 150;
     for (const f of this.fish) {
       f.sprite.x += f.speed * f.direction * (delta / 1000);
@@ -81,6 +83,16 @@ export class BackgroundFishField {
         f.sprite.x = -margin;
       } else if (f.direction === -1 && f.sprite.x < -margin) {
         f.sprite.x = this.worldWidth + margin;
+      }
+
+      // La cámara solo sube y esta capa tiene scrollFactor < 1, así que con
+      // el tiempo se queda "atrás" y cae por debajo de la pantalla. Cuando
+      // eso pasa, se recoloca justo por encima de la vista actual — igual
+      // que reciclar una capa de parallax infinita.
+      const screenY = f.baseY - cameraScrollY * this.scrollFactor;
+      if (screenY > viewHeight + margin) {
+        f.baseY = cameraScrollY * this.scrollFactor - Phaser.Math.Between(20, 200);
+        f.sprite.x = Phaser.Math.Between(0, this.worldWidth);
       }
 
       f.sprite.y = f.baseY + Math.sin(time / 1000 * f.bobSpeed + f.bobPhase) * f.bobAmplitude;
