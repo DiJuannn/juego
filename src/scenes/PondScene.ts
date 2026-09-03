@@ -10,6 +10,7 @@ import { JellyfishSpawner } from "@/systems/JellyfishSpawner";
 import { LilyPadSpawner } from "@/systems/LilyPadSpawner";
 import { LumiBubbleTrail } from "@/systems/LumiBubbleTrail";
 import { ParallaxLayer } from "@/systems/ParallaxLayer";
+import { ZoneManager } from "@/systems/ZoneManager";
 import { pondLayerKey, pondPlantFrameKey } from "./BootScene";
 
 /**
@@ -25,6 +26,8 @@ export class PondScene extends Phaser.Scene {
   private lilyPadSpawner!: LilyPadSpawner;
   private jellyfishSpawner!: JellyfishSpawner;
   private decorSpawner!: BackgroundDecorSpawner;
+  private zoneManager!: ZoneManager;
+  private zoneText!: Phaser.GameObjects.Text;
   private boostBurst!: Phaser.GameObjects.Particles.ParticleEmitter;
   private boostBurstSmall!: Phaser.GameObjects.Particles.ParticleEmitter;
   private scoreText!: Phaser.GameObjects.Text;
@@ -185,11 +188,25 @@ export class PondScene extends Phaser.Scene {
     cam.scrollX = this.clampScrollX(cam);
     cam.scrollY = START_Y - cam.height * 0.6;
 
+    // Tinte de profundidad a pantalla completa: por debajo de la UI (100+)
+    // pero por encima de todo lo demás, para oscurecer/aclarar la escena
+    // entera según la zona sin repintar ningún asset.
+    this.zoneManager = new ZoneManager(this, 50);
+
     this.scoreText = this.add
       .text(16, 16, "Altura: 0", {
         fontFamily: "system-ui, sans-serif",
         fontSize: "22px",
         color: "#3a3a5a",
+      })
+      .setScrollFactor(0)
+      .setDepth(100);
+
+    this.zoneText = this.add
+      .text(16, 44, "Estanque", {
+        fontFamily: "system-ui, sans-serif",
+        fontSize: "15px",
+        color: "#5a5a7a",
       })
       .setScrollFactor(0)
       .setDepth(100);
@@ -220,6 +237,7 @@ export class PondScene extends Phaser.Scene {
     this.scale.on(Phaser.Scale.Events.RESIZE, (gameSize: Phaser.Structs.Size) => {
       cam.setSize(gameSize.width, gameSize.height);
       this.skyLayer.resize(gameSize.width, gameSize.height);
+      this.zoneManager.resize(gameSize.width, gameSize.height);
       this.gameOverText.setPosition(gameSize.width / 2, gameSize.height / 2);
     });
   }
@@ -260,6 +278,11 @@ export class PondScene extends Phaser.Scene {
 
     this.bestHeight = Math.max(this.bestHeight, START_Y - this.lumi.sprite.y);
     this.scoreText.setText(`Altura: ${Math.round(this.bestHeight / 10)}`);
+
+    const zoneBlend = this.zoneManager.update(this.lumi.sprite.y);
+    this.zoneText.setText(
+      zoneBlend.next ? `${zoneBlend.current.name} → ${zoneBlend.next.name}` : zoneBlend.current.name,
+    );
 
     if (this.lumi.sprite.y > cam.scrollY + cam.height + GAME_OVER_MARGIN) {
       this.triggerGameOver();
