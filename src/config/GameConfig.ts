@@ -13,8 +13,9 @@ export const WORLD_WIDTH = 1376;
 export const WORLD_HEIGHT = 1400;
 
 // STYLE_GUIDE.md: "Lumi ocupa aproximadamente 10-15% de la pantalla".
-// Los frames fuente son de 1047x1024px; con este factor de escala Lumi
-// mide ~77px de alto en un canvas de 640px de alto (~12%).
-export const LUMI_SCALE = 0.075;
+// Pedido explícito del usuario: 20% más grande que el tamaño base
+// (0.075 → ~92px de alto en un canvas de 640px, ~14.4%, sigue dentro
+// del rango de la guía).
+export const LUMI_SCALE = 0.075 * 1.2;
 
 export const LUMI_SWIM_SPEED = 220; // px/seg
