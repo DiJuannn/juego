@@ -74,3 +74,40 @@ export const SQUID_START_OFFSET = 5000; // px por encima de START_Y (altura ~500
 export const SQUID_MIN_GAP = 1100;
 export const SQUID_MAX_GAP = 1900;
 export const SQUID_SCALE = 0.18;
+
+// Erizos: cuarto enemigo, entre la medusa y el tiburón (altura ~150) — casi
+// no se mueven, son un obstáculo "plantado" a esquivar, no una criatura que
+// persigue.
+export const URCHIN_START_OFFSET = 1500; // altura ~150
+export const URCHIN_MIN_GAP = 900;
+export const URCHIN_MAX_GAP = 1500;
+export const URCHIN_SCALE = 0.17;
+
+// Pez grande: reutiliza el arte de pez ya existente (fish_05) a mayor
+// escala — a diferencia del resto, tocarlo NO es game over, solo empuja a
+// Lumi lejos (un obstáculo que estorba, no que mata).
+export const BIG_FISH_START_OFFSET = 4000; // altura ~400
+export const BIG_FISH_MIN_GAP = 1300;
+export const BIG_FISH_MAX_GAP = 2100;
+export const BIG_FISH_SCALE = 0.5;
+export const BIG_FISH_PATROL_SPEED = 60;
+export const BIG_FISH_PUSH_STRENGTH = 300;
+export const BIG_FISH_PUSH_COOLDOWN_MS = 500;
+
+// Corriente de agua: no es una criatura, es una franja de mundo que empuja
+// lateralmente mientras Lumi está dentro — el último obstáculo de la Zona
+// 1 (altura ~650), justo antes de la Zona 2.
+export const CURRENT_ZONE_START_OFFSET = 6500; // altura ~650
+export const CURRENT_ZONE_MIN_GAP = 1600;
+export const CURRENT_ZONE_MAX_GAP = 2600;
+export const CURRENT_ZONE_HEIGHT = 260;
+export const CURRENT_ZONE_STRENGTH = 85; // px/seg de empuje lateral
+
+// Power-up: escudo de burbuja. Aparece pronto (antes que la propia medusa)
+// y absorbe UN golpe de cualquier enemigo letal (medusa/tiburón/calamar/
+// erizo) — no protege del empuje del pez grande ni de la corriente, esos
+// no matan de todas formas.
+export const SHIELD_START_OFFSET = 400; // altura ~40
+export const SHIELD_MIN_GAP = 2200;
+export const SHIELD_MAX_GAP = 3400;
+export const SHIELD_PICKUP_SCALE = 0.22;

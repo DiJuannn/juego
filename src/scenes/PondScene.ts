@@ -1,29 +1,39 @@
 import Phaser from "phaser";
 import {
+  BIG_FISH_PUSH_COOLDOWN_MS,
+  BIG_FISH_PUSH_STRENGTH,
+  BIG_FISH_START_OFFSET,
   CAMERA_AUTO_RISE_SPEED,
+  CURRENT_ZONE_START_OFFSET,
   GAME_OVER_MARGIN,
   SHARK_START_OFFSET,
+  SHIELD_START_OFFSET,
   SQUID_START_OFFSET,
   START_Y,
+  URCHIN_START_OFFSET,
   WORLD_HEIGHT,
   WORLD_WIDTH,
 } from "@/config/GameConfig";
 import { Lumi } from "@/entities/Lumi";
 import { BackgroundDecorSpawner } from "@/systems/BackgroundDecorSpawner";
 import { BackgroundFishField } from "@/systems/BackgroundFishField";
+import { BigFishSpawner } from "@/systems/BigFishSpawner";
 import { BubbleField } from "@/systems/BubbleField";
 import { CrossfadePlant } from "@/systems/CrossfadePlant";
+import { CurrentZoneSpawner } from "@/systems/CurrentZoneSpawner";
 import { InputController } from "@/systems/InputController";
 import { JellyfishSpawner } from "@/systems/JellyfishSpawner";
 import { LilyPadSpawner } from "@/systems/LilyPadSpawner";
 import { LumiBubbleTrail } from "@/systems/LumiBubbleTrail";
 import { ParallaxLayer } from "@/systems/ParallaxLayer";
 import { SharkSpawner } from "@/systems/SharkSpawner";
+import { ShieldPickupSpawner } from "@/systems/ShieldPickupSpawner";
 import { SquidSpawner } from "@/systems/SquidSpawner";
+import { UrchinSpawner } from "@/systems/UrchinSpawner";
 import { ZoneManager } from "@/systems/ZoneManager";
 import { pondLayerKey, pondPlantFrameKey } from "./BootScene";
 
-type DeathReason = "atras" | "medusa" | "tiburon" | "calamar";
+type DeathReason = "atras" | "medusa" | "tiburon" | "calamar" | "erizo";
 
 /**
  * Escalada infinita: la cámara solo sube (nunca retrocede) siguiendo a
@@ -39,6 +49,10 @@ export class PondScene extends Phaser.Scene {
   private jellyfishSpawner!: JellyfishSpawner;
   private sharkSpawner!: SharkSpawner;
   private squidSpawner!: SquidSpawner;
+  private urchinSpawner!: UrchinSpawner;
+  private bigFishSpawner!: BigFishSpawner;
+  private currentZoneSpawner!: CurrentZoneSpawner;
+  private shieldPickupSpawner!: ShieldPickupSpawner;
   private decorSpawner!: BackgroundDecorSpawner;
   private zoneManager!: ZoneManager;
   private zoneText!: Phaser.GameObjects.Text;
@@ -49,6 +63,14 @@ export class PondScene extends Phaser.Scene {
   private bestHeight = 0;
   private isGameOver = false;
   private isDying = false;
+  private hasShield = false;
+  private shieldAura!: Phaser.GameObjects.Image;
+  private bigFishPushCooldownUntil = 0;
+  /** Tras absorber un golpe, un respiro corto en el que ningún otro peligro
+   * puede matar — sin esto, dos peligros solapados con Lumi en el MISMO
+   * frame disparan el overlap dos veces: el primero consume el escudo, y
+   * el segundo ya lo encuentra desactivado y mata igual. */
+  private shieldGraceUntil = 0;
   /** Techo que la cámara persigue: solo puede bajar de valor (=subir en
    * pantalla), nunca sube. Se mueve sola a CAMERA_AUTO_RISE_SPEED y además
    * sigue a Lumi si ella sube más rápido — ver update(). */
@@ -62,6 +84,8 @@ export class PondScene extends Phaser.Scene {
     this.isGameOver = false;
     this.isDying = false;
     this.bestHeight = 0;
+    this.hasShield = false;
+    this.bigFishPushCooldownUntil = 0;
 
     // El mundo no es infinito de verdad (evitamos rehacer coordenadas),
     // pero el margen hacia arriba es tan grande que a efectos de juego se
@@ -172,25 +196,62 @@ export class PondScene extends Phaser.Scene {
       },
     );
 
+    // Power-up de escudo: aparece antes que la propia medusa. Absorbe UN
+    // golpe letal (ver consumeShield) — se recoge igual que un nenúfar.
+    this.shieldPickupSpawner = new ShieldPickupSpawner(this, WORLD_WIDTH, START_Y - SHIELD_START_OFFSET);
+    this.physics.add.overlap(this.lumi.sprite, this.shieldPickupSpawner.group, (_lumiObj, shieldObj) => {
+      this.hasShield = true;
+      this.shieldAura.setVisible(true);
+      this.shieldPickupSpawner.consume(shieldObj as Phaser.Physics.Arcade.Image);
+    });
+
+    // Aura visual del escudo: sigue a Lumi cada frame (ver update()),
+    // invisible hasta que se recoge el power-up.
+    this.shieldAura = this.add
+      .image(this.lumi.sprite.x, this.lumi.sprite.y, "shield_bubble")
+      .setScale(0.55)
+      .setAlpha(0.55)
+      .setDepth(5.2)
+      .setVisible(false);
+
     // Medusas: primer enemigo. Empiezan a aparecer algo por encima de la
-    // salida (no justo donde arranca la partida) y tocarlas es game over.
+    // salida (no justo donde arranca la partida) y tocarlas es game over
+    // (salvo que el escudo la absorba).
     this.jellyfishSpawner = new JellyfishSpawner(this, WORLD_WIDTH, START_Y - 600);
     this.physics.add.overlap(this.lumi.sprite, this.jellyfishSpawner.group, (_lumiObj, jellyObj) => {
-      this.startDeathSequence("medusa", jellyObj as Phaser.Physics.Arcade.Image);
+      this.handleHazardHit("medusa", jellyObj as Phaser.Physics.Arcade.Image);
+    });
+
+    // Erizos: cuarto enemigo, entre la medusa y el tiburón. Casi no se
+    // mueven, son un obstáculo a esquivar, no una criatura que persigue.
+    this.urchinSpawner = new UrchinSpawner(this, WORLD_WIDTH, START_Y - URCHIN_START_OFFSET);
+    this.physics.add.overlap(this.lumi.sprite, this.urchinSpawner.group, () => {
+      this.handleHazardHit("erizo");
     });
 
     // Tiburones: segundo enemigo, más arriba que la medusa. Patrullan de
     // lado a lado en vez de solo derivar.
     this.sharkSpawner = new SharkSpawner(this, WORLD_WIDTH, START_Y - SHARK_START_OFFSET);
     this.physics.add.overlap(this.lumi.sprite, this.sharkSpawner.group, () => {
-      this.startDeathSequence("tiburon");
+      this.handleHazardHit("tiburon");
+    });
+
+    // Pez grande: NO mata, solo empuja lejos a Lumi — un estorbo, no un
+    // peligro letal. Reutiliza el arte de pez decorativo a mayor escala.
+    this.bigFishSpawner = new BigFishSpawner(this, WORLD_WIDTH, START_Y - BIG_FISH_START_OFFSET);
+    this.physics.add.overlap(this.lumi.sprite, this.bigFishSpawner.group, (_lumiObj, fishObj) => {
+      this.pushLumiAway(fishObj as Phaser.Physics.Arcade.Image);
     });
 
     // Calamares: tercer enemigo, todavía más arriba. Dan impulsos rápidos.
     this.squidSpawner = new SquidSpawner(this, WORLD_WIDTH, START_Y - SQUID_START_OFFSET);
     this.physics.add.overlap(this.lumi.sprite, this.squidSpawner.group, () => {
-      this.startDeathSequence("calamar");
+      this.handleHazardHit("calamar");
     });
+
+    // Corriente de agua: último obstáculo de la Zona 1. No es un overlap:
+    // PondScene consulta su empuje cada frame (ver update()).
+    this.currentZoneSpawner = new CurrentZoneSpawner(this, WORLD_WIDTH, START_Y - CURRENT_ZONE_START_OFFSET);
 
     // foreground_plants es la capa más cercana a cámara: va delante de
     // Lumi (como su nombre indica), no detrás. Mismo balanceo por fundido
@@ -285,7 +346,46 @@ export class PondScene extends Phaser.Scene {
     medusa: "Te ha tocado una medusa...",
     tiburon: "Te ha mordido un tiburón...",
     calamar: "Un calamar te ha atrapado...",
+    erizo: "Te has pinchado con un erizo...",
   };
+
+  /** Punto de entrada de los 4 peligros letales (medusa/tiburón/calamar/
+   * erizo): si hay escudo activo, lo consume y no pasa nada más; si no,
+   * sigue la secuencia de muerte normal. El pez grande y la corriente NO
+   * pasan por aquí — no son letales de por sí. */
+  private handleHazardHit(reason: DeathReason, sourceSprite?: Phaser.GameObjects.Components.Transform) {
+    if (this.isDying || this.isGameOver) return;
+    if (this.time.now < this.shieldGraceUntil) return;
+    if (this.hasShield) {
+      this.consumeShield();
+      return;
+    }
+    this.startDeathSequence(reason, sourceSprite);
+  }
+
+  /** El escudo absorbe un golpe: un pequeño estallido de burbujas donde
+   * estaba el aura y una breve invulnerabilidad visual, pero el juego
+   * sigue — no hay secuencia de muerte. */
+  private consumeShield() {
+    this.hasShield = false;
+    this.shieldGraceUntil = this.time.now + 400;
+    this.shieldAura.setVisible(false);
+    this.boostBurst.explode(10, this.lumi.sprite.x, this.lumi.sprite.y);
+    this.boostBurstSmall.explode(14, this.lumi.sprite.x, this.lumi.sprite.y);
+  }
+
+  /** El pez grande no mata: solo aparta a Lumi de un empujón. Un cooldown
+   * corto evita que el empuje se reaplique todos los frames mientras los
+   * cuerpos siguen solapados. */
+  private pushLumiAway(fishSprite: Phaser.Physics.Arcade.Image) {
+    if (this.isDying || this.isGameOver) return;
+    if (this.time.now < this.bigFishPushCooldownUntil) return;
+    this.bigFishPushCooldownUntil = this.time.now + BIG_FISH_PUSH_COOLDOWN_MS;
+
+    const dx = this.lumi.sprite.x - fishSprite.x;
+    const direction = dx === 0 ? (Math.random() < 0.5 ? -1 : 1) : Math.sign(dx);
+    this.lumi.applyKnockback(direction * BIG_FISH_PUSH_STRENGTH, -60, BIG_FISH_PUSH_COOLDOWN_MS * 0.6);
+  }
 
   /** Antes de mostrar la pantalla de "has perdido", una animación breve de
    * Lumi (gira y se hunde encogiéndose) para que el golpe se sienta, en vez
@@ -421,10 +521,25 @@ export class PondScene extends Phaser.Scene {
     this.skyLayer.update(cam);
     this.fishField.update(time, delta, cam.scrollY, cam.height);
     this.lilyPadSpawner.update(cam.scrollY, cam.scrollY + cam.height, time);
+    this.shieldPickupSpawner.update(cam.scrollY, cam.scrollY + cam.height, time);
     this.jellyfishSpawner.update(cam.scrollY, cam.scrollY + cam.height, time);
+    this.urchinSpawner.update(cam.scrollY, cam.scrollY + cam.height, time);
     this.sharkSpawner.update(cam.scrollY, cam.scrollY + cam.height, time);
+    this.bigFishSpawner.update(cam.scrollY, cam.scrollY + cam.height, time);
     this.squidSpawner.update(cam.scrollY, cam.scrollY + cam.height, time);
+    this.currentZoneSpawner.update(cam.scrollY, cam.scrollY + cam.height);
     this.decorSpawner.update(cam.scrollY, cam.scrollY + cam.height);
+
+    // Corriente de agua: empuje lateral aplicado DESPUÉS del movimiento
+    // propio de Lumi, así se suma a lo que el jugador ya hace en vez de
+    // sustituirlo — se puede contrarrestar nadando en contra.
+    const currentPush = this.currentZoneSpawner.pushAt(this.lumi.sprite.y);
+    if (currentPush !== 0) {
+      const body = this.lumi.sprite.body as Phaser.Physics.Arcade.Body;
+      body.velocity.x += currentPush;
+    }
+
+    this.shieldAura.setPosition(this.lumi.sprite.x, this.lumi.sprite.y);
 
     this.bestHeight = Math.max(this.bestHeight, START_Y - this.lumi.sprite.y);
     this.scoreText.setText(`Altura: ${Math.round(this.bestHeight / 10)}`);

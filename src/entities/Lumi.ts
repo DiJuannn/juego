@@ -29,6 +29,9 @@ export class Lumi {
   readonly sprite: Phaser.Physics.Arcade.Sprite;
   private state: LumiState = "idle";
   private boostRemainingMs = 0;
+  private knockbackRemainingMs = 0;
+  private knockbackVX = 0;
+  private knockbackVY = 0;
 
   // La pose diagonal solo tiene 2 frames (swim_diagonal_01/02) y el salto
   // duro de Phaser.Animation entre ellos se notaba mucho ("muy brusco").
@@ -74,8 +77,24 @@ export class Lumi {
     this.boostRemainingMs = BOOST_DURATION_MS;
   }
 
+  /** Empujón involuntario (p.ej. el pez grande): anula el control del
+   * jugador por un instante corto, igual que el boost del nenúfar — si no,
+   * `update()` resetearía la velocidad al vector de input (0 si no se está
+   * nadando) en el frame siguiente y el empujón nunca se notaría. */
+  applyKnockback(vx: number, vy: number, durationMs: number) {
+    this.knockbackRemainingMs = durationMs;
+    this.knockbackVX = vx;
+    this.knockbackVY = vy;
+  }
+
   update(direction: DirectionVector, deltaMs: number) {
     const body = this.sprite.body as Phaser.Physics.Arcade.Body;
+
+    if (this.knockbackRemainingMs > 0) {
+      this.knockbackRemainingMs -= deltaMs;
+      body.setVelocity(this.knockbackVX, this.knockbackVY);
+      return;
+    }
 
     if (this.boostRemainingMs > 0) {
       this.boostRemainingMs -= deltaMs;
