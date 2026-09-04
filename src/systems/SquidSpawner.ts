@@ -40,6 +40,7 @@ export class SquidSpawner {
     this.squids = this.squids.filter((squid) => {
       if (squid.sprite.y > cameraBottomY + DESPAWN_MARGIN) {
         this.group.remove(squid.sprite, true, true);
+        squid.destroy();
         return false;
       }
       squid.update(time);

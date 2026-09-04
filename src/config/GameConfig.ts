@@ -26,8 +26,9 @@ export const START_Y = 700;
 // pantalla" de STYLE_GUIDE.md — avisado, no es un descuido.
 export const LUMI_SCALE = 0.075 * 3 * 1.2;
 
-// Pedido explícito: Lumi se sentía lenta. Subido desde 220.
-export const LUMI_SWIM_SPEED = 260; // px/seg
+// Pedido explícito: Lumi se sentía lenta. Subido de 220 a 260, y de nuevo
+// tras seguir sintiéndose lenta a 310.
+export const LUMI_SWIM_SPEED = 310; // px/seg
 
 // El arte de swim_right/swim_left está dibujado algo más grande que el de
 // idle/swim_up/diagonal dentro del mismo lienzo. La corrección de 0.64 fue

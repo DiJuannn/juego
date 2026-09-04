@@ -40,6 +40,7 @@ export class BigFishSpawner {
     this.fish = this.fish.filter((fish) => {
       if (fish.sprite.y > cameraBottomY + DESPAWN_MARGIN) {
         this.group.remove(fish.sprite, true, true);
+        fish.destroy();
         return false;
       }
       fish.update(time);

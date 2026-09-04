@@ -1,4 +1,5 @@
 import Phaser from "phaser";
+import { BlinkEyes } from "@/systems/BlinkEyes";
 
 const DRIFT_SPEED = 40; // px/seg mientras flota
 const DASH_SPEED = 260; // px/seg durante el impulso
@@ -22,6 +23,7 @@ export class Squid {
   private direction: 1 | -1;
   private dashingUntil = 0;
   private nextDashAt: number;
+  private readonly blinkEyes: BlinkEyes;
 
   constructor(
     scene: Phaser.Scene,
@@ -41,6 +43,23 @@ export class Squid {
     this.direction = Math.random() < 0.5 ? 1 : -1;
     this.nextDashAt = Phaser.Math.Between(DASH_MIN_INTERVAL_MS, DASH_MAX_INTERVAL_MS);
     this.sprite.setVelocityX(DRIFT_SPEED * this.direction);
+
+    // Ojos medidos sobre squid.png (927x762, origen en el centro): centros
+    // en (503.7, 389.5) y (680.4, 464.9) — asimétricos porque el dibujo está
+    // en 3/4, no de frente.
+    this.blinkEyes = new BlinkEyes(
+      scene,
+      this.sprite,
+      [
+        { x: 40.2, y: 8.5, radius: 28 },
+        { x: 216.9, y: 83.9, radius: 30 },
+      ],
+      4.83,
+    );
+  }
+
+  destroy() {
+    this.blinkEyes.destroy();
   }
 
   update(time: number) {
@@ -58,5 +77,6 @@ export class Squid {
     const speed = time < this.dashingUntil ? DASH_SPEED : DRIFT_SPEED;
     this.sprite.setVelocityX(speed * this.direction);
     this.sprite.y = this.baseY + Math.sin(t * BOB_SPEED + this.phase) * BOB_AMPLITUDE;
+    this.blinkEyes.update(time);
   }
 }

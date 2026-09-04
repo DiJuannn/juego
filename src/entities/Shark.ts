@@ -1,5 +1,6 @@
 import Phaser from "phaser";
 import { SHARK_PATROL_SPEED } from "@/config/GameConfig";
+import { BlinkEyes } from "@/systems/BlinkEyes";
 
 const BOB_AMPLITUDE = 14;
 const BOB_SPEED = 0.5;
@@ -26,6 +27,7 @@ export class Shark {
   private baseScaleY: number;
   private phase: number;
   private direction: 1 | -1;
+  private readonly blinkEyes: BlinkEyes;
 
   constructor(
     scene: Phaser.Scene,
@@ -49,6 +51,14 @@ export class Shark {
     this.direction = Math.random() < 0.5 ? 1 : -1;
     this.sprite.setFlipX(this.direction === 1);
     this.sprite.setVelocityX(SHARK_PATROL_SPEED * this.direction);
+
+    // Ojo único (dibujo de perfil), medido sobre shark.png (1191x697,
+    // origen en el centro): centro en (290.7, 395.9).
+    this.blinkEyes = new BlinkEyes(scene, this.sprite, [{ x: -304.8, y: 47.4, radius: 25 }], 4.86);
+  }
+
+  destroy() {
+    this.blinkEyes.destroy();
   }
 
   update(time: number) {
@@ -76,5 +86,6 @@ export class Shark {
       this.baseScaleX * (1 + pulse * TAIL_PULSE_AMOUNT),
       this.baseScaleY * (1 - pulse * TAIL_PULSE_AMOUNT * 0.5),
     );
+    this.blinkEyes.update(time);
   }
 }

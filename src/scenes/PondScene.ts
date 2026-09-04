@@ -75,6 +75,9 @@ export class PondScene extends Phaser.Scene {
    * pantalla), nunca sube. Se mueve sola a CAMERA_AUTO_RISE_SPEED y además
    * sigue a Lumi si ella sube más rápido — ver update(). */
   private cameraCeiling = 0;
+  /** Graphics de los ojos en cruz de la animación de muerte — solo existe
+   * mientras dura el giro/hundimiento (ver startDeathSequence). */
+  private deathEyesGraphics?: Phaser.GameObjects.Graphics;
 
   constructor() {
     super("Pond");
@@ -395,6 +398,7 @@ export class PondScene extends Phaser.Scene {
   private startDeathSequence(reason: DeathReason, sourceSprite?: Phaser.GameObjects.Components.Transform) {
     if (this.isDying || this.isGameOver) return;
     this.isDying = true;
+    this.lumi.prepareForDeath();
 
     const sprite = this.lumi.sprite;
     const body = sprite.body as Phaser.Physics.Arcade.Body;
@@ -406,6 +410,13 @@ export class PondScene extends Phaser.Scene {
       this.playElectricShock(sourceSprite.x, sourceSprite.y, sprite.x, sprite.y);
     }
 
+    // Ojos en cruz (x_x): un Graphics aparte, no un asset nuevo — se
+    // redibuja cada frame del giro/hundimiento siguiendo posición, rotación,
+    // escala y alpha del sprite, para que quede "pegado" a la cara mientras
+    // gira y se encoge.
+    this.deathEyesGraphics = this.add.graphics().setDepth(sprite.depth + 0.01);
+    this.drawDeathEyes(sprite);
+
     this.tweens.add({
       targets: sprite,
       angle: sprite.flipX ? -360 : 360,
@@ -415,8 +426,61 @@ export class PondScene extends Phaser.Scene {
       alpha: 0,
       duration: 700,
       ease: "Cubic.easeIn",
-      onComplete: () => this.triggerGameOver(reason),
+      onUpdate: () => this.drawDeathEyes(sprite),
+      onComplete: () => {
+        this.deathEyesGraphics?.destroy();
+        this.deathEyesGraphics = undefined;
+        this.triggerGameOver(reason);
+      },
     });
+  }
+
+  // Posición de los ojos de Lumi dentro del lienzo del frame (1047x1024,
+  // origen del sprite en el centro), medida directamente sobre idle_01.png
+  // (los dos blobs oscuros de la cara): centro en (434.96, 294.79) y
+  // (616.91, 294.50) sobre un lienzo centrado en (523.5, 512) — de ahí los
+  // ±91 / -217 de abajo. Misma posición para todas las poses porque la
+  // cabeza no cambia de sitio en el lienzo entre animaciones.
+  private static readonly DEATH_EYE_OFFSET_X = 91;
+  private static readonly DEATH_EYE_OFFSET_Y = -217;
+  private static readonly DEATH_EYE_CROSS_SIZE = 17;
+
+  /** Dibuja las dos "x" de los ojos en la posición actual del sprite,
+   * aplicando su rotación/escala/flip/alpha del momento — así el efecto
+   * sigue pegado a la cara durante todo el giro de la animación de muerte. */
+  private drawDeathEyes(sprite: Phaser.Physics.Arcade.Sprite) {
+    const g = this.deathEyesGraphics;
+    if (!g) return;
+    g.clear();
+    g.setAlpha(sprite.alpha);
+
+    const rot = sprite.rotation;
+    const cos = Math.cos(rot);
+    const sin = Math.sin(rot);
+    const scale = sprite.scaleX;
+    const mirror = sprite.flipX ? -1 : 1;
+    const cross = PondScene.DEATH_EYE_CROSS_SIZE * scale;
+
+    g.lineStyle(9 * scale, 0x3a2a4a, 0.95);
+    for (const sideX of [-1, 1]) {
+      const localX = sideX * PondScene.DEATH_EYE_OFFSET_X * mirror;
+      const localY = PondScene.DEATH_EYE_OFFSET_Y;
+      const eyeX = sprite.x + (localX * cos - localY * sin) * scale;
+      const eyeY = sprite.y + (localX * sin + localY * cos) * scale;
+
+      // Las dos diagonales de la "x", rotadas igual que el sprite para que
+      // no se queden "derechas" mientras el cuerpo gira.
+      const rotatePoint = (px: number, py: number) => ({
+        x: eyeX + px * cos - py * sin,
+        y: eyeY + px * sin + py * cos,
+      });
+      const a = rotatePoint(-cross, -cross);
+      const b = rotatePoint(cross, cross);
+      const c = rotatePoint(-cross, cross);
+      const d = rotatePoint(cross, -cross);
+      g.lineBetween(a.x, a.y, b.x, b.y);
+      g.lineBetween(c.x, c.y, d.x, d.y);
+    }
   }
 
   /** Rayo en zigzag entre la medusa y Lumi (Graphics, no un asset — es un

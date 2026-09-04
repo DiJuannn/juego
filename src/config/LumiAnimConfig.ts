@@ -17,12 +17,18 @@
 // el lado izquierdo (asimétrica respecto a los otros 3, que la llevan más
 // centrada) y se veía raro en el ciclo — se quitó del todo y se
 // renumeraron los que quedaban (el antiguo idle_03 pasó a ser idle_02, etc).
+//
+// swim_diagonal subió de 2 a 4: con solo 2 frames (que apenas variaban la
+// cola) el crossfade entre ellos se notaba como un "salto" pese al fundido
+// de alpha — pedido explícito de más animación de BRAZOS. Los 2 frames
+// nuevos (ahora _02 y _04) alternan brazos adelante/atrás en un ciclo de
+// brazada; el antiguo _02 pasó a ser _03.
 export const LUMI_FRAME_COUNT: Record<string, number> = {
   idle: 3,
   sleep: 3,
   swim_right: 4,
   swim_up: 4,
-  swim_diagonal: 2,
+  swim_diagonal: 4,
 };
 
 export const LUMI_FPS = 8; // pedido en el ejemplo de STYLE_GUIDE.md

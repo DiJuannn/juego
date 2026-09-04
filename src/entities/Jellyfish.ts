@@ -1,4 +1,5 @@
 import Phaser from "phaser";
+import { BlinkEyes } from "@/systems/BlinkEyes";
 
 const BOB_AMPLITUDE = 10;
 const BOB_SPEED = 0.55;
@@ -25,6 +26,7 @@ export class Jellyfish {
   private baseY: number;
   private baseScale: number;
   private phase: number;
+  private readonly blinkEyes: BlinkEyes;
 
   constructor(scene: Phaser.Scene, x: number, y: number, scale: number) {
     this.sprite = scene.physics.add.staticImage(x, y, "jellyfish");
@@ -36,6 +38,22 @@ export class Jellyfish {
     this.baseY = y;
     this.baseScale = scale;
     this.phase = Phaser.Math.FloatBetween(0, Math.PI * 2);
+
+    // Posiciones medidas directamente sobre jellyfish.png (431x604, origen
+    // en el centro): los dos ojos están en (129, 168) y (298, 166).
+    this.blinkEyes = new BlinkEyes(
+      scene,
+      this.sprite,
+      [
+        { x: -86.5, y: -134.3, radius: 15 },
+        { x: 82.5, y: -135.9, radius: 15 },
+      ],
+      4.81,
+    );
+  }
+
+  destroy() {
+    this.blinkEyes.destroy();
   }
 
   /** Movimiento puramente visual: el cuerpo físico se queda en su posición
@@ -51,5 +69,6 @@ export class Jellyfish {
       this.baseScale * (1 - pulse * PULSE_AMOUNT * 0.6),
     );
     this.sprite.rotation = Math.sin(t * ROTATION_SPEED + this.phase) * ROTATION_AMOUNT;
+    this.blinkEyes.update(time);
   }
 }

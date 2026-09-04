@@ -1,5 +1,6 @@
 import Phaser from "phaser";
 import { BIG_FISH_PATROL_SPEED } from "@/config/GameConfig";
+import { BlinkEyes } from "@/systems/BlinkEyes";
 
 const BOB_AMPLITUDE = 12;
 const BOB_SPEED = 0.45;
@@ -16,6 +17,7 @@ export class BigFish {
   private baseY: number;
   private phase: number;
   private direction: 1 | -1;
+  private readonly blinkEyes: BlinkEyes;
 
   constructor(
     scene: Phaser.Scene,
@@ -37,6 +39,14 @@ export class BigFish {
     this.direction = Math.random() < 0.5 ? 1 : -1;
     this.sprite.setFlipX(this.direction === -1);
     this.sprite.setVelocityX(BIG_FISH_PATROL_SPEED * this.direction);
+
+    // Ojo único medido sobre fish_05.png (323x230, origen en el centro):
+    // centro en (282.1, 111.4).
+    this.blinkEyes = new BlinkEyes(scene, this.sprite, [{ x: 120.6, y: -3.6, radius: 11 }], 4.61);
+  }
+
+  destroy() {
+    this.blinkEyes.destroy();
   }
 
   update(time: number) {
@@ -56,5 +66,6 @@ export class BigFish {
     this.sprite.setVelocityX(BIG_FISH_PATROL_SPEED * this.direction);
 
     this.sprite.y = this.baseY + Math.sin(t * BOB_SPEED + this.phase) * BOB_AMPLITUDE;
+    this.blinkEyes.update(time);
   }
 }
