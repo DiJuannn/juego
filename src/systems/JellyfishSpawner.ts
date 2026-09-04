@@ -20,12 +20,17 @@ export class JellyfishSpawner {
     private scene: Phaser.Scene,
     private worldWidth: number,
     startY: number,
+    private readonly isWithinCoralBand?: (y: number) => boolean,
   ) {
     this.group = scene.physics.add.staticGroup();
     this.highestY = startY;
   }
 
   private spawnAt(y: number) {
+    // Pedido explícito: nunca dejar una medusa parada justo en la banda de
+    // un coral estrecho — ahí el carril libre tiene que quedar garantizado
+    // sin ningún animal encima.
+    if (this.isWithinCoralBand?.(y)) return;
     const x = Phaser.Math.Between(MARGIN_X, this.worldWidth - MARGIN_X);
     const scale = JELLYFISH_SCALE * Phaser.Math.FloatBetween(0.85, 1.15);
     const jelly = new Jellyfish(this.scene, x, y, scale);

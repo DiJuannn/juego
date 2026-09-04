@@ -7,6 +7,7 @@ import {
   CAMERA_RISE_RAMP_ALTITUDE,
   CAMERA_RISE_SPEED_MAX,
   CAMERA_RISE_SPEED_START,
+  CORAL_START_OFFSET,
   CURRENT_ZONE_START_OFFSET,
   GAME_OVER_MARGIN,
   LUMI_HIT_KNOCKBACK_STRENGTH,
@@ -30,6 +31,7 @@ import { BigFishSpawner } from "@/systems/BigFishSpawner";
 import { BoostPickupSpawner } from "@/systems/BoostPickupSpawner";
 import { BubbleField } from "@/systems/BubbleField";
 import { CoinSpawner } from "@/systems/CoinSpawner";
+import { CoralSpawner } from "@/systems/CoralSpawner";
 import { CrossfadePlant } from "@/systems/CrossfadePlant";
 import { CurrentZoneSpawner } from "@/systems/CurrentZoneSpawner";
 import { InputController } from "@/systems/InputController";
@@ -45,7 +47,7 @@ import { UrchinSpawner } from "@/systems/UrchinSpawner";
 import { ZoneManager } from "@/systems/ZoneManager";
 import { pondLayerKey, pondPlantFrameKey } from "./BootScene";
 
-type DeathReason = "atras" | "medusa" | "tiburon" | "calamar" | "erizo";
+type DeathReason = "atras" | "medusa" | "tiburon" | "calamar" | "erizo" | "coral";
 
 /**
  * Escalada infinita: la cámara solo sube (nunca retrocede) siguiendo a
@@ -62,6 +64,7 @@ export class PondScene extends Phaser.Scene {
   private sharkSpawner!: SharkSpawner;
   private squidSpawner!: SquidSpawner;
   private urchinSpawner!: UrchinSpawner;
+  private coralSpawner!: CoralSpawner;
   private bigFishSpawner!: BigFishSpawner;
   private currentZoneSpawner!: CurrentZoneSpawner;
   private shieldPickupSpawner!: ShieldPickupSpawner;
@@ -235,17 +238,30 @@ export class PondScene extends Phaser.Scene {
       this.boostPickupSpawner.consume(boostObj as Phaser.Physics.Arcade.Image);
     });
 
+    // Coral estrecho: obstáculo plantado que solo deja pasar por un lado.
+    // Se crea ANTES que medusa/erizo para poder pasarles su comprobación de
+    // banda (ver isWithinAnyCoralBand) y que nunca coloquen un animal
+    // estático encima del carril libre.
+    this.coralSpawner = new CoralSpawner(this, WORLD_WIDTH, START_Y - CORAL_START_OFFSET);
+    this.physics.add.overlap(this.lumi.sprite, this.coralSpawner.group, () => {
+      this.handleHazardHit("coral");
+    });
+
     // Medusas: primer enemigo. Empiezan a aparecer algo por encima de la
     // salida (no justo donde arranca la partida) y tocarlas es game over
     // (salvo que el escudo la absorba).
-    this.jellyfishSpawner = new JellyfishSpawner(this, WORLD_WIDTH, START_Y - 600);
+    this.jellyfishSpawner = new JellyfishSpawner(this, WORLD_WIDTH, START_Y - 600, (y) =>
+      this.coralSpawner.isWithinAnyCoralBand(y),
+    );
     this.physics.add.overlap(this.lumi.sprite, this.jellyfishSpawner.group, (_lumiObj, jellyObj) => {
       this.handleHazardHit("medusa", jellyObj as Phaser.Physics.Arcade.Image);
     });
 
     // Erizos: cuarto enemigo, entre la medusa y el tiburón. Casi no se
     // mueven, son un obstáculo a esquivar, no una criatura que persigue.
-    this.urchinSpawner = new UrchinSpawner(this, WORLD_WIDTH, START_Y - URCHIN_START_OFFSET);
+    this.urchinSpawner = new UrchinSpawner(this, WORLD_WIDTH, START_Y - URCHIN_START_OFFSET, (y) =>
+      this.coralSpawner.isWithinAnyCoralBand(y),
+    );
     this.physics.add.overlap(this.lumi.sprite, this.urchinSpawner.group, () => {
       this.handleHazardHit("erizo");
     });
@@ -386,9 +402,11 @@ export class PondScene extends Phaser.Scene {
     tiburon: "Te ha mordido un tiburón...",
     calamar: "Un calamar te ha atrapado...",
     erizo: "Te has pinchado con un erizo...",
+    coral: "Has chocado contra el coral...",
   };
 
-  /** Punto de entrada de los 4 peligros (medusa/tiburón/calamar/erizo): si
+  /** Punto de entrada de los 5 peligros (medusa/tiburón/calamar/erizo/
+   * coral): si
    * hay escudo activo, lo consume y no pasa nada más; si Lumi está
    * invulnerable tras un golpe reciente, se ignora; si no, resta una vida
    * (game over solo si era la última — ver takeDamage). El pez grande y la
@@ -670,6 +688,7 @@ export class PondScene extends Phaser.Scene {
     this.fishField.update(time, delta, cam.scrollY, cam.height);
     this.lilyPadSpawner.update(cam.scrollY, cam.scrollY + cam.height, time);
     this.shieldPickupSpawner.update(cam.scrollY, cam.scrollY + cam.height, time);
+    this.coralSpawner.update(cam.scrollY, cam.scrollY + cam.height);
     this.coinSpawner.update(cam.scrollY, cam.scrollY + cam.height, time);
     this.boostPickupSpawner.update(cam.scrollY, cam.scrollY + cam.height, time);
     this.jellyfishSpawner.update(cam.scrollY, cam.scrollY + cam.height, time);

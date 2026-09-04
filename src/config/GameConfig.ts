@@ -125,6 +125,19 @@ export const BIG_FISH_PATROL_SPEED = 60;
 export const BIG_FISH_PUSH_STRENGTH = 300;
 export const BIG_FISH_PUSH_COOLDOWN_MS = 500;
 
+// Coral estrecho: pedido explícito — un obstáculo plantado que solo deja
+// pasar a Lumi por UN lado (izquierda o derecha al azar), con el lado
+// contrario completamente bloqueado. El carril libre queda garantizado sin
+// ningún animal estático (medusa/erizo) encima — ver CoralSpawner e
+// isWithinAnyCoralBand, consultado por esos spawners antes de colocar uno
+// nuevo — para que cruzarlo no sea nunca una muerte 100% inevitable.
+export const CORAL_START_OFFSET = 2200; // altura ~220
+export const CORAL_MIN_GAP = 2000;
+export const CORAL_MAX_GAP = 3200;
+export const CORAL_GAP_WIDTH = 230; // ancho del carril libre garantizado
+export const CORAL_WALL_MARGIN_X = 40; // margen respecto al borde del mundo
+export const CORAL_CHUNK_SCALE = 0.32;
+
 // Corriente de agua: no es una criatura, es una franja de mundo que empuja
 // lateralmente mientras Lumi está dentro — el último obstáculo de la Zona
 // 1 (altura ~650), justo antes de la Zona 2.
