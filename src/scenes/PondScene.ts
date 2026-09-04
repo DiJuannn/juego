@@ -3,6 +3,7 @@ import {
   BIG_FISH_PUSH_COOLDOWN_MS,
   BIG_FISH_PUSH_STRENGTH,
   BIG_FISH_START_OFFSET,
+  BOOST_PICKUP_START_OFFSET,
   CAMERA_RISE_RAMP_ALTITUDE,
   CAMERA_RISE_SPEED_MAX,
   CAMERA_RISE_SPEED_START,
@@ -12,6 +13,8 @@ import {
   LUMI_INVULNERABILITY_MS,
   LUMI_LIVES_START,
   SHARK_START_OFFSET,
+  SHIELD_AURA_ALPHA,
+  SHIELD_AURA_SCALE,
   SHIELD_START_OFFSET,
   SQUID_START_OFFSET,
   START_Y,
@@ -24,6 +27,7 @@ import { Lumi } from "@/entities/Lumi";
 import { BackgroundDecorSpawner } from "@/systems/BackgroundDecorSpawner";
 import { BackgroundFishField } from "@/systems/BackgroundFishField";
 import { BigFishSpawner } from "@/systems/BigFishSpawner";
+import { BoostPickupSpawner } from "@/systems/BoostPickupSpawner";
 import { BubbleField } from "@/systems/BubbleField";
 import { CoinSpawner } from "@/systems/CoinSpawner";
 import { CrossfadePlant } from "@/systems/CrossfadePlant";
@@ -62,6 +66,7 @@ export class PondScene extends Phaser.Scene {
   private currentZoneSpawner!: CurrentZoneSpawner;
   private shieldPickupSpawner!: ShieldPickupSpawner;
   private coinSpawner!: CoinSpawner;
+  private boostPickupSpawner!: BoostPickupSpawner;
   private decorSpawner!: BackgroundDecorSpawner;
   private zoneManager!: ZoneManager;
   private zoneText!: Phaser.GameObjects.Text;
@@ -194,16 +199,18 @@ export class PondScene extends Phaser.Scene {
     this.shieldPickupSpawner = new ShieldPickupSpawner(this, WORLD_WIDTH, START_Y - SHIELD_START_OFFSET);
     this.physics.add.overlap(this.lumi.sprite, this.shieldPickupSpawner.group, (_lumiObj, shieldObj) => {
       this.hasShield = true;
-      this.shieldAura.setVisible(true);
+      this.playShieldActivate();
       this.shieldPickupSpawner.consume(shieldObj as Phaser.Physics.Arcade.Image);
     });
 
     // Aura visual del escudo: sigue a Lumi cada frame (ver update()),
-    // invisible hasta que se recoge el power-up.
+    // invisible hasta que se recoge el power-up. Arranca en escala 0 para
+    // que playShieldActivate() la "infle" con un pop, en vez de aparecer de
+    // golpe.
     this.shieldAura = this.add
       .image(this.lumi.sprite.x, this.lumi.sprite.y, "shield_bubble")
-      .setScale(0.55)
-      .setAlpha(0.55)
+      .setScale(0)
+      .setAlpha(0)
       .setDepth(5.2)
       .setVisible(false);
 
@@ -215,6 +222,17 @@ export class PondScene extends Phaser.Scene {
       this.coinCount += 1;
       this.coinText.setText(`Monedas: ${this.coinCount}`);
       this.coinSpawner.consume(coinObj as Phaser.Physics.Arcade.Image);
+    });
+
+    // Power-up de impulso vertical: distinto del nenúfar (siempre
+    // disponible como parte del terreno) — este es un empujón mucho más
+    // fuerte y largo, escaso, que hay que recoger.
+    this.boostPickupSpawner = new BoostPickupSpawner(this, WORLD_WIDTH, START_Y - BOOST_PICKUP_START_OFFSET);
+    this.physics.add.overlap(this.lumi.sprite, this.boostPickupSpawner.group, (_lumiObj, boostObj) => {
+      this.lumi.triggerSuperBoost();
+      this.boostBurst.explode(14, this.lumi.sprite.x, this.lumi.sprite.y);
+      this.boostBurstSmall.explode(20, this.lumi.sprite.x, this.lumi.sprite.y);
+      this.boostPickupSpawner.consume(boostObj as Phaser.Physics.Arcade.Image);
     });
 
     // Medusas: primer enemigo. Empiezan a aparecer algo por encima de la
@@ -447,13 +465,40 @@ export class PondScene extends Phaser.Scene {
     });
   }
 
-  /** El escudo absorbe un golpe: un pequeño estallido de burbujas donde
-   * estaba el aura y una breve invulnerabilidad visual, pero el juego
-   * sigue — no hay secuencia de muerte. */
+  /** Activación del escudo: la burbuja se "infla" desde el centro de Lumi
+   * con un pequeño rebote (Back.easeOut), en vez de aparecer de golpe —
+   * pedido explícito de que el power-up tenga una animación clara de
+   * activación, no solo un cambio instantáneo de visibilidad. */
+  private playShieldActivate() {
+    this.tweens.killTweensOf(this.shieldAura);
+    this.shieldAura.setVisible(true).setScale(0).setAlpha(0);
+    this.tweens.add({
+      targets: this.shieldAura,
+      scale: SHIELD_AURA_SCALE,
+      alpha: SHIELD_AURA_ALPHA,
+      duration: 260,
+      ease: "Back.easeOut",
+    });
+  }
+
+  /** El escudo absorbe un golpe: la burbuja se expande de golpe y se
+   * desvanece (efecto "reventar"), junto con el estallido de burbujas ya
+   * existente, en vez de simplemente desaparecer — misma idea de "ruptura
+   * visible" que pide la revisión de Zona 1. El juego sigue: no hay
+   * secuencia de muerte. */
   private consumeShield() {
     this.hasShield = false;
     this.shieldGraceUntil = this.time.now + 400;
-    this.shieldAura.setVisible(false);
+    this.tweens.killTweensOf(this.shieldAura);
+    const aura = this.shieldAura;
+    this.tweens.add({
+      targets: aura,
+      scale: SHIELD_AURA_SCALE * 1.6,
+      alpha: 0,
+      duration: 220,
+      ease: "Cubic.easeOut",
+      onComplete: () => aura.setVisible(false).setScale(0),
+    });
     this.boostBurst.explode(10, this.lumi.sprite.x, this.lumi.sprite.y);
     this.boostBurstSmall.explode(14, this.lumi.sprite.x, this.lumi.sprite.y);
   }
@@ -623,6 +668,7 @@ export class PondScene extends Phaser.Scene {
     this.lilyPadSpawner.update(cam.scrollY, cam.scrollY + cam.height, time);
     this.shieldPickupSpawner.update(cam.scrollY, cam.scrollY + cam.height, time);
     this.coinSpawner.update(cam.scrollY, cam.scrollY + cam.height, time);
+    this.boostPickupSpawner.update(cam.scrollY, cam.scrollY + cam.height, time);
     this.jellyfishSpawner.update(cam.scrollY, cam.scrollY + cam.height, time);
     this.urchinSpawner.update(cam.scrollY, cam.scrollY + cam.height, time);
     this.sharkSpawner.update(cam.scrollY, cam.scrollY + cam.height, time);

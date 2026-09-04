@@ -139,6 +139,8 @@ export const SHIELD_START_OFFSET = 400; // altura ~40
 export const SHIELD_MIN_GAP = 2200;
 export const SHIELD_MAX_GAP = 3400;
 export const SHIELD_PICKUP_SCALE = 0.22;
+export const SHIELD_AURA_SCALE = 0.55;
+export const SHIELD_AURA_ALPHA = 0.55;
 
 // Monedas: recompensa + guía visual de ruta. Se generan en pequeños grupos
 // (arco/línea, ver CoinSpawner) en vez de puntos sueltos al azar, para que
@@ -152,3 +154,16 @@ export const COIN_GROUP_SIZE_MAX = 5;
 export const COIN_GROUP_SPACING = 70; // separación vertical entre monedas de un mismo grupo
 export const COIN_GROUP_ARC_SPREAD = 90; // desplazamiento horizontal máx. dentro del arco del grupo
 export const COIN_RISKY_GROUP_CHANCE = 0.25;
+
+// Power-up de impulso vertical: distinto del nenúfar (que está siempre
+// disponible como parte del terreno) — este es un power-up que se recoge
+// como el escudo/las monedas, más escaso, y da un empujón notablemente más
+// fuerte y largo (recompensa puntual, no una ayuda constante). Arte propio
+// (remolino de burbujas ascendiendo) para que se distinga a simple vista
+// del nenúfar (hoja verde) y del escudo (esfera translúcida).
+export const BOOST_PICKUP_SCALE = 0.16;
+export const BOOST_PICKUP_START_OFFSET = 1100; // altura ~110
+export const BOOST_PICKUP_MIN_GAP = 2400;
+export const BOOST_PICKUP_MAX_GAP = 3600;
+export const SUPER_BOOST_DURATION_MS = 950;
+export const SUPER_BOOST_SPEED_MULT = 1.5; // sobre BOOST_SPEED del nenúfar

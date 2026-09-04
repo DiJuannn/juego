@@ -1,5 +1,12 @@
 import Phaser from "phaser";
-import { LUMI_DRIFT_SPEED, LUMI_SCALE, LUMI_SWIM_SPEED, SWIM_SIDE_SCALE_CORRECTION } from "@/config/GameConfig";
+import {
+  LUMI_DRIFT_SPEED,
+  LUMI_SCALE,
+  LUMI_SWIM_SPEED,
+  SUPER_BOOST_DURATION_MS,
+  SUPER_BOOST_SPEED_MULT,
+  SWIM_SIDE_SCALE_CORRECTION,
+} from "@/config/GameConfig";
 import { frameKey } from "@/config/LumiAnimConfig";
 import type { DirectionVector } from "@/systems/InputController";
 
@@ -34,6 +41,7 @@ export class Lumi {
   readonly sprite: Phaser.Physics.Arcade.Sprite;
   private state: LumiState = "idle";
   private boostRemainingMs = 0;
+  private boostSpeedMult = 1;
   private knockbackRemainingMs = 0;
   private knockbackVX = 0;
   private knockbackVY = 0;
@@ -65,6 +73,15 @@ export class Lumi {
   /** Impulso al tocar un nenúfar: un empujón hacia arriba, tipo "jump". */
   triggerBoost() {
     this.boostRemainingMs = BOOST_DURATION_MS;
+    this.boostSpeedMult = 1;
+  }
+
+  /** Power-up de impulso vertical (ver BoostPickup): mismo mecanismo que el
+   * nenúfar pero notablemente más fuerte y largo — una recompensa puntual
+   * que se recoge, no una ayuda de terreno siempre disponible. */
+  triggerSuperBoost() {
+    this.boostRemainingMs = SUPER_BOOST_DURATION_MS;
+    this.boostSpeedMult = SUPER_BOOST_SPEED_MULT;
   }
 
   /** Antes de la secuencia de muerte: asegura que el sprite físico esté
@@ -103,7 +120,7 @@ export class Lumi {
       this.boostRemainingMs -= deltaMs;
       const easeFactor =
         this.boostRemainingMs < BOOST_EASE_MS ? Math.max(this.boostRemainingMs, 0) / BOOST_EASE_MS : 1;
-      const boostSpeed = BOOST_SPEED * (0.5 + 0.5 * easeFactor);
+      const boostSpeed = BOOST_SPEED * this.boostSpeedMult * (0.5 + 0.5 * easeFactor);
       // El empuje vertical del propulsor manda, pero el jugador sigue
       // pudiendo dirigirse a los lados mientras dura — no es una pérdida
       // de control, es un impulso hacia arriba con dirección libre.
