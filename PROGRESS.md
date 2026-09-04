@@ -50,9 +50,27 @@ funciona **hoy**, verificado en el código — no lo que el diseño aspira a ten
 - Zonas 2-8: existen como **datos** de progresión (altitud de inicio, tinte de
   color) en `ZoneConfig.ts`, pero reutilizan el arte/fauna de la Zona 1 — no
   tienen arte, obstáculos ni identidad visual propios todavía.
+- Rediseño de los obstáculos ambientales de la Zona 1 (`ReefCluster`/
+  `ReefClusterSpawner`, sustituye a `CoralWall`/`CoralSpawner`, que se
+  quedan intactos sin usarse por si hay que revertir): **solo el prototipo
+  de 2-3 composiciones está hecho** (diagonal desde un lado, masa central
+  con dos caminos, curva en S entrando por los bordes), con 3 piezas nuevas
+  generadas con Gemini (`coral_fan`, `rock_cluster`, `seaweed_frond`) y 4
+  capas de profundidad (fondo/decoración/obstáculo/primer plano). Verificado
+  con Playwright: las 3 plantillas ciclan sin repetirse, generan una
+  composición orgánica de varias piezas (no una pared de un solo asset), y
+  las monedas trazan la ruta curva real. **Pendiente de aprobación visual
+  del usuario antes de generalizarlo al resto de la Zona 1** — es el pedido
+  explícito, no está aprobado todavía. Nota menor detectada: en la
+  plantilla "curva en S", los tramos de transición del trazado de monedas
+  entre bandas pasan un poco cerca (visualmente, no de colisión) del
+  obstáculo de la banda central — retocar si se aprueba el enfoque.
 
 # PENDIENTE
 
+- Aprobación del usuario del prototipo de `ReefCluster` de arriba, y si se
+  aprueba, generalizarlo al resto de la Zona 1 (sustituyendo del todo al
+  coral estrecho anterior) — más piezas de la librería si hacen falta.
 - Arte y diseño propios para la Zona 2 ("Arrecife") en adelante.
 - Conectar la animación de "dormir" (`sleep/`, el asset ya existe) a un trigger
   real de inactividad del jugador — hoy no se usa en ningún sitio del código.
@@ -69,9 +87,14 @@ funciona **hoy**, verificado en el código — no lo que el diseño aspira a ten
 
 # PRÓXIMA TAREA
 
-Corregir la continuidad del fondo (`background_far.png` / `ParallaxLayer`): la
+Esperar la aprobación visual del usuario sobre el prototipo de `ReefCluster`
+(ver EN PROGRESO) antes de tocar más Zona 1 — es un requisito explícito, no
+generalizar el enfoque sin ese visto bueno. Si se aprueba: generalizarlo
+(sustituir del todo el coral estrecho anterior) y de paso retocar la nota
+menor del trazado de monedas en la plantilla "curva en S". Si se pide
+cambiar el enfoque, iterar sobre las 3 plantillas antes de generar más.
+
+Después de eso (o si el usuario prefiere dejar esto en pausa): corregir la
+continuidad del fondo (`background_far.png` / `ParallaxLayer`) — la
 decoración se concentra en una franja y deja un tramo largo vacío antes de
-repetirse. Probablemente requiera regenerar/ampliar el asset con más elementos
-repartidos de forma pareja en todo el alto del tile, o añadir una capa
-decorativa adicional que rellene los huecos — ver detalle en GAME_DESIGN.md
-(sección ENVIRONMENT) y la tarea ya encolada por el usuario.
+repetirse. Ver detalle en GAME_DESIGN.md (sección ENVIRONMENT).
