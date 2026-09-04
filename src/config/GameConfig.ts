@@ -1,8 +1,13 @@
 // Constantes de tuning del juego. Nada de esto es arte: son números que
 // controlan cámara, velocidad y tamaño en pantalla.
 
-export const GAME_WIDTH = 960;
-export const GAME_HEIGHT = 640;
+// Pedido explícito: el juego está diseñado para jugarse en móvil, siempre
+// en vertical — estas medidas son solo el tamaño inicial antes de que el
+// modo RESIZE de Phaser (ver main.ts) lo ajuste al contenedor real; se
+// declaran en proporción de teléfono (9:16) para que ese primer frame ya
+// sea vertical y no un parpadeo de horizontal a vertical al cargar.
+export const GAME_WIDTH = 405;
+export const GAME_HEIGHT = 720;
 
 // El ancho coincide EXACTAMENTE con el de los PNG de fondo (1376px) para
 // poder colocarlos una sola vez, a su resolución real, sin estirarlos ni

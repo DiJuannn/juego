@@ -2,7 +2,10 @@
 <html lang="es">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
+    />
     <title>Lumi</title>
     <style>
       html,
@@ -12,14 +15,21 @@
         background: #dff1f7;
         overflow: hidden;
         height: 100%;
+        /* Pensado para móvil: el arrastre del joystick táctil no debe
+           disparar scroll, pull-to-refresh ni el zoom por doble toque del
+           navegador. */
+        touch-action: none;
+        overscroll-behavior: none;
       }
       #game {
         width: 100vw;
         height: 100vh;
+        touch-action: none;
       }
       canvas {
         display: block;
         margin: 0 auto;
+        touch-action: none;
       }
     </style>
   </head>
