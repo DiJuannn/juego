@@ -68,10 +68,16 @@ export class Lumi {
   }
 
   /** Antes de la secuencia de muerte: asegura que el sprite físico esté
-   * visible (por si acaso), para que el giro/hundimiento y los ojos en cruz
-   * se vean pase lo que pase con el estado de nado en el momento del golpe. */
+   * visible (por si acaso) y le pone la pose de muerte (ojos en X, arte de
+   * verdad generado con Gemini — ver assets/characters/lumi/death/ y
+   * lumi-asset-gen), pase lo que pase con el estado de nado en el momento
+   * del golpe. Un solo frame fijo, no una animación en bucle: hay que
+   * parar cualquier animación en curso o el siguiente tick la
+   * sobrescribiría. */
   prepareForDeath() {
     this.sprite.setVisible(true);
+    this.sprite.anims.stop();
+    this.sprite.setTexture(frameKey("death", 1));
   }
 
   /** Empujón involuntario (p.ej. el pez grande): anula el control del

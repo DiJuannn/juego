@@ -39,7 +39,9 @@ export class Shark {
   ) {
     this.sprite = scene.physics.add.image(x, y, "shark");
     this.sprite.setScale(scale);
-    this.sprite.setDepth(4.85);
+    // Pedido explícito: todos los animales en la misma capa que Lumi, para
+    // que se lean claramente como obstáculos y no como decoración de fondo.
+    this.sprite.setDepth(5);
     (this.sprite.body as Phaser.Physics.Arcade.Body).setAllowGravity(false);
 
     this.baseY = y;
@@ -54,7 +56,7 @@ export class Shark {
 
     // Ojo único (dibujo de perfil), medido sobre shark.png (1191x697,
     // origen en el centro): centro en (290.7, 395.9).
-    this.blinkEyes = new BlinkEyes(scene, this.sprite, [{ x: -304.8, y: 47.4, radius: 25 }], 4.86);
+    this.blinkEyes = new BlinkEyes(scene, this.sprite, [{ x: -304.8, y: 47.4, radius: 25 }], 5.01);
   }
 
   destroy() {

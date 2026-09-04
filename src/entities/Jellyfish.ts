@@ -31,7 +31,9 @@ export class Jellyfish {
   constructor(scene: Phaser.Scene, x: number, y: number, scale: number) {
     this.sprite = scene.physics.add.staticImage(x, y, "jellyfish");
     this.sprite.setScale(scale);
-    this.sprite.setDepth(4.8);
+    // Pedido explícito: todos los animales en la misma capa que Lumi, para
+    // que se lean claramente como obstáculos y no como decoración de fondo.
+    this.sprite.setDepth(5);
     this.sprite.refreshBody();
 
     this.baseX = x;
@@ -48,7 +50,7 @@ export class Jellyfish {
         { x: -86.5, y: -134.3, radius: 15 },
         { x: 82.5, y: -135.9, radius: 15 },
       ],
-      4.81,
+      5.01,
     );
   }
 

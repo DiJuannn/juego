@@ -20,6 +20,12 @@ export class ParallaxLayer {
   }
 
   update(camera: Phaser.Cameras.Scene2D.Camera) {
+    // Reafirmar el tamaño cada frame (barato): al construirse en create(),
+    // scene.scale.width/height a veces aún no reflejaba el tamaño real del
+    // contenedor (layout del navegador todavía sin asentar), dejando esta
+    // franja más pequeña que la pantalla real — se veía como un
+    // rectángulo del color de fondo del canvas asomando en una esquina.
+    this.tile.setSize(camera.width, camera.height);
     this.tile.tilePositionX = camera.scrollX * this.factor;
     this.tile.tilePositionY = camera.scrollY * this.factor;
   }

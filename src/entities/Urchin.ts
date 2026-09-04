@@ -19,7 +19,9 @@ export class Urchin {
   constructor(scene: Phaser.Scene, x: number, y: number, scale: number) {
     this.sprite = scene.physics.add.staticImage(x, y, "urchin");
     this.sprite.setScale(scale);
-    this.sprite.setDepth(4.75);
+    // Pedido explícito: todos los animales en la misma capa que Lumi, para
+    // que se lean claramente como obstáculos y no como decoración de fondo.
+    this.sprite.setDepth(5);
     this.sprite.refreshBody();
 
     this.baseY = y;
@@ -34,7 +36,7 @@ export class Urchin {
         { x: -220.2, y: -26.1, radius: 20 },
         { x: -25.2, y: 1.1, radius: 20 },
       ],
-      4.76,
+      5.01,
     );
   }
 

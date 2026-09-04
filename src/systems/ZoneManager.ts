@@ -60,7 +60,15 @@ export class ZoneManager {
   /** Actualiza el rectángulo de tinte de profundidad a pantalla completa
    * interpolando color+alpha entre la zona actual y la siguiente según el
    * progreso de la transición. */
-  update(worldY: number): ZoneBlend {
+  update(worldY: number, cam: Phaser.Cameras.Scene2D.Camera): ZoneBlend {
+    // Reafirmar el tamaño cada frame (barato) en vez de fiarse solo del
+    // evento RESIZE: al construirse en create(), scene.scale.width/height
+    // a veces aún no reflejaba el tamaño real del contenedor (todavía sin
+    // asentar el layout del navegador), dejando el rectángulo más pequeño
+    // que la pantalla real — eso se veía como "un rectángulo de otro
+    // color" en la esquina no cubierta durante las transiciones de zona.
+    this.tintRect.setSize(cam.width, cam.height);
+
     const blend = this.resolve(worldY);
     const { current, next, t } = blend;
 

@@ -4,6 +4,12 @@ import { BlinkEyes } from "@/systems/BlinkEyes";
 
 const BOB_AMPLITUDE = 12;
 const BOB_SPEED = 0.45;
+const BOUNCE_DURATION_MS = 160;
+const BOUNCE_SQUASH = 0.22;
+// Al chocar, un pequeño retroceso en su propia velocidad de patrulla (se
+// frena/retrocede un instante), para que el "bote" se sienta en los dos
+// lados del choque, no solo en Lumi.
+const BOUNCE_RECOIL_SPEED_MULT = 0.6;
 
 /**
  * Quinto obstáculo: un pez mucho más grande que los decorativos de fondo
@@ -18,9 +24,11 @@ export class BigFish {
   private phase: number;
   private direction: 1 | -1;
   private readonly blinkEyes: BlinkEyes;
+  private readonly baseScale: number;
+  private bounceUntil = 0;
 
   constructor(
-    scene: Phaser.Scene,
+    private scene: Phaser.Scene,
     x: number,
     y: number,
     scale: number,
@@ -29,7 +37,13 @@ export class BigFish {
   ) {
     this.sprite = scene.physics.add.image(x, y, "fish_05");
     this.sprite.setScale(scale);
-    this.sprite.setDepth(4.6);
+    this.baseScale = scale;
+    // Permite a PondScene recuperar esta instancia a partir del sprite que
+    // recibe el callback de overlap (que solo conoce el GameObject físico).
+    this.sprite.setData("entity", this);
+    // Pedido explícito: todos los animales en la misma capa que Lumi, para
+    // que se lean claramente como obstáculos y no como decoración de fondo.
+    this.sprite.setDepth(5);
     (this.sprite.body as Phaser.Physics.Arcade.Body).setAllowGravity(false);
 
     this.baseY = y;
@@ -42,11 +56,28 @@ export class BigFish {
 
     // Ojo único medido sobre fish_05.png (323x230, origen en el centro):
     // centro en (282.1, 111.4).
-    this.blinkEyes = new BlinkEyes(scene, this.sprite, [{ x: 120.6, y: -3.6, radius: 11 }], 4.61);
+    this.blinkEyes = new BlinkEyes(scene, this.sprite, [{ x: 120.6, y: -3.6, radius: 11 }], 5.01);
   }
 
   destroy() {
     this.blinkEyes.destroy();
+  }
+
+  /** Pedido explícito: el pez debería "botar" al empujar a Lumi, no
+   * quedarse igual como si nada. Un squash/stretch rápido (mismo tipo de
+   * animación que el nenúfar al usarse) más un frenazo/retroceso breve en
+   * su propia velocidad de patrulla — el bote se nota en los dos lados del
+   * choque. */
+  bounce(time: number) {
+    this.bounceUntil = time + BOUNCE_DURATION_MS;
+    this.scene.tweens.add({
+      targets: this.sprite,
+      scaleX: this.baseScale * (1 - BOUNCE_SQUASH),
+      scaleY: this.baseScale * (1 + BOUNCE_SQUASH),
+      duration: BOUNCE_DURATION_MS * 0.4,
+      yoyo: true,
+      ease: "Sine.easeOut",
+    });
   }
 
   update(time: number) {
@@ -63,7 +94,8 @@ export class BigFish {
     // grupo físico resetea la velocidad a 0 justo después de que el
     // constructor la fija (ver BigFishSpawner), si no el pez se queda
     // parado para siempre.
-    this.sprite.setVelocityX(BIG_FISH_PATROL_SPEED * this.direction);
+    const recoiling = time < this.bounceUntil;
+    this.sprite.setVelocityX(BIG_FISH_PATROL_SPEED * this.direction * (recoiling ? -BOUNCE_RECOIL_SPEED_MULT : 1));
 
     this.sprite.y = this.baseY + Math.sin(t * BOB_SPEED + this.phase) * BOB_AMPLITUDE;
     this.blinkEyes.update(time);

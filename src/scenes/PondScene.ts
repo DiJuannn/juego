@@ -14,6 +14,7 @@ import {
   WORLD_HEIGHT,
   WORLD_WIDTH,
 } from "@/config/GameConfig";
+import { BigFish } from "@/entities/BigFish";
 import { Lumi } from "@/entities/Lumi";
 import { BackgroundDecorSpawner } from "@/systems/BackgroundDecorSpawner";
 import { BackgroundFishField } from "@/systems/BackgroundFishField";
@@ -75,9 +76,6 @@ export class PondScene extends Phaser.Scene {
    * pantalla), nunca sube. Se mueve sola a CAMERA_AUTO_RISE_SPEED y además
    * sigue a Lumi si ella sube más rápido — ver update(). */
   private cameraCeiling = 0;
-  /** Graphics de los ojos en cruz de la animación de muerte — solo existe
-   * mientras dura el giro/hundimiento (ver startDeathSequence). */
-  private deathEyesGraphics?: Phaser.GameObjects.Graphics;
 
   constructor() {
     super("Pond");
@@ -256,9 +254,13 @@ export class PondScene extends Phaser.Scene {
     // PondScene consulta su empuje cada frame (ver update()).
     this.currentZoneSpawner = new CurrentZoneSpawner(this, WORLD_WIDTH, START_Y - CURRENT_ZONE_START_OFFSET);
 
-    // foreground_plants es la capa más cercana a cámara: va delante de
-    // Lumi (como su nombre indica), no detrás. Mismo balanceo por fundido
-    // que distant_plants.
+    // foreground_plants es la capa más cercana a cámara visualmente, pero
+    // NO puede ir por delante de Lumi/animales/partículas (antes en depth
+    // 6, por encima de todo) — eso escondía el burbujeo del impulso del
+    // nenúfar de salida y hacía que los animales que pasaran por detrás se
+    // sintieran "decoración" en vez de obstáculos reales. Se deja justo
+    // por debajo de los nenúfares, no por delante de todo. Mismo balanceo
+    // por fundido que distant_plants.
     new CrossfadePlant(
       this,
       WORLD_WIDTH / 2,
@@ -270,7 +272,7 @@ export class PondScene extends Phaser.Scene {
       ],
       { x: 0.5, y: 1 },
       1,
-      6,
+      3.5,
       3500,
       4000,
     );
@@ -377,17 +379,23 @@ export class PondScene extends Phaser.Scene {
     this.boostBurstSmall.explode(14, this.lumi.sprite.x, this.lumi.sprite.y);
   }
 
-  /** El pez grande no mata: solo aparta a Lumi de un empujón. Un cooldown
-   * corto evita que el empuje se reaplique todos los frames mientras los
-   * cuerpos siguen solapados. */
+  /** El pez grande no mata: solo aparta a Lumi de un empujón (y bota él
+   * mismo al chocar, ver BigFish.bounce). Un cooldown corto evita que el
+   * empuje se reaplique todos los frames mientras los cuerpos siguen
+   * solapados. */
   private pushLumiAway(fishSprite: Phaser.Physics.Arcade.Image) {
     if (this.isDying || this.isGameOver) return;
     if (this.time.now < this.bigFishPushCooldownUntil) return;
     this.bigFishPushCooldownUntil = this.time.now + BIG_FISH_PUSH_COOLDOWN_MS;
 
+    (fishSprite.getData("entity") as BigFish | undefined)?.bounce(this.time.now);
+
     const dx = this.lumi.sprite.x - fishSprite.x;
     const direction = dx === 0 ? (Math.random() < 0.5 ? -1 : 1) : Math.sign(dx);
-    this.lumi.applyKnockback(direction * BIG_FISH_PUSH_STRENGTH, -60, BIG_FISH_PUSH_COOLDOWN_MS * 0.6);
+    // Pedido explícito: que además de apartarla a un lado, el golpe "tire
+    // hacia atrás" de Lumi — un empuje hacia abajo (contra su progreso de
+    // escalada), no solo lateral.
+    this.lumi.applyKnockback(direction * BIG_FISH_PUSH_STRENGTH, 90, BIG_FISH_PUSH_COOLDOWN_MS * 0.6);
   }
 
   /** Antes de mostrar la pantalla de "has perdido", una animación breve de
@@ -410,13 +418,10 @@ export class PondScene extends Phaser.Scene {
       this.playElectricShock(sourceSprite.x, sourceSprite.y, sprite.x, sprite.y);
     }
 
-    // Ojos en cruz (x_x): un Graphics aparte, no un asset nuevo — se
-    // redibuja cada frame del giro/hundimiento siguiendo posición, rotación,
-    // escala y alpha del sprite, para que quede "pegado" a la cara mientras
-    // gira y se encoge.
-    this.deathEyesGraphics = this.add.graphics().setDepth(sprite.depth + 0.01);
-    this.drawDeathEyes(sprite);
-
+    // Los ojos en cruz ya no son un Graphics dibujado por código: son arte
+    // de verdad generado con Gemini (ver assets/characters/lumi/death/ y
+    // Lumi.prepareForDeath, que ya puso esa textura). Aquí solo queda el
+    // giro/hundimiento/encogido normal del sprite.
     this.tweens.add({
       targets: sprite,
       angle: sprite.flipX ? -360 : 360,
@@ -426,61 +431,8 @@ export class PondScene extends Phaser.Scene {
       alpha: 0,
       duration: 700,
       ease: "Cubic.easeIn",
-      onUpdate: () => this.drawDeathEyes(sprite),
-      onComplete: () => {
-        this.deathEyesGraphics?.destroy();
-        this.deathEyesGraphics = undefined;
-        this.triggerGameOver(reason);
-      },
+      onComplete: () => this.triggerGameOver(reason),
     });
-  }
-
-  // Posición de los ojos de Lumi dentro del lienzo del frame (1047x1024,
-  // origen del sprite en el centro), medida directamente sobre idle_01.png
-  // (los dos blobs oscuros de la cara): centro en (434.96, 294.79) y
-  // (616.91, 294.50) sobre un lienzo centrado en (523.5, 512) — de ahí los
-  // ±91 / -217 de abajo. Misma posición para todas las poses porque la
-  // cabeza no cambia de sitio en el lienzo entre animaciones.
-  private static readonly DEATH_EYE_OFFSET_X = 91;
-  private static readonly DEATH_EYE_OFFSET_Y = -217;
-  private static readonly DEATH_EYE_CROSS_SIZE = 17;
-
-  /** Dibuja las dos "x" de los ojos en la posición actual del sprite,
-   * aplicando su rotación/escala/flip/alpha del momento — así el efecto
-   * sigue pegado a la cara durante todo el giro de la animación de muerte. */
-  private drawDeathEyes(sprite: Phaser.Physics.Arcade.Sprite) {
-    const g = this.deathEyesGraphics;
-    if (!g) return;
-    g.clear();
-    g.setAlpha(sprite.alpha);
-
-    const rot = sprite.rotation;
-    const cos = Math.cos(rot);
-    const sin = Math.sin(rot);
-    const scale = sprite.scaleX;
-    const mirror = sprite.flipX ? -1 : 1;
-    const cross = PondScene.DEATH_EYE_CROSS_SIZE * scale;
-
-    g.lineStyle(9 * scale, 0x3a2a4a, 0.95);
-    for (const sideX of [-1, 1]) {
-      const localX = sideX * PondScene.DEATH_EYE_OFFSET_X * mirror;
-      const localY = PondScene.DEATH_EYE_OFFSET_Y;
-      const eyeX = sprite.x + (localX * cos - localY * sin) * scale;
-      const eyeY = sprite.y + (localX * sin + localY * cos) * scale;
-
-      // Las dos diagonales de la "x", rotadas igual que el sprite para que
-      // no se queden "derechas" mientras el cuerpo gira.
-      const rotatePoint = (px: number, py: number) => ({
-        x: eyeX + px * cos - py * sin,
-        y: eyeY + px * sin + py * cos,
-      });
-      const a = rotatePoint(-cross, -cross);
-      const b = rotatePoint(cross, cross);
-      const c = rotatePoint(-cross, cross);
-      const d = rotatePoint(cross, -cross);
-      g.lineBetween(a.x, a.y, b.x, b.y);
-      g.lineBetween(c.x, c.y, d.x, d.y);
-    }
   }
 
   /** Rayo en zigzag entre la medusa y Lumi (Graphics, no un asset — es un
@@ -608,7 +560,7 @@ export class PondScene extends Phaser.Scene {
     this.bestHeight = Math.max(this.bestHeight, START_Y - this.lumi.sprite.y);
     this.scoreText.setText(`Altura: ${Math.round(this.bestHeight / 10)}`);
 
-    const zoneBlend = this.zoneManager.update(this.lumi.sprite.y);
+    const zoneBlend = this.zoneManager.update(this.lumi.sprite.y, cam);
     this.zoneText.setText(
       zoneBlend.next ? `${zoneBlend.current.name} → ${zoneBlend.next.name}` : zoneBlend.current.name,
     );

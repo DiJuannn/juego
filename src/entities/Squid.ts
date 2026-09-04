@@ -35,7 +35,9 @@ export class Squid {
   ) {
     this.sprite = scene.physics.add.image(x, y, "squid");
     this.sprite.setScale(scale);
-    this.sprite.setDepth(4.82);
+    // Pedido explícito: todos los animales en la misma capa que Lumi, para
+    // que se lean claramente como obstáculos y no como decoración de fondo.
+    this.sprite.setDepth(5);
     (this.sprite.body as Phaser.Physics.Arcade.Body).setAllowGravity(false);
 
     this.baseY = y;
@@ -54,7 +56,7 @@ export class Squid {
         { x: 40.2, y: 8.5, radius: 28 },
         { x: 216.9, y: 83.9, radius: 30 },
       ],
-      4.83,
+      5.01,
     );
   }
 

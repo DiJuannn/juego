@@ -29,6 +29,10 @@ export const LUMI_FRAME_COUNT: Record<string, number> = {
   swim_right: 4,
   swim_up: 4,
   swim_diagonal: 4,
+  // Un solo frame: la pose de muerte (ojos en X, generada con Gemini, ver
+  // lumi-asset-gen) no es una animación en bucle — se pone como textura
+  // fija justo al empezar el giro/hundimiento (ver Lumi.showDeathFace).
+  death: 1,
 };
 
 export const LUMI_FPS = 8; // pedido en el ejemplo de STYLE_GUIDE.md
