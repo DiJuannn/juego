@@ -139,3 +139,16 @@ export const SHIELD_START_OFFSET = 400; // altura ~40
 export const SHIELD_MIN_GAP = 2200;
 export const SHIELD_MAX_GAP = 3400;
 export const SHIELD_PICKUP_SCALE = 0.22;
+
+// Monedas: recompensa + guía visual de ruta. Se generan en pequeños grupos
+// (arco/línea, ver CoinSpawner) en vez de puntos sueltos al azar, para que
+// su trazado sugiera por dónde conviene pasar — la mayoría en el centro
+// "seguro", algún grupo ocasional más al lado como recompensa de riesgo.
+export const COIN_SCALE = 0.11;
+export const COIN_GROUP_MIN_GAP = 500;
+export const COIN_GROUP_MAX_GAP = 850;
+export const COIN_GROUP_SIZE_MIN = 3;
+export const COIN_GROUP_SIZE_MAX = 5;
+export const COIN_GROUP_SPACING = 70; // separación vertical entre monedas de un mismo grupo
+export const COIN_GROUP_ARC_SPREAD = 90; // desplazamiento horizontal máx. dentro del arco del grupo
+export const COIN_RISKY_GROUP_CHANCE = 0.25;

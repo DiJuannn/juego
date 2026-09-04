@@ -25,6 +25,7 @@ import { BackgroundDecorSpawner } from "@/systems/BackgroundDecorSpawner";
 import { BackgroundFishField } from "@/systems/BackgroundFishField";
 import { BigFishSpawner } from "@/systems/BigFishSpawner";
 import { BubbleField } from "@/systems/BubbleField";
+import { CoinSpawner } from "@/systems/CoinSpawner";
 import { CrossfadePlant } from "@/systems/CrossfadePlant";
 import { CurrentZoneSpawner } from "@/systems/CurrentZoneSpawner";
 import { InputController } from "@/systems/InputController";
@@ -60,6 +61,7 @@ export class PondScene extends Phaser.Scene {
   private bigFishSpawner!: BigFishSpawner;
   private currentZoneSpawner!: CurrentZoneSpawner;
   private shieldPickupSpawner!: ShieldPickupSpawner;
+  private coinSpawner!: CoinSpawner;
   private decorSpawner!: BackgroundDecorSpawner;
   private zoneManager!: ZoneManager;
   private zoneText!: Phaser.GameObjects.Text;
@@ -67,6 +69,8 @@ export class PondScene extends Phaser.Scene {
   private boostBurst!: Phaser.GameObjects.Particles.ParticleEmitter;
   private boostBurstSmall!: Phaser.GameObjects.Particles.ParticleEmitter;
   private scoreText!: Phaser.GameObjects.Text;
+  private coinText!: Phaser.GameObjects.Text;
+  private coinCount = 0;
   private gameOverText!: Phaser.GameObjects.Text;
   private bestHeight = 0;
   private isGameOver = false;
@@ -93,6 +97,7 @@ export class PondScene extends Phaser.Scene {
     this.isDying = false;
     this.bestHeight = 0;
     this.hasShield = false;
+    this.coinCount = 0;
     this.bigFishPushCooldownUntil = 0;
 
     // El mundo no es infinito de verdad (evitamos rehacer coordenadas),
@@ -202,6 +207,16 @@ export class PondScene extends Phaser.Scene {
       .setDepth(5.2)
       .setVisible(false);
 
+    // Monedas: recompensa + guía visual de ruta (ver CoinSpawner, que las
+    // agrupa en arcos/líneas en vez de soltarlas al azar). Empiezan desde
+    // el arranque, antes que cualquier peligro.
+    this.coinSpawner = new CoinSpawner(this, WORLD_WIDTH, START_Y - 200);
+    this.physics.add.overlap(this.lumi.sprite, this.coinSpawner.group, (_lumiObj, coinObj) => {
+      this.coinCount += 1;
+      this.coinText.setText(`Monedas: ${this.coinCount}`);
+      this.coinSpawner.consume(coinObj as Phaser.Physics.Arcade.Image);
+    });
+
     // Medusas: primer enemigo. Empiezan a aparecer algo por encima de la
     // salida (no justo donde arranca la partida) y tocarlas es game over
     // (salvo que el escudo la absorba).
@@ -298,7 +313,16 @@ export class PondScene extends Phaser.Scene {
       .setScrollFactor(0)
       .setDepth(100);
 
-    this.livesSystem = new LivesSystem(this, 16, 74, LUMI_LIVES_START, 100);
+    this.coinText = this.add
+      .text(16, 66, "Monedas: 0", {
+        fontFamily: "system-ui, sans-serif",
+        fontSize: "15px",
+        color: "#c99a3a",
+      })
+      .setScrollFactor(0)
+      .setDepth(100);
+
+    this.livesSystem = new LivesSystem(this, 16, 96, LUMI_LIVES_START, 100);
 
     this.gameOverText = this.add
       .text(cam.width / 2, cam.height / 2, "", {
@@ -598,6 +622,7 @@ export class PondScene extends Phaser.Scene {
     this.fishField.update(time, delta, cam.scrollY, cam.height);
     this.lilyPadSpawner.update(cam.scrollY, cam.scrollY + cam.height, time);
     this.shieldPickupSpawner.update(cam.scrollY, cam.scrollY + cam.height, time);
+    this.coinSpawner.update(cam.scrollY, cam.scrollY + cam.height, time);
     this.jellyfishSpawner.update(cam.scrollY, cam.scrollY + cam.height, time);
     this.urchinSpawner.update(cam.scrollY, cam.scrollY + cam.height, time);
     this.sharkSpawner.update(cam.scrollY, cam.scrollY + cam.height, time);

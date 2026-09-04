@@ -78,6 +78,7 @@ export class BootScene extends Phaser.Scene {
     this.load.image("squid", "/objects/enemies/squid.png");
     this.load.image("urchin", "/objects/enemies/urchin.png");
     this.load.image("shield_bubble", "/objects/powerups/shield_bubble.png");
+    this.load.image("coin", "/objects/powerups/coin.png");
   }
 
   create() {
