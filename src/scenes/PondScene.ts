@@ -1,5 +1,13 @@
 import Phaser from "phaser";
-import { CAMERA_AUTO_RISE_SPEED, GAME_OVER_MARGIN, START_Y, WORLD_HEIGHT, WORLD_WIDTH } from "@/config/GameConfig";
+import {
+  CAMERA_AUTO_RISE_SPEED,
+  GAME_OVER_MARGIN,
+  SHARK_START_OFFSET,
+  SQUID_START_OFFSET,
+  START_Y,
+  WORLD_HEIGHT,
+  WORLD_WIDTH,
+} from "@/config/GameConfig";
 import { Lumi } from "@/entities/Lumi";
 import { BackgroundDecorSpawner } from "@/systems/BackgroundDecorSpawner";
 import { BackgroundFishField } from "@/systems/BackgroundFishField";
@@ -10,8 +18,12 @@ import { JellyfishSpawner } from "@/systems/JellyfishSpawner";
 import { LilyPadSpawner } from "@/systems/LilyPadSpawner";
 import { LumiBubbleTrail } from "@/systems/LumiBubbleTrail";
 import { ParallaxLayer } from "@/systems/ParallaxLayer";
+import { SharkSpawner } from "@/systems/SharkSpawner";
+import { SquidSpawner } from "@/systems/SquidSpawner";
 import { ZoneManager } from "@/systems/ZoneManager";
 import { pondLayerKey, pondPlantFrameKey } from "./BootScene";
+
+type DeathReason = "atras" | "medusa" | "tiburon" | "calamar";
 
 /**
  * Escalada infinita: la cámara solo sube (nunca retrocede) siguiendo a
@@ -25,6 +37,8 @@ export class PondScene extends Phaser.Scene {
   private fishField!: BackgroundFishField;
   private lilyPadSpawner!: LilyPadSpawner;
   private jellyfishSpawner!: JellyfishSpawner;
+  private sharkSpawner!: SharkSpawner;
+  private squidSpawner!: SquidSpawner;
   private decorSpawner!: BackgroundDecorSpawner;
   private zoneManager!: ZoneManager;
   private zoneText!: Phaser.GameObjects.Text;
@@ -161,8 +175,21 @@ export class PondScene extends Phaser.Scene {
     // Medusas: primer enemigo. Empiezan a aparecer algo por encima de la
     // salida (no justo donde arranca la partida) y tocarlas es game over.
     this.jellyfishSpawner = new JellyfishSpawner(this, WORLD_WIDTH, START_Y - 600);
-    this.physics.add.overlap(this.lumi.sprite, this.jellyfishSpawner.group, () => {
-      this.startDeathSequence("medusa");
+    this.physics.add.overlap(this.lumi.sprite, this.jellyfishSpawner.group, (_lumiObj, jellyObj) => {
+      this.startDeathSequence("medusa", jellyObj as Phaser.Physics.Arcade.Image);
+    });
+
+    // Tiburones: segundo enemigo, más arriba que la medusa. Patrullan de
+    // lado a lado en vez de solo derivar.
+    this.sharkSpawner = new SharkSpawner(this, WORLD_WIDTH, START_Y - SHARK_START_OFFSET);
+    this.physics.add.overlap(this.lumi.sprite, this.sharkSpawner.group, () => {
+      this.startDeathSequence("tiburon");
+    });
+
+    // Calamares: tercer enemigo, todavía más arriba. Dan impulsos rápidos.
+    this.squidSpawner = new SquidSpawner(this, WORLD_WIDTH, START_Y - SQUID_START_OFFSET);
+    this.physics.add.overlap(this.lumi.sprite, this.squidSpawner.group, () => {
+      this.startDeathSequence("calamar");
     });
 
     // foreground_plants es la capa más cercana a cámara: va delante de
@@ -253,10 +280,19 @@ export class PondScene extends Phaser.Scene {
     return Phaser.Math.Clamp(this.lumi.sprite.x - cam.width / 2, 0, Math.max(0, WORLD_WIDTH - cam.width));
   }
 
+  private static readonly DEATH_MESSAGES: Record<DeathReason, string> = {
+    atras: "Te has quedado atrás...",
+    medusa: "Te ha tocado una medusa...",
+    tiburon: "Te ha mordido un tiburón...",
+    calamar: "Un calamar te ha atrapado...",
+  };
+
   /** Antes de mostrar la pantalla de "has perdido", una animación breve de
-   * Lumi (gira y se hunde encogiéndose) para que el golpe de la medusa se
-   * sienta, en vez de cortar directo al texto de game over. */
-  private startDeathSequence(reason: "atras" | "medusa") {
+   * Lumi (gira y se hunde encogiéndose) para que el golpe se sienta, en vez
+   * de cortar directo al texto de game over. Si es una medusa, además un
+   * chispazo eléctrico (rayo + parpadeo) justo al contacto — es lo que
+   * distingue a la medusa de las demás causas de muerte. */
+  private startDeathSequence(reason: DeathReason, sourceSprite?: Phaser.GameObjects.Components.Transform) {
     if (this.isDying || this.isGameOver) return;
     this.isDying = true;
 
@@ -265,6 +301,10 @@ export class PondScene extends Phaser.Scene {
     body.setVelocity(0, 0);
     body.setAllowGravity(false);
     body.enable = false;
+
+    if (reason === "medusa" && sourceSprite) {
+      this.playElectricShock(sourceSprite.x, sourceSprite.y, sprite.x, sprite.y);
+    }
 
     this.tweens.add({
       targets: sprite,
@@ -279,12 +319,83 @@ export class PondScene extends Phaser.Scene {
     });
   }
 
-  private triggerGameOver(reason: "atras" | "medusa" = "atras") {
+  /** Rayo en zigzag entre la medusa y Lumi (Graphics, no un asset — es un
+   * efecto abstracto, no arte del mundo) + un parpadeo de tinte
+   * amarillo-blanco eléctrico sobre Lumi. Todo dura ~250ms, mucho menos que
+   * el hundimiento que viene justo después. */
+  private playElectricShock(fromX: number, fromY: number, toX: number, toY: number) {
+    const graphics = this.add.graphics().setDepth(5.5);
+    const segments = 6;
+    const draw = () => {
+      graphics.clear();
+      graphics.lineStyle(6, 0xcbb8f0, 0.55);
+      this.drawJaggedBolt(graphics, fromX, fromY, toX, toY, segments);
+      graphics.lineStyle(3, 0xfff2a8, 0.95);
+      this.drawJaggedBolt(graphics, fromX, fromY, toX, toY, segments);
+    };
+    draw();
+
+    const flicker = this.time.addEvent({
+      delay: 40,
+      repeat: 5,
+      callback: () => {
+        graphics.setVisible(!graphics.visible);
+        if (graphics.visible) draw();
+      },
+    });
+
+    const sprite = this.lumi.sprite;
+    const originalTint = sprite.tintTopLeft;
+    this.tweens.addCounter({
+      from: 0,
+      to: 1,
+      duration: 220,
+      repeat: 2,
+      yoyo: true,
+      onUpdate: (tween) => {
+        const v = tween.getValue() ?? 0;
+        sprite.setTint(v > 0.5 ? 0xfff2a8 : originalTint);
+      },
+      onComplete: () => sprite.clearTint(),
+    });
+
+    this.time.delayedCall(260, () => {
+      flicker.remove();
+      graphics.destroy();
+    });
+  }
+
+  private drawJaggedBolt(
+    graphics: Phaser.GameObjects.Graphics,
+    fromX: number,
+    fromY: number,
+    toX: number,
+    toY: number,
+    segments: number,
+  ) {
+    const dx = toX - fromX;
+    const dy = toY - fromY;
+    const length = Math.hypot(dx, dy) || 1;
+    const perpX = -dy / length;
+    const perpY = dx / length;
+
+    graphics.beginPath();
+    graphics.moveTo(fromX, fromY);
+    for (let i = 1; i < segments; i++) {
+      const t = i / segments;
+      const wobble = Phaser.Math.FloatBetween(-14, 14);
+      graphics.lineTo(fromX + dx * t + perpX * wobble, fromY + dy * t + perpY * wobble);
+    }
+    graphics.lineTo(toX, toY);
+    graphics.strokePath();
+  }
+
+  private triggerGameOver(reason: DeathReason = "atras") {
     if (this.isGameOver) return;
     this.isGameOver = true;
     this.physics.pause();
     const altura = Math.round(this.bestHeight / 10);
-    const motivo = reason === "medusa" ? "Te ha tocado una medusa..." : "Te has quedado atrás...";
+    const motivo = PondScene.DEATH_MESSAGES[reason];
     this.gameOverText.setText(`${motivo}\n\nAltura: ${altura}\n\nToca la pantalla para volver a intentarlo`);
     this.gameOverText.setVisible(true);
   }
@@ -311,6 +422,8 @@ export class PondScene extends Phaser.Scene {
     this.fishField.update(time, delta, cam.scrollY, cam.height);
     this.lilyPadSpawner.update(cam.scrollY, cam.scrollY + cam.height, time);
     this.jellyfishSpawner.update(cam.scrollY, cam.scrollY + cam.height, time);
+    this.sharkSpawner.update(cam.scrollY, cam.scrollY + cam.height, time);
+    this.squidSpawner.update(cam.scrollY, cam.scrollY + cam.height, time);
     this.decorSpawner.update(cam.scrollY, cam.scrollY + cam.height);
 
     this.bestHeight = Math.max(this.bestHeight, START_Y - this.lumi.sprite.y);

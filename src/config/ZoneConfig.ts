@@ -32,6 +32,10 @@ export interface ZoneDefinition {
  * de las dos zonas de forma gradual. */
 export const TRANSITION_HALF_WIDTH = 200;
 
+// Pedido explícito del usuario: primero se alargaron mucho (última zona en
+// 20000), pero se sintió que tardaba demasiado en notarse el cambio de
+// zona. Se acortan a la mitad aproximadamente — siguen siendo más largas
+// que el original (4500 en total) pero los cambios llegan antes.
 export const ZONES: ZoneDefinition[] = [
   {
     id: 1,
@@ -44,7 +48,7 @@ export const ZONES: ZoneDefinition[] = [
   {
     id: 2,
     name: "Arrecife",
-    altitudeStart: 1500,
+    altitudeStart: 750,
     tint: { color: 0x000000, alpha: 0 }, // TODO: sin arte propio todavía
     fishKeys: FISH_KEYS,
     decorKeys: DECOR_KEYS,
@@ -52,7 +56,7 @@ export const ZONES: ZoneDefinition[] = [
   {
     id: 3,
     name: "Océano abierto",
-    altitudeStart: 4000,
+    altitudeStart: 2000,
     tint: { color: 0x3a6fa8, alpha: 0.08 },
     fishKeys: FISH_KEYS,
     decorKeys: DECOR_KEYS,
@@ -60,7 +64,7 @@ export const ZONES: ZoneDefinition[] = [
   {
     id: 4,
     name: "Aguas profundas",
-    altitudeStart: 7500,
+    altitudeStart: 3750,
     tint: { color: 0x2d4f8a, alpha: 0.18 },
     fishKeys: FISH_KEYS,
     decorKeys: DECOR_KEYS,
@@ -68,7 +72,7 @@ export const ZONES: ZoneDefinition[] = [
   {
     id: 5,
     name: "Abismo",
-    altitudeStart: 11000,
+    altitudeStart: 5500,
     tint: { color: 0x1c2f5e, alpha: 0.32 },
     fishKeys: FISH_KEYS,
     decorKeys: DECOR_KEYS,
@@ -76,7 +80,7 @@ export const ZONES: ZoneDefinition[] = [
   {
     id: 6,
     name: "Bosque bioluminiscente",
-    altitudeStart: 14000,
+    altitudeStart: 7000,
     tint: { color: 0x24205c, alpha: 0.3 },
     fishKeys: FISH_KEYS,
     decorKeys: DECOR_KEYS,
@@ -84,7 +88,7 @@ export const ZONES: ZoneDefinition[] = [
   {
     id: 7,
     name: "Ascenso",
-    altitudeStart: 17000,
+    altitudeStart: 8500,
     tint: { color: 0x3a6fa8, alpha: 0.1 },
     fishKeys: FISH_KEYS,
     decorKeys: DECOR_KEYS,
@@ -92,7 +96,7 @@ export const ZONES: ZoneDefinition[] = [
   {
     id: 8,
     name: "Superficie",
-    altitudeStart: 20000,
+    altitudeStart: 10000,
     tint: { color: 0xfff2c4, alpha: 0.1 },
     fishKeys: FISH_KEYS,
     decorKeys: DECOR_KEYS,

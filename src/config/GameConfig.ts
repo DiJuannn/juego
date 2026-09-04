@@ -58,3 +58,19 @@ export const JELLYFISH_SCALE = 0.16;
 // presión incluso si el jugador va despacio. Si Lumi sube más rápido que
 // esto, manda su propia velocidad (ver PondScene.update).
 export const CAMERA_AUTO_RISE_SPEED = 22;
+
+// Tiburones: segundo enemigo, "poco a poco" tras la medusa — empiezan a
+// aparecer más arriba (altura ~300, dentro de la Zona 1) y patrullan de
+// lado a lado en vez de solo derivar como la medusa.
+export const SHARK_START_OFFSET = 3000; // px por encima de START_Y (altura ~300)
+export const SHARK_MIN_GAP = 1200;
+export const SHARK_MAX_GAP = 2000;
+export const SHARK_SCALE = 0.22;
+
+// Calamares: tercer enemigo, más arriba todavía (altura ~500) — impulsos
+// rápidos en vez de patrulla constante, para que cada peligro se esquive
+// de forma distinta.
+export const SQUID_START_OFFSET = 5000; // px por encima de START_Y (altura ~500)
+export const SQUID_MIN_GAP = 1100;
+export const SQUID_MAX_GAP = 1900;
+export const SQUID_SCALE = 0.18;
