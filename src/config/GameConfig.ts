@@ -124,6 +124,13 @@ export const CURRENT_ZONE_MAX_GAP = 2600;
 export const CURRENT_ZONE_HEIGHT = 260;
 export const CURRENT_ZONE_STRENGTH = 85; // px/seg de empuje lateral
 
+// Sistema de vidas: 3 golpes peligrosos antes del game over de verdad (ver
+// PondScene.takeDamage), con una invulnerabilidad breve tras cada golpe no
+// letal para no perder varias vidas de golpe por el mismo peligro.
+export const LUMI_LIVES_START = 3;
+export const LUMI_INVULNERABILITY_MS = 1400;
+export const LUMI_HIT_KNOCKBACK_STRENGTH = 220;
+
 // Power-up: escudo de burbuja. Aparece pronto (antes que la propia medusa)
 // y absorbe UN golpe de cualquier enemigo letal (medusa/tiburón/calamar/
 // erizo) — no protege del empuje del pez grande ni de la corriente, esos

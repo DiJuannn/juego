@@ -8,6 +8,9 @@ import {
   CAMERA_RISE_SPEED_START,
   CURRENT_ZONE_START_OFFSET,
   GAME_OVER_MARGIN,
+  LUMI_HIT_KNOCKBACK_STRENGTH,
+  LUMI_INVULNERABILITY_MS,
+  LUMI_LIVES_START,
   SHARK_START_OFFSET,
   SHIELD_START_OFFSET,
   SQUID_START_OFFSET,
@@ -27,6 +30,7 @@ import { CurrentZoneSpawner } from "@/systems/CurrentZoneSpawner";
 import { InputController } from "@/systems/InputController";
 import { JellyfishSpawner } from "@/systems/JellyfishSpawner";
 import { LilyPadSpawner } from "@/systems/LilyPadSpawner";
+import { LivesSystem } from "@/systems/LivesSystem";
 import { LumiBubbleTrail } from "@/systems/LumiBubbleTrail";
 import { ParallaxLayer } from "@/systems/ParallaxLayer";
 import { SharkSpawner } from "@/systems/SharkSpawner";
@@ -59,6 +63,7 @@ export class PondScene extends Phaser.Scene {
   private decorSpawner!: BackgroundDecorSpawner;
   private zoneManager!: ZoneManager;
   private zoneText!: Phaser.GameObjects.Text;
+  private livesSystem!: LivesSystem;
   private boostBurst!: Phaser.GameObjects.Particles.ParticleEmitter;
   private boostBurstSmall!: Phaser.GameObjects.Particles.ParticleEmitter;
   private scoreText!: Phaser.GameObjects.Text;
@@ -293,6 +298,8 @@ export class PondScene extends Phaser.Scene {
       .setScrollFactor(0)
       .setDepth(100);
 
+    this.livesSystem = new LivesSystem(this, 16, 74, LUMI_LIVES_START, 100);
+
     this.gameOverText = this.add
       .text(cam.width / 2, cam.height / 2, "", {
         fontFamily: "system-ui, sans-serif",
@@ -336,10 +343,11 @@ export class PondScene extends Phaser.Scene {
     erizo: "Te has pinchado con un erizo...",
   };
 
-  /** Punto de entrada de los 4 peligros letales (medusa/tiburón/calamar/
-   * erizo): si hay escudo activo, lo consume y no pasa nada más; si no,
-   * sigue la secuencia de muerte normal. El pez grande y la corriente NO
-   * pasan por aquí — no son letales de por sí. */
+  /** Punto de entrada de los 4 peligros (medusa/tiburón/calamar/erizo): si
+   * hay escudo activo, lo consume y no pasa nada más; si Lumi está
+   * invulnerable tras un golpe reciente, se ignora; si no, resta una vida
+   * (game over solo si era la última — ver takeDamage). El pez grande y la
+   * corriente NO pasan por aquí, no son peligros que quiten vida. */
   private handleHazardHit(reason: DeathReason, sourceSprite?: Phaser.GameObjects.Components.Transform) {
     if (this.isDying || this.isGameOver) return;
     if (this.time.now < this.shieldGraceUntil) return;
@@ -347,7 +355,72 @@ export class PondScene extends Phaser.Scene {
       this.consumeShield();
       return;
     }
-    this.startDeathSequence(reason, sourceSprite);
+    if (this.livesSystem.isInvulnerable(this.time.now)) return;
+    this.takeDamage(reason, sourceSprite);
+  }
+
+  /** Resta una vida. Si era la última, sigue la secuencia de muerte
+   * definitiva de siempre; si no, una reacción de golpe más leve (flash,
+   * empujón hacia atrás) y una ventana breve de invulnerabilidad — el
+   * juego sigue fluido, sin pausas ni pantallas intermedias. */
+  private takeDamage(reason: DeathReason, sourceSprite?: Phaser.GameObjects.Components.Transform) {
+    const wasLastLife = this.livesSystem.loseLife();
+    if (wasLastLife) {
+      this.startDeathSequence(reason, sourceSprite);
+      return;
+    }
+
+    if (reason === "medusa" && sourceSprite) {
+      this.playElectricShock(sourceSprite.x, sourceSprite.y, this.lumi.sprite.x, this.lumi.sprite.y);
+    } else {
+      this.playGenericHitFlash();
+    }
+
+    // Empujoncito hacia atrás para separarla del peligro que la golpeó —
+    // en la dirección opuesta a la que ya llevaba, o aleatoria si estaba
+    // quieta. No todos los peligros pasan su propio sprite (solo la
+    // medusa), así que no siempre se puede empujar "lejos de la fuente".
+    const body = this.lumi.sprite.body as Phaser.Physics.Arcade.Body;
+    const awayX = sourceSprite ? this.lumi.sprite.x - sourceSprite.x : -body.velocity.x;
+    const direction = awayX === 0 ? (Math.random() < 0.5 ? -1 : 1) : Math.sign(awayX);
+    this.lumi.applyKnockback(direction * LUMI_HIT_KNOCKBACK_STRENGTH, 70, LUMI_INVULNERABILITY_MS * 0.3);
+
+    this.livesSystem.grantInvulnerability(this.time.now, LUMI_INVULNERABILITY_MS);
+    this.playInvulnerabilityBlink(LUMI_INVULNERABILITY_MS);
+  }
+
+  /** Reacción de golpe genérica (tiburón/calamar/erizo): un parpadeo de
+   * tinte rojo suave, mucho más corto que el chispazo eléctrico propio de
+   * la medusa — cada peligro se sigue distinguiendo. */
+  private playGenericHitFlash() {
+    const sprite = this.lumi.sprite;
+    const originalTint = sprite.tintTopLeft;
+    this.tweens.addCounter({
+      from: 0,
+      to: 1,
+      duration: 90,
+      repeat: 2,
+      yoyo: true,
+      onUpdate: (tween) => {
+        const v = tween.getValue() ?? 0;
+        sprite.setTint(v > 0.5 ? 0xff9a9a : originalTint);
+      },
+      onComplete: () => sprite.clearTint(),
+    });
+  }
+
+  /** Parpadeo de alpha durante toda la ventana de invulnerabilidad, para
+   * que el jugador vea claramente que un golpe no cuenta mientras dura. */
+  private playInvulnerabilityBlink(durationMs: number) {
+    const sprite = this.lumi.sprite;
+    this.tweens.add({
+      targets: sprite,
+      alpha: 0.35,
+      duration: 110,
+      yoyo: true,
+      repeat: Math.max(0, Math.floor(durationMs / 220) - 1),
+      onComplete: () => sprite.setAlpha(1),
+    });
   }
 
   /** El escudo absorbe un golpe: un pequeño estallido de burbujas donde
