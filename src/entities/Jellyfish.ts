@@ -35,6 +35,11 @@ export class Jellyfish {
     // que se lean claramente como obstáculos y no como decoración de fondo.
     this.sprite.setDepth(5);
     this.sprite.refreshBody();
+    // Pedido explícito: la hitbox se sentía "cuadrada", con esquinas que
+    // chocaban sin tocar el dibujo. Se ajusta al cuerpo/campana real (no a
+    // las esquinas del lienzo, que incluyen tentáculos finos y huecos
+    // vacíos) — medido sobre jellyfish.png (431x604).
+    (this.sprite.body as Phaser.Physics.Arcade.StaticBody).setSize(209, 325).setOffset(112, 140);
 
     this.baseX = x;
     this.baseY = y;

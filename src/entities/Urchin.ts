@@ -23,6 +23,9 @@ export class Urchin {
     // que se lean claramente como obstáculos y no como decoración de fondo.
     this.sprite.setDepth(5);
     this.sprite.refreshBody();
+    // Pedido explícito: hitbox ajustada al cuerpo real de púas, no a las
+    // esquinas vacías del lienzo — medido sobre urchin.png (846x680).
+    (this.sprite.body as Phaser.Physics.Arcade.StaticBody).setSize(406, 355).setOffset(220, 162);
 
     this.baseY = y;
     this.phase = Phaser.Math.FloatBetween(0, Math.PI * 2);

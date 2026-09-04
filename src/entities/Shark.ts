@@ -42,7 +42,12 @@ export class Shark {
     // Pedido explícito: todos los animales en la misma capa que Lumi, para
     // que se lean claramente como obstáculos y no como decoración de fondo.
     this.sprite.setDepth(5);
-    (this.sprite.body as Phaser.Physics.Arcade.Body).setAllowGravity(false);
+    const body = this.sprite.body as Phaser.Physics.Arcade.Body;
+    body.setAllowGravity(false);
+    // Pedido explícito: hitbox ajustada al cuerpo real (no a las aletas ni
+    // al hueco por encima/debajo) — medido sobre shark.png (1191x697), casi
+    // centrado en x así que el flip al patrullar no lo desalinea.
+    body.setSize(574, 359).setOffset(309, 168);
 
     this.baseY = y;
     this.baseScaleX = scale;

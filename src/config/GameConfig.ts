@@ -61,12 +61,20 @@ export const JELLYFISH_MIN_GAP = 700;
 export const JELLYFISH_MAX_GAP = 1300;
 export const JELLYFISH_SCALE = 0.16;
 
-// La cámara ya no espera solo a que Lumi suba: sube ella sola a este ritmo
-// (px/seg) sin parar, mucho más despacio que nadar a tope, para que exista
-// presión incluso si el jugador va despacio. Si Lumi sube más rápido que
-// esto, manda su propia velocidad (ver PondScene.update). Pedido explícito:
-// otro +40% sobre el valor anterior (30 -> 42).
-export const CAMERA_AUTO_RISE_SPEED = 42;
+// La cámara ya no espera solo a que Lumi suba: sube ella sola sin parar,
+// mucho más despacio que nadar a tope, para que exista presión incluso si
+// el jugador va despacio. Si Lumi sube más rápido que esto, manda su propia
+// velocidad (ver PondScene.update).
+//
+// Pedido explícito: la velocidad no debe ser un valor fijo — debe empezar
+// tranquila (para aprender) y subir progresivamente con la altura, sin
+// saltos bruscos, hasta un tope razonable un 80% más rápido que el valor
+// anterior (42 -> 76). CAMERA_RISE_RAMP_ALTITUDE es la altura (misma escala
+// que ZoneConfig, START/10 por segundo) a la que se alcanza ese tope —
+// coincide con el final de la Zona 1 (ver ZoneConfig.ts).
+export const CAMERA_RISE_SPEED_START = 42;
+export const CAMERA_RISE_SPEED_MAX = 76;
+export const CAMERA_RISE_RAMP_ALTITUDE = 10000;
 
 // Tiburones: segundo enemigo, "poco a poco" tras la medusa — empiezan a
 // aparecer más arriba (altura ~300, dentro de la Zona 1) y patrullan de

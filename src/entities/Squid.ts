@@ -38,7 +38,12 @@ export class Squid {
     // Pedido explícito: todos los animales en la misma capa que Lumi, para
     // que se lean claramente como obstáculos y no como decoración de fondo.
     this.sprite.setDepth(5);
-    (this.sprite.body as Phaser.Physics.Arcade.Body).setAllowGravity(false);
+    const body = this.sprite.body as Phaser.Physics.Arcade.Body;
+    body.setAllowGravity(false);
+    // Pedido explícito: hitbox ajustada al manto/cabeza real, no a los
+    // tentáculos sueltos ni al hueco alrededor — medido sobre squid.png
+    // (927x762).
+    body.setSize(453, 407).setOffset(226, 166);
 
     this.baseY = y;
     this.phase = Phaser.Math.FloatBetween(0, Math.PI * 2);

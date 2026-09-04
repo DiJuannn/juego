@@ -3,7 +3,9 @@ import {
   BIG_FISH_PUSH_COOLDOWN_MS,
   BIG_FISH_PUSH_STRENGTH,
   BIG_FISH_START_OFFSET,
-  CAMERA_AUTO_RISE_SPEED,
+  CAMERA_RISE_RAMP_ALTITUDE,
+  CAMERA_RISE_SPEED_MAX,
+  CAMERA_RISE_SPEED_START,
   CURRENT_ZONE_START_OFFSET,
   GAME_OVER_MARGIN,
   SHARK_START_OFFSET,
@@ -96,33 +98,13 @@ export class PondScene extends Phaser.Scene {
 
     const cam = this.cameras.main;
 
-    // El PNG de background_far no está pensado para repetirse verticalmente
-    // sin fin (tiene una única fuente de luz arriba): al tilearlo tal cual
-    // se nota mucho la costura entre una copia y la siguiente. Se
-    // construye una textura "espejada" (original + copia volteada debajo)
-    // una sola vez: al repetir ESA textura, el borde de una copia siempre
-    // conecta con su propio reflejo, así que no hay corte visible en
-    // ningún punto de la repetición.
+    // background_far.png ya viene preparado para repetirse verticalmente
+    // tal cual (sus bordes superior e inferior se diseñaron a juego, ver
+    // lumi-asset-gen): repetirlo espejado (como se hacía antes) mostraba
+    // ruinas/arcos boca abajo cada dos copias, que se notaba mucho y se
+    // veía mal — ahora se tilea directo, sin espejar.
     const bgKey = pondLayerKey("background_far");
-    const seamlessKey = "background_far_seamless";
-    if (!this.textures.exists(seamlessKey)) {
-      const bgImg = this.textures.get(bgKey).getSourceImage() as HTMLImageElement;
-      const w = bgImg.width;
-      const h = bgImg.height;
-      const canvasTex = this.textures.createCanvas(seamlessKey, w, h * 2)!;
-      const ctx = canvasTex.getContext();
-      ctx.drawImage(bgImg, 0, 0);
-      ctx.save();
-      ctx.translate(0, h * 2);
-      ctx.scale(1, -1);
-      ctx.drawImage(bgImg, 0, 0);
-      ctx.restore();
-      canvasTex.refresh();
-    }
-
-    // El cielo/agua de fondo es un degradado continuo: tilearlo cubre
-    // cualquier tamaño de mundo sin huecos ni costuras visibles.
-    this.skyLayer = new ParallaxLayer(this, seamlessKey, 0.15, 0);
+    this.skyLayer = new ParallaxLayer(this, bgKey, 0.15, 0);
 
     // Peces de fondo, muy detrás de las rocas/plantas (parallax lento,
     // escala pequeña, teñido suave) para dar sensación de profundidad sin
@@ -523,12 +505,17 @@ export class PondScene extends Phaser.Scene {
 
     const cam = this.cameras.main;
 
-    // El techo de cámara sube solo (a CAMERA_AUTO_RISE_SPEED) y además
-    // sigue a Lumi si ella sube más rápido — lo que vaya "más arriba" (más
-    // negativo) manda. La cámara solo puede subir (scrollY solo baja de
-    // valor): quedarse atrás no se perdona dejando que la cámara "espere",
-    // es justo lo que crea la presión de un juego de escalada infinita.
-    this.cameraCeiling -= CAMERA_AUTO_RISE_SPEED * (delta / 1000);
+    // El techo de cámara sube solo y además sigue a Lumi si ella sube más
+    // rápido — lo que vaya "más arriba" (más negativo) manda. La cámara
+    // solo puede subir (scrollY solo baja de valor): quedarse atrás no se
+    // perdona dejando que la cámara "espere", es justo lo que crea la
+    // presión de un juego de escalada infinita.
+    // La velocidad de subida no es fija: empieza tranquila y sube poco a
+    // poco con la altura hasta un tope (ver CAMERA_RISE_* en GameConfig),
+    // en vez de un salto brusco de velocidad.
+    const rampT = Phaser.Math.Clamp(this.bestHeight / 10 / CAMERA_RISE_RAMP_ALTITUDE, 0, 1);
+    const riseSpeed = Phaser.Math.Linear(CAMERA_RISE_SPEED_START, CAMERA_RISE_SPEED_MAX, rampT);
+    this.cameraCeiling -= riseSpeed * (delta / 1000);
     const desiredScrollY = this.lumi.sprite.y - cam.height * 0.6;
     this.cameraCeiling = Math.min(this.cameraCeiling, desiredScrollY);
     cam.scrollY = Math.min(cam.scrollY, this.cameraCeiling);

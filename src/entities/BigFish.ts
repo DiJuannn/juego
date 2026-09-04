@@ -44,7 +44,11 @@ export class BigFish {
     // Pedido explícito: todos los animales en la misma capa que Lumi, para
     // que se lean claramente como obstáculos y no como decoración de fondo.
     this.sprite.setDepth(5);
-    (this.sprite.body as Phaser.Physics.Arcade.Body).setAllowGravity(false);
+    const body = this.sprite.body as Phaser.Physics.Arcade.Body;
+    body.setAllowGravity(false);
+    // Pedido explícito: hitbox ajustada al cuerpo real, no a las aletas —
+    // medido sobre fish_05.png (323x230).
+    body.setSize(154, 118).setOffset(84, 55);
 
     this.baseY = y;
     this.phase = Phaser.Math.FloatBetween(0, Math.PI * 2);
