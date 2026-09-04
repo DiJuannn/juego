@@ -143,6 +143,19 @@ export const CORAL_GAP_WIDTH = 230; // ancho del carril libre garantizado
 export const CORAL_WALL_MARGIN_X = 40; // margen respecto al borde del mundo
 export const CORAL_CHUNK_SCALE = 0.32;
 
+// ReefCluster: prototipo de obstáculo orgánico que sustituye a
+// CoralWall/CoralSpawner en la instanciación real (ver PondScene y
+// entities/ReefCluster.ts) — pedido explícito del usuario: nada de una
+// pared de un único asset repetido en línea recta, cada cúmulo combina
+// varias piezas (coral/roca/alga) en una composición diseñada a mano, con
+// una ruta curva propia en vez de un simple hueco recto. CoralWall/
+// CoralSpawner no se borran, solo dejan de usarse, por si hay que
+// revertir. Mismos huecos de altura que el coral estrecho anterior.
+export const REEF_CLUSTER_START_OFFSET = 2200; // altura ~220
+export const REEF_CLUSTER_MIN_GAP = 2000;
+export const REEF_CLUSTER_MAX_GAP = 3200;
+export const REEF_COIN_SPACING = 90; // separación entre monedas a lo largo de la ruta guía
+
 // Corriente de agua: no es una criatura, es una franja de mundo que empuja
 // lateralmente mientras Lumi está dentro — el último obstáculo de la Zona
 // 1 (altura ~650), justo antes de la Zona 2.

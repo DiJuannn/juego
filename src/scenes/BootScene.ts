@@ -81,6 +81,11 @@ export class BootScene extends Phaser.Scene {
     this.load.image("squid", "/objects/enemies/squid.png");
     this.load.image("urchin", "/objects/enemies/urchin.png");
     this.load.image("coral", "/objects/enemies/coral.png");
+    // Librería de piezas para ReefCluster (composiciones orgánicas de
+    // obstáculos de Zona 1, ver systems/ReefCluster.ts).
+    this.load.image("reef_coral_fan", "/objects/reef/coral_fan.png");
+    this.load.image("reef_rock_cluster", "/objects/reef/rock_cluster.png");
+    this.load.image("reef_seaweed_frond", "/objects/reef/seaweed_frond.png");
     // Parpadeo: arte de verdad (ojos cerrados) generado con Gemini a partir
     // de cada sprite base, ver systems/BlinkTimer — nunca un Graphics
     // dibujado por código.

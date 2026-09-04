@@ -7,12 +7,12 @@ import {
   CAMERA_RISE_RAMP_ALTITUDE,
   CAMERA_RISE_SPEED_MAX,
   CAMERA_RISE_SPEED_START,
-  CORAL_START_OFFSET,
   CURRENT_ZONE_START_OFFSET,
   GAME_OVER_MARGIN,
   LUMI_HIT_KNOCKBACK_STRENGTH,
   LUMI_INVULNERABILITY_MS,
   LUMI_LIVES_START,
+  REEF_CLUSTER_START_OFFSET,
   SHARK_START_OFFSET,
   SHIELD_AURA_ALPHA,
   SHIELD_AURA_SCALE,
@@ -31,7 +31,6 @@ import { BigFishSpawner } from "@/systems/BigFishSpawner";
 import { BoostPickupSpawner } from "@/systems/BoostPickupSpawner";
 import { BubbleField } from "@/systems/BubbleField";
 import { CoinSpawner } from "@/systems/CoinSpawner";
-import { CoralSpawner } from "@/systems/CoralSpawner";
 import { CrossfadePlant } from "@/systems/CrossfadePlant";
 import { CurrentZoneSpawner } from "@/systems/CurrentZoneSpawner";
 import { InputController } from "@/systems/InputController";
@@ -40,6 +39,7 @@ import { LilyPadSpawner } from "@/systems/LilyPadSpawner";
 import { LivesSystem } from "@/systems/LivesSystem";
 import { LumiBubbleTrail } from "@/systems/LumiBubbleTrail";
 import { ParallaxLayer } from "@/systems/ParallaxLayer";
+import { ReefClusterSpawner } from "@/systems/ReefClusterSpawner";
 import { SharkSpawner } from "@/systems/SharkSpawner";
 import { ShieldPickupSpawner } from "@/systems/ShieldPickupSpawner";
 import { SquidSpawner } from "@/systems/SquidSpawner";
@@ -64,7 +64,7 @@ export class PondScene extends Phaser.Scene {
   private sharkSpawner!: SharkSpawner;
   private squidSpawner!: SquidSpawner;
   private urchinSpawner!: UrchinSpawner;
-  private coralSpawner!: CoralSpawner;
+  private reefClusterSpawner!: ReefClusterSpawner;
   private bigFishSpawner!: BigFishSpawner;
   private currentZoneSpawner!: CurrentZoneSpawner;
   private shieldPickupSpawner!: ShieldPickupSpawner;
@@ -238,20 +238,27 @@ export class PondScene extends Phaser.Scene {
       this.boostPickupSpawner.consume(boostObj as Phaser.Physics.Arcade.Image);
     });
 
-    // Coral estrecho: obstáculo plantado que solo deja pasar por un lado.
-    // Se crea ANTES que medusa/erizo para poder pasarles su comprobación de
-    // banda (ver isWithinAnyCoralBand) y que nunca coloquen un animal
-    // estático encima del carril libre.
-    this.coralSpawner = new CoralSpawner(this, WORLD_WIDTH, START_Y - CORAL_START_OFFSET);
-    this.physics.add.overlap(this.lumi.sprite, this.coralSpawner.group, () => {
+    // Obstáculos orgánicos de arrecife: prototipo que sustituye al coral
+    // estrecho de pared recta (ver entities/ReefCluster.ts y
+    // systems/ReefTemplates.ts — CoralWall/CoralSpawner se quedan
+    // intactos sin usarse, por si hay que revertir). Se crea ANTES que
+    // medusa/erizo para poder pasarles su comprobación de banda y que
+    // nunca coloquen un animal estático encima de una ruta guía.
+    this.reefClusterSpawner = new ReefClusterSpawner(this, WORLD_WIDTH, START_Y - REEF_CLUSTER_START_OFFSET);
+    this.physics.add.overlap(this.lumi.sprite, this.reefClusterSpawner.group, () => {
       this.handleHazardHit("coral");
+    });
+    this.physics.add.overlap(this.lumi.sprite, this.reefClusterSpawner.coinGroup, (_lumiObj, coinObj) => {
+      this.coinCount += 1;
+      this.coinText.setText(`Monedas: ${this.coinCount}`);
+      this.reefClusterSpawner.consumeCoin(coinObj as Phaser.Physics.Arcade.Image);
     });
 
     // Medusas: primer enemigo. Empiezan a aparecer algo por encima de la
     // salida (no justo donde arranca la partida) y tocarlas es game over
     // (salvo que el escudo la absorba).
     this.jellyfishSpawner = new JellyfishSpawner(this, WORLD_WIDTH, START_Y - 600, (y) =>
-      this.coralSpawner.isWithinAnyCoralBand(y),
+      this.reefClusterSpawner.isWithinAnyClusterBand(y),
     );
     this.physics.add.overlap(this.lumi.sprite, this.jellyfishSpawner.group, (_lumiObj, jellyObj) => {
       this.handleHazardHit("medusa", jellyObj as Phaser.Physics.Arcade.Image);
@@ -260,7 +267,7 @@ export class PondScene extends Phaser.Scene {
     // Erizos: cuarto enemigo, entre la medusa y el tiburón. Casi no se
     // mueven, son un obstáculo a esquivar, no una criatura que persigue.
     this.urchinSpawner = new UrchinSpawner(this, WORLD_WIDTH, START_Y - URCHIN_START_OFFSET, (y) =>
-      this.coralSpawner.isWithinAnyCoralBand(y),
+      this.reefClusterSpawner.isWithinAnyClusterBand(y),
     );
     this.physics.add.overlap(this.lumi.sprite, this.urchinSpawner.group, () => {
       this.handleHazardHit("erizo");
@@ -688,7 +695,7 @@ export class PondScene extends Phaser.Scene {
     this.fishField.update(time, delta, cam.scrollY, cam.height);
     this.lilyPadSpawner.update(cam.scrollY, cam.scrollY + cam.height, time);
     this.shieldPickupSpawner.update(cam.scrollY, cam.scrollY + cam.height, time);
-    this.coralSpawner.update(cam.scrollY, cam.scrollY + cam.height);
+    this.reefClusterSpawner.update(cam.scrollY, cam.scrollY + cam.height, time);
     this.coinSpawner.update(cam.scrollY, cam.scrollY + cam.height, time);
     this.boostPickupSpawner.update(cam.scrollY, cam.scrollY + cam.height, time);
     this.jellyfishSpawner.update(cam.scrollY, cam.scrollY + cam.height, time);
