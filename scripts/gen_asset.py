@@ -56,8 +56,10 @@ def build_parts(prompt: str, ref_paths: list[str]) -> list[dict]:
     return parts
 
 
-def generate(prompt: str, ref_paths: list[str], api_key: str) -> bytes:
+def generate(prompt: str, ref_paths: list[str], api_key: str, aspect_ratio: str | None = None) -> bytes:
     payload = {"contents": [{"parts": build_parts(prompt, ref_paths)}]}
+    if aspect_ratio:
+        payload["generationConfig"] = {"imageConfig": {"aspectRatio": aspect_ratio}}
     resp = requests.post(
         API_URL,
         params={"key": api_key},
@@ -82,6 +84,16 @@ def main() -> int:
     parser.add_argument("--ref", action="append", default=[], help="Imagen de referencia de estilo (repetible)")
     parser.add_argument("--out", required=True)
     parser.add_argument("--attempts", type=int, default=MAX_ATTEMPTS)
+    parser.add_argument(
+        "--background",
+        action="store_true",
+        help="Genera una escena de fondo opaca (sin la instruccion de transparencia, que solo aplica a props/personajes recortados).",
+    )
+    parser.add_argument(
+        "--aspect-ratio",
+        default=None,
+        help="Relacion de aspecto del lienzo, p.ej. 9:16 para una escena vertical (el modelo ignora la orientacion pedida solo por texto).",
+    )
     args = parser.parse_args()
 
     project_root = Path(__file__).resolve().parent.parent
@@ -91,20 +103,31 @@ def main() -> int:
         print("ERROR: falta GEMINI_API_KEY (ni en el entorno ni en .env)", file=sys.stderr)
         return 1
 
-    style_prefix = (
-        "Ilustracion 2D pintada a mano, estilo acuarela pastel, contorno "
-        "lavanda/malva (nunca negro), formas organicas suaves, colores "
-        "pastel desaturados, sin sombreado duro, sin pixel art, sin 3D, sin "
-        "fotorrealismo. Debe parecer dibujado por el mismo artista que las "
-        "imagenes de referencia adjuntas. Fondo completamente transparente "
-        "(alpha real, no checkerboard). "
-    )
+    if args.background:
+        style_prefix = (
+            "Ilustracion 2D pintada a mano, estilo acuarela pastel, contorno "
+            "lavanda/malva (nunca negro), formas organicas suaves, colores "
+            "pastel desaturados, sin sombreado duro, sin pixel art, sin 3D, sin "
+            "fotorrealismo. Debe parecer dibujado por el mismo artista que las "
+            "imagenes de referencia adjuntas. Es un FONDO DE ESCENA completo: "
+            "todo el lienzo debe estar pintado de borde a borde, sin ningun "
+            "area transparente ni recortada. "
+        )
+    else:
+        style_prefix = (
+            "Ilustracion 2D pintada a mano, estilo acuarela pastel, contorno "
+            "lavanda/malva (nunca negro), formas organicas suaves, colores "
+            "pastel desaturados, sin sombreado duro, sin pixel art, sin 3D, sin "
+            "fotorrealismo. Debe parecer dibujado por el mismo artista que las "
+            "imagenes de referencia adjuntas. Fondo completamente transparente "
+            "(alpha real, no checkerboard). "
+        )
     full_prompt = style_prefix + args.prompt
 
     last_error: Exception | None = None
     for attempt in range(1, args.attempts + 1):
         try:
-            image_bytes = generate(full_prompt, args.ref, api_key)
+            image_bytes = generate(full_prompt, args.ref, api_key, args.aspect_ratio)
             out_path = Path(args.out)
             out_path.parent.mkdir(parents=True, exist_ok=True)
             out_path.write_bytes(image_bytes)
