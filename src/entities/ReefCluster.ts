@@ -36,9 +36,10 @@ const DEPTH_BY_ROLE: Record<ReefDepthRole, number> = {
  * silueta real"), pero en fracción en vez de píxeles fijos para que sirva
  * con cualquier escala/reutilización. Aproximado a ojo sobre cada asset. */
 const HITBOX_FRACTION: Record<string, [number, number, number, number]> = {
-  reef_coral_fan: [0.05, 0.12, 0.95, 1.0],
-  reef_rock_cluster: [0.02, 0.12, 0.98, 1.0],
-  coral: [0.08, 0.1, 0.92, 0.95],
+  reef_coral_mass: [0.04, 0.08, 0.96, 1.0],
+  reef_rock_formation: [0.02, 0.1, 0.98, 1.0],
+  reef_coral_mound: [0.03, 0.1, 0.97, 1.0],
+  reef_kelp_frond: [0.15, 0.03, 0.85, 0.97],
 };
 
 export interface ReefPieceSpec {

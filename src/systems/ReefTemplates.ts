@@ -8,6 +8,13 @@ import type { ReefClusterSpec, ReefPieceSpec } from "@/entities/ReefCluster";
  * hueco ahí; solo la escala/rotación de cada pieza tiene un jitter
  * pequeño (ver JITTER_*) para que dos usos de la misma plantilla no sean
  * pixel-idénticos, sin cambiar la composición en sí.
+ *
+ * Piezas: `reef_coral_mass`/`reef_rock_formation`/`reef_kelp_frond`/
+ * `reef_coral_mound` se generaron juntas encadenando referencias (cada
+ * pieza nueva usa la anterior como ancla adicional, ver docs/
+ * style_anchors.md) para que se lean como UN conjunto correlacionado —
+ * pedido explícito del usuario tras rechazar la primera tanda, que
+ * mezclaba piezas generadas por separado sin esa correlación.
  */
 
 const JITTER_SCALE = 0.06;
@@ -36,36 +43,33 @@ function piece(p: PieceInput): ReefPieceSpec {
  */
 function diagonalLeft(worldWidth: number, centerY: number): ReefClusterSpec {
   const pieces: ReefPieceSpec[] = [
-    piece({ key: "reef_rock_cluster", x: worldWidth * 0.14, y: centerY + 150, scale: 0.34, rotation: -0.04, role: "obstacle" }),
-    piece({ key: "coral", x: worldWidth * 0.23, y: centerY + 45, scale: 0.55, rotation: 0.08, role: "obstacle" }),
+    piece({ key: "reef_coral_mound", x: worldWidth * 0.13, y: centerY + 155, scale: 0.34, rotation: -0.03, role: "obstacle" }),
+    piece({ key: "reef_rock_formation", x: worldWidth * 0.22, y: centerY + 40, scale: 0.32, rotation: 0.02, role: "obstacle" }),
+    piece({ key: "reef_coral_mass", x: worldWidth * 0.31, y: centerY - 90, scale: 0.4, rotation: -0.04, role: "obstacle" }),
     piece({
-      key: "reef_coral_fan",
-      x: worldWidth * 0.31,
-      y: centerY - 70,
+      key: "reef_kelp_frond",
+      x: worldWidth * 0.36,
+      y: centerY - 190,
       scale: 0.32,
-      rotation: -0.03,
-      role: "obstacle",
-      flipX: Math.random() < 0.5,
+      rotation: 0.04,
+      role: "decoration",
     }),
-    piece({ key: "reef_rock_cluster", x: worldWidth * 0.37, y: centerY - 175, scale: 0.22, rotation: 0.05, role: "obstacle" }),
     // Decoración: crece pegada a los obstáculos, sin colisión.
-    piece({ key: "decor_starfish", x: worldWidth * 0.2, y: centerY + 5, scale: 0.3, role: "decoration" }),
-    piece({ key: "decor_pebble", x: worldWidth * 0.11, y: centerY + 195, scale: 0.35, role: "decoration" }),
-    piece({ key: "decor_shell", x: worldWidth * 0.34, y: centerY - 130, scale: 0.28, role: "decoration" }),
+    piece({ key: "decor_starfish", x: worldWidth * 0.19, y: centerY - 30, scale: 0.28, role: "decoration" }),
+    piece({ key: "decor_pebble", x: worldWidth * 0.1, y: centerY + 200, scale: 0.32, role: "decoration" }),
+    piece({ key: "decor_shell", x: worldWidth * 0.32, y: centerY - 145, scale: 0.26, role: "decoration" }),
     // Fondo: un eco pequeño y difuminado del arrecife más allá del hueco,
     // para dar profundidad sin ocupar la ruta.
-    piece({ key: "reef_coral_fan", x: worldWidth * 0.86, y: centerY - 30, scale: 0.12, role: "background", alpha: 0.5 }),
-    // Primer plano: una punta pequeña justo al borde del carril libre.
-    piece({ key: "decor_pebble", x: worldWidth * 0.44, y: centerY + 165, scale: 0.16, role: "foreground", alpha: 0.9 }),
+    piece({ key: "reef_coral_mass", x: worldWidth * 0.87, y: centerY - 30, scale: 0.1, role: "background", alpha: 0.45 }),
   ];
 
   const path = [
-    { x: worldWidth * 0.62, y: centerY + 175 },
-    { x: worldWidth * 0.72, y: centerY },
-    { x: worldWidth * 0.68, y: centerY - 175 },
+    { x: worldWidth * 0.63, y: centerY + 185 },
+    { x: worldWidth * 0.73, y: centerY },
+    { x: worldWidth * 0.69, y: centerY - 185 },
   ];
 
-  return { pieces, path, yTop: centerY - 230, yBottom: centerY + 230 };
+  return { pieces, path, yTop: centerY - 250, yBottom: centerY + 250 };
 }
 
 /**
@@ -77,38 +81,31 @@ function diagonalLeft(worldWidth: number, centerY: number): ReefClusterSpec {
  */
 function centerTwoPaths(worldWidth: number, centerY: number): ReefClusterSpec {
   const pieces: ReefPieceSpec[] = [
-    piece({ key: "reef_rock_cluster", x: worldWidth * 0.45, y: centerY + 40, scale: 0.36, rotation: -0.02, role: "obstacle" }),
-    piece({
-      key: "reef_coral_fan",
-      x: worldWidth * 0.54,
-      y: centerY - 65,
-      scale: 0.3,
-      rotation: 0.03,
-      role: "obstacle",
-      flipX: true,
-    }),
-    piece({ key: "coral", x: worldWidth * 0.59, y: centerY + 125, scale: 0.42, rotation: -0.06, role: "obstacle" }),
-    piece({ key: "decor_starfish", x: worldWidth * 0.38, y: centerY + 90, scale: 0.3, role: "decoration" }),
-    piece({ key: "decor_shell", x: worldWidth * 0.63, y: centerY - 110, scale: 0.3, role: "decoration" }),
-    piece({ key: "decor_pebble", x: worldWidth * 0.5, y: centerY + 180, scale: 0.3, role: "decoration" }),
-    piece({ key: "reef_rock_cluster", x: worldWidth * 0.12, y: centerY - 10, scale: 0.1, role: "background", alpha: 0.45 }),
+    piece({ key: "reef_rock_formation", x: worldWidth * 0.44, y: centerY + 50, scale: 0.32, rotation: -0.02, role: "obstacle" }),
+    piece({ key: "reef_coral_mass", x: worldWidth * 0.53, y: centerY - 70, scale: 0.4, rotation: 0.02, role: "obstacle" }),
+    piece({ key: "reef_coral_mound", x: worldWidth * 0.59, y: centerY + 130, scale: 0.34, rotation: -0.03, role: "obstacle" }),
+    piece({ key: "reef_kelp_frond", x: worldWidth * 0.47, y: centerY - 170, scale: 0.3, role: "decoration" }),
+    piece({ key: "decor_starfish", x: worldWidth * 0.37, y: centerY + 95, scale: 0.3, role: "decoration" }),
+    piece({ key: "decor_shell", x: worldWidth * 0.64, y: centerY - 100, scale: 0.3, role: "decoration" }),
+    piece({ key: "decor_pebble", x: worldWidth * 0.5, y: centerY + 195, scale: 0.3, role: "decoration" }),
+    piece({ key: "reef_rock_formation", x: worldWidth * 0.12, y: centerY - 10, scale: 0.09, role: "background", alpha: 0.4 }),
   ];
 
   // Camino "cómodo": el canal derecho, más ancho.
   const path = [
-    { x: worldWidth * 0.8, y: centerY + 175 },
-    { x: worldWidth * 0.83, y: centerY },
-    { x: worldWidth * 0.79, y: centerY - 175 },
+    { x: worldWidth * 0.81, y: centerY + 185 },
+    { x: worldWidth * 0.84, y: centerY },
+    { x: worldWidth * 0.8, y: centerY - 185 },
   ];
 
   // Un par de monedas sueltas en el canal izquierdo (más estrecho) — no un
   // trazado completo, solo la recompensa puntual de arriesgarse por ahí.
   const riskyBonus = [
-    { x: worldWidth * 0.19, y: centerY + 60 },
-    { x: worldWidth * 0.22, y: centerY - 60 },
+    { x: worldWidth * 0.18, y: centerY + 65 },
+    { x: worldWidth * 0.21, y: centerY - 65 },
   ];
 
-  return { pieces, path: [...path, ...riskyBonus.map((p) => ({ ...p, y: p.y }))], yTop: centerY - 220, yBottom: centerY + 220 };
+  return { pieces, path: [...path, ...riskyBonus], yTop: centerY - 230, yBottom: centerY + 230 };
 }
 
 /**
@@ -118,38 +115,40 @@ function centerTwoPaths(worldWidth: number, centerY: number): ReefClusterSpec {
  * salto de carril. Ver brief, ejemplo 6.
  */
 function sCurveEdges(worldWidth: number, centerY: number): ReefClusterSpec {
-  const topY = centerY - 160;
+  const topY = centerY - 170;
   const midY = centerY;
-  const bottomY = centerY + 160;
+  const bottomY = centerY + 170;
 
   const pieces: ReefPieceSpec[] = [
     // Banda superior: entra por la izquierda.
-    piece({ key: "reef_rock_cluster", x: worldWidth * 0.15, y: topY, scale: 0.4, rotation: -0.03, role: "obstacle" }),
-    piece({ key: "reef_coral_fan", x: worldWidth * 0.32, y: topY - 20, scale: 0.28, rotation: -0.05, role: "obstacle" }),
-    piece({ key: "decor_shell", x: worldWidth * 0.24, y: topY + 60, scale: 0.28, role: "decoration" }),
+    piece({ key: "reef_rock_formation", x: worldWidth * 0.14, y: topY, scale: 0.34, rotation: -0.02, role: "obstacle" }),
+    piece({ key: "reef_coral_mass", x: worldWidth * 0.3, y: topY - 30, scale: 0.34, rotation: -0.04, role: "obstacle" }),
+    piece({ key: "reef_kelp_frond", x: worldWidth * 0.22, y: topY + 70, scale: 0.26, role: "decoration" }),
 
     // Banda media: entra por la derecha.
-    piece({ key: "coral", x: worldWidth * 0.68, y: midY, scale: 0.5, rotation: 0.05, role: "obstacle" }),
-    piece({ key: "reef_rock_cluster", x: worldWidth * 0.85, y: midY + 10, scale: 0.28, rotation: 0.02, role: "obstacle" }),
-    piece({ key: "decor_starfish", x: worldWidth * 0.75, y: midY - 70, scale: 0.3, role: "decoration" }),
+    piece({ key: "reef_coral_mound", x: worldWidth * 0.7, y: midY, scale: 0.36, rotation: 0.03, role: "obstacle" }),
+    piece({ key: "reef_rock_formation", x: worldWidth * 0.86, y: midY + 10, scale: 0.28, rotation: 0.02, role: "obstacle" }),
+    piece({ key: "decor_starfish", x: worldWidth * 0.77, y: midY - 80, scale: 0.3, role: "decoration" }),
 
     // Banda inferior: entra por la izquierda otra vez, con distinto
     // alcance que la superior (para que no se lea como un espejo).
-    piece({ key: "reef_coral_fan", x: worldWidth * 0.19, y: bottomY, scale: 0.3, rotation: 0.04, role: "obstacle" }),
-    piece({ key: "coral", x: worldWidth * 0.33, y: bottomY + 15, scale: 0.4, rotation: -0.03, role: "obstacle" }),
-    piece({ key: "decor_pebble", x: worldWidth * 0.27, y: bottomY - 70, scale: 0.3, role: "decoration" }),
+    piece({ key: "reef_coral_mound", x: worldWidth * 0.18, y: bottomY, scale: 0.3, rotation: 0.04, role: "obstacle" }),
+    piece({ key: "reef_coral_mass", x: worldWidth * 0.33, y: bottomY + 20, scale: 0.32, rotation: -0.03, role: "obstacle" }),
+    piece({ key: "decor_pebble", x: worldWidth * 0.26, y: bottomY - 80, scale: 0.3, role: "decoration" }),
   ];
 
-  // La ruta serpentea: derecha (abajo) -> izquierda (medio) -> derecha (arriba).
+  // La ruta serpentea: derecha (abajo) -> izquierda (medio) -> derecha
+  // (arriba), pasando bien lejos de la masa de la banda media (que ocupa
+  // hasta ~0.6W) en los tramos de transición, no cortando por encima.
   const path = [
-    { x: worldWidth * 0.76, y: bottomY + 15 },
-    { x: worldWidth * 0.52, y: bottomY - 90 },
-    { x: worldWidth * 0.35, y: midY },
-    { x: worldWidth * 0.55, y: topY + 90 },
-    { x: worldWidth * 0.78, y: topY - 20 },
+    { x: worldWidth * 0.82, y: bottomY + 20 },
+    { x: worldWidth * 0.6, y: bottomY - 100 },
+    { x: worldWidth * 0.32, y: midY },
+    { x: worldWidth * 0.6, y: topY + 100 },
+    { x: worldWidth * 0.84, y: topY - 30 },
   ];
 
-  return { pieces, path, yTop: centerY - 280, yBottom: centerY + 280 };
+  return { pieces, path, yTop: centerY - 300, yBottom: centerY + 300 };
 }
 
 export const REEF_TEMPLATES: ((worldWidth: number, centerY: number) => ReefClusterSpec)[] = [

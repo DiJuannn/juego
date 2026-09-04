@@ -187,7 +187,11 @@ export const SHIELD_AURA_ALPHA = 0.55;
 // (arco/línea, ver CoinSpawner) en vez de puntos sueltos al azar, para que
 // su trazado sugiera por dónde conviene pasar — la mayoría en el centro
 // "seguro", algún grupo ocasional más al lado como recompensa de riesgo.
-export const COIN_SCALE = 0.11;
+// Pedido explícito: eran demasiado grandes (a 0.11 sobre la textura vieja
+// de 791px medían ~87px, más que COIN_GROUP_SPACING=70 — se solapaban
+// entre sí dentro del mismo grupo). La textura nueva (508px) a 0.08 mide
+// ~41px, con margen de sobra respecto al espaciado del grupo.
+export const COIN_SCALE = 0.08;
 export const COIN_GROUP_MIN_GAP = 500;
 export const COIN_GROUP_MAX_GAP = 850;
 export const COIN_GROUP_SIZE_MIN = 3;
