@@ -57,12 +57,16 @@ export class Shark {
     if (this.sprite.x >= this.maxX && this.direction === 1) {
       this.direction = -1;
       this.sprite.setFlipX(false);
-      this.sprite.setVelocityX(SHARK_PATROL_SPEED * this.direction);
     } else if (this.sprite.x <= this.minX && this.direction === -1) {
       this.direction = 1;
       this.sprite.setFlipX(true);
-      this.sprite.setVelocityX(SHARK_PATROL_SPEED * this.direction);
     }
+    // Reafirmar la velocidad TODOS los frames, no solo al girar: al añadir
+    // el sprite al grupo físico de Phaser (ver SharkSpawner), el grupo
+    // resetea la velocidad a 0 justo después de que el constructor la fija
+    // — sin esto el tiburón se quedaba parado para siempre (nunca llegaba a
+    // un borde para volver a fijarla).
+    this.sprite.setVelocityX(SHARK_PATROL_SPEED * this.direction);
 
     this.sprite.y = this.baseY + Math.sin(t * BOB_SPEED + this.phase) * BOB_AMPLITUDE;
     this.sprite.rotation = Math.sin(t * BOB_SPEED + this.phase) * TILT_AMOUNT * this.direction;

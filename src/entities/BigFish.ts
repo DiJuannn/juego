@@ -45,12 +45,15 @@ export class BigFish {
     if (this.sprite.x >= this.maxX && this.direction === 1) {
       this.direction = -1;
       this.sprite.setFlipX(true);
-      this.sprite.setVelocityX(BIG_FISH_PATROL_SPEED * this.direction);
     } else if (this.sprite.x <= this.minX && this.direction === -1) {
       this.direction = 1;
       this.sprite.setFlipX(false);
-      this.sprite.setVelocityX(BIG_FISH_PATROL_SPEED * this.direction);
     }
+    // Igual que el tiburón: reafirmar cada frame, no solo al girar — el
+    // grupo físico resetea la velocidad a 0 justo después de que el
+    // constructor la fija (ver BigFishSpawner), si no el pez se queda
+    // parado para siempre.
+    this.sprite.setVelocityX(BIG_FISH_PATROL_SPEED * this.direction);
 
     this.sprite.y = this.baseY + Math.sin(t * BOB_SPEED + this.phase) * BOB_AMPLITUDE;
   }

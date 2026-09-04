@@ -29,12 +29,11 @@ export const LUMI_SCALE = 0.075 * 3 * 1.2;
 // Pedido explícito: Lumi se sentía lenta. Subido desde 220.
 export const LUMI_SWIM_SPEED = 260; // px/seg
 
-// El arte de swim_right/swim_left está dibujado sensiblemente más grande
-// que el de idle/swim_up/diagonal dentro del mismo lienzo (~57% más grande
-// de cabeza a cabeza, medido) — no es una pose distinta, es una
-// inconsistencia real del asset. Se corrige por código con un multiplicador
-// extra solo en esos dos estados en vez de regenerar el arte.
-export const SWIM_SIDE_SCALE_CORRECTION = 0.64;
+// El arte de swim_right/swim_left está dibujado algo más grande que el de
+// idle/swim_up/diagonal dentro del mismo lienzo. La corrección de 0.64 fue
+// pedido explícito de bajarla: se notaba demasiado el cambio de tamaño al
+// pasar a nadar de lado y se veía mal. Se deja solo un ajuste leve del 15%.
+export const SWIM_SIDE_SCALE_CORRECTION = 0.85;
 
 // Hundimiento suave cuando Lumi no nada activamente: sin esto no habría
 // tensión ninguna en un juego de escalada (podrías quedarte quieta para
@@ -65,8 +64,8 @@ export const JELLYFISH_SCALE = 0.16;
 // (px/seg) sin parar, mucho más despacio que nadar a tope, para que exista
 // presión incluso si el jugador va despacio. Si Lumi sube más rápido que
 // esto, manda su propia velocidad (ver PondScene.update). Pedido explícito:
-// un poco más rápido que antes.
-export const CAMERA_AUTO_RISE_SPEED = 30;
+// otro +40% sobre el valor anterior (30 -> 42).
+export const CAMERA_AUTO_RISE_SPEED = 42;
 
 // Tiburones: segundo enemigo, "poco a poco" tras la medusa — empiezan a
 // aparecer más arriba (altura ~300, dentro de la Zona 1) y patrullan de
