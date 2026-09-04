@@ -44,6 +44,16 @@ funciona **hoy**, verificado en el código — no lo que el diseño aspira a ten
   Gemini a partir de ella (cola extendida / en S con brazos abiertos / enroscada
   arriba). Verificado sin residuo de sombra contra fondo negro y sin doble
   cabeza/fantasma (blend 50/50 contra el ancla) antes de integrar.
+- **Bug crítico arreglado**: las hitboxes de Jellyfish/Urchin/Shark/Squid/
+  BigFish (y el `ReefCluster` nuevo) medían 2 a 3.5 veces más que el dibujo
+  visible en cada dimensión — Phaser no escala `body.setSize()/setOffset()`
+  con el `setScale()` del sprite, y el código pasaba píxeles nativos sin
+  corregir por la escala real. Lumi moría por golpes que visualmente
+  esquivaba sin problema ("no se puede jugar, es imposible pasar",
+  reportado por el usuario). Arreglado multiplicando por `scale` en las 6
+  llamadas. Verificado con un probe numérico (hitbox ≈ 45-65% del sprite en
+  los 5 casos, antes 200-350%) y un playtest automatizado (zigzag simple
+  sin esquiva real, sobrevive sin un golpe hasta altura 516).
 
 # EN PROGRESO
 
@@ -68,12 +78,22 @@ funciona **hoy**, verificado en el código — no lo que el diseño aspira a ten
   repetirse, piezas sustanciales y correlacionadas, monedas sin solape.
   **Pendiente de aprobación visual del usuario antes de generalizarlo al
   resto de la Zona 1** — es el pedido explícito, no está aprobado todavía.
+  Dirección de arquitectura ya confirmada por el usuario: el fondo pintado
+  (ver siguiente punto) es decoración pura, `ReefCluster` sigue siendo el
+  sistema real de colisión — con piezas que entran desde los laterales
+  para complementar visualmente al fondo.
+- Primer fondo de escena pintado con Gemini (formato vertical 9:16, sin
+  transparencia — ver `scripts/gen_asset.py --background --aspect-ratio`,
+  ambos flags nuevos) generado a partir de un prompt del usuario. Resultado
+  aprobado visualmente pero **todavía no integrado en el juego** (solo en
+  `/tmp`, no en `assets/`) — falta generar más secciones variadas para el
+  scroll infinito y decidir cómo se ancla/recicla verticalmente.
 
 # PENDIENTE
 
-- Aprobación del usuario del prototipo de `ReefCluster` de arriba, y si se
-  aprueba, generalizarlo al resto de la Zona 1 (sustituyendo del todo al
-  coral estrecho anterior) — más piezas de la librería si hacen falta.
+- Aprobación del usuario del prototipo de `ReefCluster` (ver EN PROGRESO).
+- Generar más secciones del fondo pintado + integrarlo en el juego
+  (reemplaza o complementa a `background_far.png`/`rocks_back.png`).
 - Arte y diseño propios para la Zona 2 ("Arrecife") en adelante.
 - Conectar la animación de "dormir" (`sleep/`, el asset ya existe) a un trigger
   real de inactividad del jugador — hoy no se usa en ningún sitio del código.
@@ -90,14 +110,19 @@ funciona **hoy**, verificado en el código — no lo que el diseño aspira a ten
 
 # PRÓXIMA TAREA
 
-Esperar la aprobación visual del usuario sobre el prototipo de `ReefCluster`
-(ver EN PROGRESO) antes de tocar más Zona 1 — es un requisito explícito, no
-generalizar el enfoque sin ese visto bueno. Si se aprueba: generalizarlo
-(sustituir del todo el coral estrecho anterior) y de paso retocar la nota
-menor del trazado de monedas en la plantilla "curva en S". Si se pide
-cambiar el enfoque, iterar sobre las 3 plantillas antes de generar más.
+Dirección de arquitectura ya confirmada por el usuario (fondo pintado =
+decoración pura, `ReefCluster` = colisión real, con piezas entrando desde
+los laterales) — falta:
 
-Después de eso (o si el usuario prefiere dejar esto en pausa): corregir la
-continuidad del fondo (`background_far.png` / `ParallaxLayer`) — la
-decoración se concentra en una franja y deja un tramo largo vacío antes de
-repetirse. Ver detalle en GAME_DESIGN.md (sección ENVIRONMENT).
+1. Generar más secciones del fondo pintado (formato vertical, mismo estilo
+   que la primera aprobada) e integrarlas en el juego (`assets/`, wiring en
+   `ParallaxLayer`/`BootScene`), decidiendo cómo se reciclan verticalmente
+   para el scroll infinito.
+2. Retomar el prototipo de `ReefCluster` (3 plantillas, ver EN PROGRESO):
+   sigue pendiente de aprobación visual antes de generalizarlo al resto de
+   la Zona 1 — no generalizar sin ese visto bueno explícito.
+
+Después de eso: corregir la continuidad del fondo actual (franja decorada
+seguida de un tramo largo vacío) — puede que quede resuelto de paso al
+generar las nuevas secciones del punto 1. Ver detalle en GAME_DESIGN.md
+(sección ENVIRONMENT).
