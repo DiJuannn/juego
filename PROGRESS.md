@@ -39,6 +39,11 @@ funciona **hoy**, verificado en el código — no lo que el diseño aspira a ten
 - Corriente de agua (`CurrentZone`) al final de la Zona 1.
 - Sistema de zonas (`ZoneManager`/`ZoneConfig`): tinte de profundidad progresivo
   por altura — funciona como sistema, pero solo la Zona 1 tiene arte propio.
+- Ciclo de animación swim_up regenerado por completo: `swim_up_02.png` (la
+  referencia limpia del usuario) como ancla + 3 frames nuevos generados con
+  Gemini a partir de ella (cola extendida / en S con brazos abiertos / enroscada
+  arriba). Verificado sin residuo de sombra contra fondo negro y sin doble
+  cabeza/fantasma (blend 50/50 contra el ancla) antes de integrar.
 
 # EN PROGRESO
 
@@ -60,21 +65,13 @@ funciona **hoy**, verificado en el código — no lo que el diseño aspira a ten
 
 # BUGS / PROBLEMAS
 
-- **swim_up_01.png, swim_up_03.png y swim_up_04.png**: probablemente conservan un
-  residuo de la mancha/sombra oscura cerca de la cabeza que el usuario reportó.
-  `swim_up_02.png` ya se reemplazó por una referencia limpia que el usuario
-  proporcionó directamente, pero los otros 3 frames solo pasaron por una
-  limpieza heurística por píxeles que **no llegó a verificarse como
-  satisfactoria** (el propio usuario indicó que el defecto seguía sin verse
-  bien tras dos intentos). Necesitan revisión con el mismo estándar que 02
-  (comparar contra fondo negro, no solo blanco/azul) antes de darlos por buenos.
 - Fondo sin distribución continua de decoración (ver PENDIENTE arriba).
 
 # PRÓXIMA TAREA
 
-Revisar `swim_up_01.png`, `swim_up_03.png` y `swim_up_04.png` contra un
-composite de fondo **negro** (no blanco/azul, que puede ocultar el defecto) para
-confirmar si conservan el mismo residuo de sombra que tenía `swim_up_02.png`
-antes de reemplazarlo; si lo tienen, pedir al usuario referencias limpias
-equivalentes (el método que sí funcionó) en vez de reintentar la limpieza
-heurística por píxeles, que ya falló dos veces.
+Corregir la continuidad del fondo (`background_far.png` / `ParallaxLayer`): la
+decoración se concentra en una franja y deja un tramo largo vacío antes de
+repetirse. Probablemente requiera regenerar/ampliar el asset con más elementos
+repartidos de forma pareja en todo el alto del tile, o añadir una capa
+decorativa adicional que rellene los huecos — ver detalle en GAME_DESIGN.md
+(sección ENVIRONMENT) y la tarea ya encolada por el usuario.
