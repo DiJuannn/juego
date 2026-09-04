@@ -54,17 +54,20 @@ funciona **hoy**, verificado en el código — no lo que el diseño aspira a ten
   `ReefClusterSpawner`, sustituye a `CoralWall`/`CoralSpawner`, que se
   quedan intactos sin usarse por si hay que revertir): **solo el prototipo
   de 2-3 composiciones está hecho** (diagonal desde un lado, masa central
-  con dos caminos, curva en S entrando por los bordes), con 3 piezas nuevas
-  generadas con Gemini (`coral_fan`, `rock_cluster`, `seaweed_frond`) y 4
-  capas de profundidad (fondo/decoración/obstáculo/primer plano). Verificado
-  con Playwright: las 3 plantillas ciclan sin repetirse, generan una
-  composición orgánica de varias piezas (no una pared de un solo asset), y
-  las monedas trazan la ruta curva real. **Pendiente de aprobación visual
-  del usuario antes de generalizarlo al resto de la Zona 1** — es el pedido
-  explícito, no está aprobado todavía. Nota menor detectada: en la
-  plantilla "curva en S", los tramos de transición del trazado de monedas
-  entre bandas pasan un poco cerca (visualmente, no de colisión) del
-  obstáculo de la banda central — retocar si se aprueba el enfoque.
+  con dos caminos, curva en S entrando por los bordes), con 4 capas de
+  profundidad (fondo/decoración/obstáculo/primer plano). Primera tanda de
+  piezas (`coral_fan`/`rock_cluster`/`seaweed_frond`) rechazada por el
+  usuario ("horribles, no funcionan como obstáculos de mapa") — sustituida
+  por un conjunto nuevo generado ENCADENANDO referencias (cada pieza usa
+  la anterior como ancla) para que se lean como un conjunto correlacionado
+  y con más presencia visual: `coral_mass` (masa densa, pieza principal),
+  `rock_formation`, `coral_mound`, `kelp_frond`. Moneda también rediseñada
+  (pearla dorada nacarada) y reducida de escala 0.11 a 0.08 — a la escala
+  vieja medían más que la separación entre monedas del grupo y se
+  solapaban. Verificado con Playwright: las 3 plantillas ciclan sin
+  repetirse, piezas sustanciales y correlacionadas, monedas sin solape.
+  **Pendiente de aprobación visual del usuario antes de generalizarlo al
+  resto de la Zona 1** — es el pedido explícito, no está aprobado todavía.
 
 # PENDIENTE
 
