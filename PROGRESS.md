@@ -62,26 +62,29 @@ funciona **hoy**, verificado en el código — no lo que el diseño aspira a ten
   tienen arte, obstáculos ni identidad visual propios todavía.
 - Rediseño de los obstáculos ambientales de la Zona 1 (`ReefCluster`/
   `ReefClusterSpawner`, sustituye a `CoralWall`/`CoralSpawner`, que se
-  quedan intactos sin usarse por si hay que revertir): **solo el prototipo
-  de 2-3 composiciones está hecho** (diagonal desde un lado, masa central
-  con dos caminos, curva en S entrando por los bordes), con 4 capas de
-  profundidad (fondo/decoración/obstáculo/primer plano). Primera tanda de
-  piezas (`coral_fan`/`rock_cluster`/`seaweed_frond`) rechazada por el
-  usuario ("horribles, no funcionan como obstáculos de mapa") — sustituida
-  por un conjunto nuevo generado ENCADENANDO referencias (cada pieza usa
-  la anterior como ancla) para que se lean como un conjunto correlacionado
-  y con más presencia visual: `coral_mass` (masa densa, pieza principal),
-  `rock_formation`, `coral_mound`, `kelp_frond`. Moneda también rediseñada
-  (pearla dorada nacarada) y reducida de escala 0.11 a 0.08 — a la escala
-  vieja medían más que la separación entre monedas del grupo y se
-  solapaban. Verificado con Playwright: las 3 plantillas ciclan sin
-  repetirse, piezas sustanciales y correlacionadas, monedas sin solape.
+  quedan intactos sin usarse por si hay que revertir): **prototipo con 4
+  composiciones** (diagonal desde un lado, masa central con dos caminos,
+  curva en S entrando por los bordes, y pared lateral que crece desde un
+  borde del mundo — la más nueva, pedido explícito del usuario: "objetos
+  que salen por la izquierda o laterales... haciendo que el ajolote tenga
+  que cambiar de ruta"), con 4 capas de profundidad (fondo/decoración/
+  obstáculo/primer plano). Primera tanda de piezas (`coral_fan`/
+  `rock_cluster`/`seaweed_frond`) rechazada por el usuario ("horribles, no
+  funcionan como obstáculos de mapa") — sustituida por un conjunto nuevo
+  generado ENCADENANDO referencias (cada pieza usa la anterior como ancla)
+  para que se lean como un conjunto correlacionado y con más presencia
+  visual: `coral_mass` (masa densa, pieza principal), `rock_formation`,
+  `coral_mound`, `kelp_frond`. Moneda también rediseñada (perla dorada
+  nacarada) y reducida de escala 0.11 a 0.08 — a la escala vieja medían
+  más que la separación entre monedas del grupo y se solapaban. Verificado
+  con Playwright: las 4 plantillas ciclan sin repetirse, piezas
+  sustanciales y correlacionadas, monedas sin solape, la pared lateral se
+  lee claramente "saliendo del borde" en ambos lados (izquierda/derecha).
   **Pendiente de aprobación visual del usuario antes de generalizarlo al
   resto de la Zona 1** — es el pedido explícito, no está aprobado todavía.
   Dirección de arquitectura ya confirmada por el usuario: el fondo pintado
   (ver siguiente punto) es decoración pura, `ReefCluster` sigue siendo el
-  sistema real de colisión — con piezas que entran desde los laterales
-  para complementar visualmente al fondo.
+  sistema real de colisión.
 - Primer fondo de escena pintado con Gemini (formato vertical 9:16, sin
   transparencia — ver `scripts/gen_asset.py --background --aspect-ratio`,
   ambos flags nuevos) generado a partir de un prompt del usuario. Resultado
@@ -118,7 +121,7 @@ los laterales) — falta:
    que la primera aprobada) e integrarlas en el juego (`assets/`, wiring en
    `ParallaxLayer`/`BootScene`), decidiendo cómo se reciclan verticalmente
    para el scroll infinito.
-2. Retomar el prototipo de `ReefCluster` (3 plantillas, ver EN PROGRESO):
+2. Retomar el prototipo de `ReefCluster` (4 plantillas, ver EN PROGRESO):
    sigue pendiente de aprobación visual antes de generalizarlo al resto de
    la Zona 1 — no generalizar sin ese visto bueno explícito.
 
