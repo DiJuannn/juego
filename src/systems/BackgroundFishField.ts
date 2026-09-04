@@ -15,11 +15,29 @@ export const FISH_KEYS = Array.from({ length: 16 }, (_, i) => i + 1)
   .filter((n) => !EXCLUDED_FISH.has(n))
   .map((n) => `fish_${String(n).padStart(2, "0")}`);
 
-interface FishState {
-  sprite: Phaser.GameObjects.Image;
+// Pedido explícito (revisión de Zona 1): fauna ambiental "en cardumen", no
+// cada pez derivando de forma totalmente independiente. Se agrupan en
+// grupos pequeños (2-4) que comparten dirección/velocidad — cada miembro
+// mantiene un offset fijo respecto al "ancla" del grupo (que se mueve como
+// llevaría el líder) más su propio balanceo individual, así el grupo se
+// lee como una unidad sin necesitar boids de verdad para algo puramente
+// decorativo.
+const SCHOOL_SIZE_MIN = 2;
+const SCHOOL_SIZE_MAX = 4;
+const MEMBER_OFFSET_SPACING = 34;
+
+interface School {
+  anchorX: number;
+  anchorY: number;
   speed: number;
   direction: 1 | -1;
-  baseY: number;
+}
+
+interface FishState {
+  sprite: Phaser.GameObjects.Image;
+  school: School;
+  offsetX: number;
+  offsetY: number;
   bobPhase: number;
   bobSpeed: number;
   bobAmplitude: number;
@@ -29,6 +47,7 @@ interface FishState {
 
 export class BackgroundFishField {
   private fish: FishState[] = [];
+  private schools: School[] = [];
   private worldWidth: number;
   private scrollFactor: number;
 
@@ -43,68 +62,88 @@ export class BackgroundFishField {
     this.worldWidth = worldWidth;
     this.scrollFactor = scrollFactor;
 
-    for (let i = 0; i < count; i++) {
-      const key = Phaser.Utils.Array.GetRandom(FISH_KEYS);
-      const direction: 1 | -1 = Math.random() < 0.5 ? 1 : -1;
-      const x = Phaser.Math.Between(0, worldWidth);
-      const baseY = Phaser.Math.Between(initialViewHeight * 0.15, initialViewHeight * 0.85);
-      const scale = Phaser.Math.FloatBetween(0.12, 0.22);
+    let remaining = count;
+    while (remaining > 0) {
+      const size = Math.min(remaining, Phaser.Math.Between(SCHOOL_SIZE_MIN, SCHOOL_SIZE_MAX));
+      remaining -= size;
 
-      const sprite = scene.add
-        .image(x, baseY, key)
-        .setScale(scale)
-        .setScrollFactor(scrollFactor)
-        .setDepth(depth)
-        .setAlpha(0.8)
-        .setTint(0xcfe6ff);
-      // El arte original mira a la derecha; si nada a la izquierda se voltea.
-      sprite.setFlipX(direction === -1);
+      const school: School = {
+        anchorX: Phaser.Math.Between(0, worldWidth),
+        anchorY: Phaser.Math.Between(initialViewHeight * 0.15, initialViewHeight * 0.85),
+        speed: Phaser.Math.FloatBetween(12, 26),
+        direction: Math.random() < 0.5 ? 1 : -1,
+      };
+      this.schools.push(school);
 
-      this.fish.push({
-        sprite,
-        speed: Phaser.Math.FloatBetween(12, 28),
-        direction,
-        baseY,
-        bobPhase: Phaser.Math.FloatBetween(0, Math.PI * 2),
-        bobSpeed: Phaser.Math.FloatBetween(0.6, 1.1),
-        bobAmplitude: Phaser.Math.FloatBetween(6, 14),
-        wagPhase: Phaser.Math.FloatBetween(0, Math.PI * 2),
-        wagSpeed: Phaser.Math.FloatBetween(2.5, 4),
-      });
+      for (let i = 0; i < size; i++) {
+        const key = Phaser.Utils.Array.GetRandom(FISH_KEYS);
+        const scale = Phaser.Math.FloatBetween(0.12, 0.2);
+        // Offsets en abanico alrededor del ancla, no en fila india — un
+        // grupo real no nada en columna perfecta.
+        const offsetX = (i - (size - 1) / 2) * MEMBER_OFFSET_SPACING + Phaser.Math.FloatBetween(-6, 6);
+        const offsetY = Phaser.Math.FloatBetween(-16, 16);
+
+        const sprite = scene.add
+          .image(school.anchorX + offsetX, school.anchorY + offsetY, key)
+          .setScale(scale)
+          .setScrollFactor(scrollFactor)
+          .setDepth(depth)
+          .setAlpha(0.8)
+          .setTint(0xcfe6ff);
+        // El arte original mira a la derecha; si nada a la izquierda se voltea.
+        sprite.setFlipX(school.direction === -1);
+
+        this.fish.push({
+          sprite,
+          school,
+          offsetX,
+          offsetY,
+          bobPhase: Phaser.Math.FloatBetween(0, Math.PI * 2),
+          bobSpeed: Phaser.Math.FloatBetween(0.6, 1.1),
+          bobAmplitude: Phaser.Math.FloatBetween(6, 14),
+          wagPhase: Phaser.Math.FloatBetween(0, Math.PI * 2),
+          wagSpeed: Phaser.Math.FloatBetween(2.5, 4),
+        });
+      }
     }
   }
 
   update(time: number, delta: number, cameraScrollY: number, viewHeight: number) {
     const margin = 150;
-    for (const f of this.fish) {
-      f.sprite.x += f.speed * f.direction * (delta / 1000);
 
-      if (f.direction === 1 && f.sprite.x > this.worldWidth + margin) {
-        f.sprite.x = -margin;
-      } else if (f.direction === -1 && f.sprite.x < -margin) {
-        f.sprite.x = this.worldWidth + margin;
+    for (const school of this.schools) {
+      school.anchorX += school.speed * school.direction * (delta / 1000);
+      if (school.direction === 1 && school.anchorX > this.worldWidth + margin) {
+        school.anchorX = -margin;
+      } else if (school.direction === -1 && school.anchorX < -margin) {
+        school.anchorX = this.worldWidth + margin;
       }
 
-      // La cámara solo sube y esta capa tiene scrollFactor < 1, así que con
-      // el tiempo se queda "atrás" y cae por debajo de la pantalla. Cuando
-      // eso pasa, se recoloca justo por encima de la vista actual — igual
-      // que reciclar una capa de parallax infinita.
-      const screenY = f.baseY - cameraScrollY * this.scrollFactor;
+      // Igual que antes: la cámara solo sube y esta capa tiene scrollFactor
+      // < 1, así que el grupo se queda "atrás" — se recicla por delante de
+      // la vista actual cuando cae por debajo, todo el grupo a la vez para
+      // no romper la formación.
+      const screenY = school.anchorY - cameraScrollY * this.scrollFactor;
       if (screenY > viewHeight + margin) {
-        f.baseY = cameraScrollY * this.scrollFactor - Phaser.Math.Between(20, 200);
-        f.sprite.x = Phaser.Math.Between(0, this.worldWidth);
+        school.anchorY = cameraScrollY * this.scrollFactor - Phaser.Math.Between(20, 200);
+        school.anchorX = Phaser.Math.Between(0, this.worldWidth);
       }
+    }
 
-      f.sprite.y = f.baseY + Math.sin(time / 1000 * f.bobSpeed + f.bobPhase) * f.bobAmplitude;
+    for (const f of this.fish) {
+      f.sprite.x = f.school.anchorX + f.offsetX;
+      f.sprite.y =
+        f.school.anchorY + f.offsetY + Math.sin((time / 1000) * f.bobSpeed + f.bobPhase) * f.bobAmplitude;
 
       // Balanceo leve del cuerpo (rotación) para dar sensación de nado sin
       // necesitar frames nuevos: solo transforma la imagen existente.
-      f.sprite.rotation = Math.sin(time / 1000 * f.wagSpeed + f.wagPhase) * 0.09;
+      f.sprite.rotation = Math.sin((time / 1000) * f.wagSpeed + f.wagPhase) * 0.09;
     }
   }
 
   destroy() {
     for (const f of this.fish) f.sprite.destroy();
     this.fish = [];
+    this.schools = [];
   }
 }
