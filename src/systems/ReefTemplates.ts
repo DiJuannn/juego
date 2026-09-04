@@ -151,8 +151,57 @@ function sCurveEdges(worldWidth: number, centerY: number): ReefClusterSpec {
   return { pieces, path, yTop: centerY - 300, yBottom: centerY + 300 };
 }
 
+/**
+ * 4) Pared lateral: una masa que crece desde UN borde del mundo (al azar,
+ * izquierda o derecha) hacia dentro, pegada al borde de verdad (la
+ * primera pieza empieza casi en x=0/worldWidth, algo se sale incluso) para
+ * que se lea como "la punta de algo mucho más grande que sigue fuera de
+ * pantalla", no como un objeto suelto colocado ahí — pedido explícito del
+ * usuario: "objetos que salen por la izquierda o laterales que
+ * complementen al fondo... haciendo que el ajolote tenga que cambiar de
+ * ruta". El lado contrario queda totalmente abierto.
+ */
+function lateralWall(worldWidth: number, centerY: number): ReefClusterSpec {
+  const side: "left" | "right" = Math.random() < 0.5 ? "left" : "right";
+  // Convierte una posición relativa al borde (0 = pegado al borde, hacia
+  // dentro conforme crece) a coordenada absoluta de mundo, según el lado.
+  const fromEdge = (relX: number) => (side === "left" ? relX * worldWidth : worldWidth - relX * worldWidth);
+
+  const pieces: ReefPieceSpec[] = [
+    // La pieza más cercana al borde se centra casi en el borde mismo (y un
+    // poco más allá, x negativa o > worldWidth es inofensivo: la cámara
+    // nunca llega ahí) — el resto de la masa "sigue" fuera de pantalla.
+    piece({ key: "reef_rock_formation", x: fromEdge(-0.02), y: centerY + 140, scale: 0.44, rotation: 0, role: "obstacle" }),
+    piece({ key: "reef_coral_mass", x: fromEdge(0.14), y: centerY - 40, scale: 0.48, rotation: 0, role: "obstacle" }),
+    piece({ key: "reef_coral_mound", x: fromEdge(0.28), y: centerY + 160, scale: 0.36, rotation: 0, role: "obstacle" }),
+    piece({ key: "reef_rock_formation", x: fromEdge(0.08), y: centerY - 190, scale: 0.3, rotation: 0, role: "obstacle" }),
+    piece({ key: "reef_kelp_frond", x: fromEdge(0.36), y: centerY - 60, scale: 0.32, role: "decoration" }),
+    piece({ key: "decor_starfish", x: fromEdge(0.2), y: centerY + 30, scale: 0.3, role: "decoration" }),
+    piece({ key: "decor_shell", x: fromEdge(0.32), y: centerY + 210, scale: 0.28, role: "decoration" }),
+    piece({ key: "decor_pebble", x: fromEdge(0.05), y: centerY + 240, scale: 0.3, role: "decoration" }),
+    // Fondo: un eco pequeño y difuminado del lado abierto, para que no se
+    // sienta completamente vacío sin invadir la ruta.
+    piece({ key: "reef_coral_mound", x: fromEdge(0.85), y: centerY + 10, scale: 0.1, role: "background", alpha: 0.4 }),
+  ];
+
+  // El carril libre queda en el lado contrario a la masa, con margen
+  // amplio (la masa solo ocupa ~40% del ancho del mundo) — la ruta guía
+  // serpentea dentro de ese espacio abierto, nunca pegada al borde
+  // opuesto ni en línea recta.
+  const openCenterX = side === "left" ? worldWidth * 0.72 : worldWidth * 0.28;
+  const path = [
+    { x: openCenterX - 40, y: centerY + 200 },
+    { x: openCenterX + 35, y: centerY + 20 },
+    { x: openCenterX - 25, y: centerY - 150 },
+    { x: openCenterX + 20, y: centerY - 260 },
+  ];
+
+  return { pieces, path, yTop: centerY - 300, yBottom: centerY + 300 };
+}
+
 export const REEF_TEMPLATES: ((worldWidth: number, centerY: number) => ReefClusterSpec)[] = [
   diagonalLeft,
   centerTwoPaths,
   sCurveEdges,
+  lateralWall,
 ];
