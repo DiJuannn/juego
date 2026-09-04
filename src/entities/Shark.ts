@@ -67,7 +67,11 @@ export class Shark {
     // Pedido explícito: hitbox ajustada al cuerpo real (no a las aletas ni
     // al hueco por encima/debajo) — medido sobre shark.png (1191x697), casi
     // centrado en x así que el flip al patrullar no lo desalinea.
-    body.setSize(574, 359).setOffset(309, 168);
+    // Multiplicado por `scale`: un body dinámico tampoco escala el
+    // tamaño/offset con setScale() (confirmado con un probe en juego — la
+    // hitbox se quedaba ~2.2x más grande que el dibujo visible, matando
+    // desde mucho antes de que el tiburón se viera cerca de verdad).
+    body.setSize(574 * scale, 359 * scale).setOffset(309 * scale, 168 * scale);
 
     this.baseY = y;
     this.baseScaleX = scale;

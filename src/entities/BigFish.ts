@@ -49,7 +49,9 @@ export class BigFish {
     body.setAllowGravity(false);
     // Pedido explícito: hitbox ajustada al cuerpo real, no a las aletas —
     // medido sobre fish_05.png (323x230).
-    body.setSize(154, 118).setOffset(84, 55);
+    // Multiplicado por `scale`: un body dinámico no escala el tamaño/
+    // offset con setScale() (mismo bug que el resto de criaturas).
+    body.setSize(154 * scale, 118 * scale).setOffset(84 * scale, 55 * scale);
 
     this.baseY = y;
     this.phase = Phaser.Math.FloatBetween(0, Math.PI * 2);

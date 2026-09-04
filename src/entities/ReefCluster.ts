@@ -87,9 +87,18 @@ export class ReefCluster {
         if (frac) {
           const tex = scene.textures.get(piece.key).getSourceImage();
           const [fx0, fy0, fx1, fy1] = frac;
-          const w = tex.width * (fx1 - fx0);
-          const h = tex.height * (fy1 - fy0);
-          (sprite.body as Phaser.Physics.Arcade.StaticBody).setSize(w, h).setOffset(tex.width * fx0, tex.height * fy0);
+          // Phaser NO escala el tamaño/offset del body con el scale del
+          // sprite (confirmado con un probe en juego: un body creado con
+          // valores en píxeles nativos se queda en esos píxeles tal cual,
+          // sin multiplicar por setScale) — hay que aplicar piece.scale a
+          // mano aquí, si no la hitbox queda mucho más grande que el
+          // dibujo visible (mismo bug que tenían Jellyfish/Urchin/Shark/
+          // Squid/BigFish, arreglado en el mismo cambio).
+          const w = tex.width * (fx1 - fx0) * piece.scale;
+          const h = tex.height * (fy1 - fy0) * piece.scale;
+          (sprite.body as Phaser.Physics.Arcade.StaticBody)
+            .setSize(w, h)
+            .setOffset(tex.width * fx0 * piece.scale, tex.height * fy0 * piece.scale);
         }
 
         this.obstacleSprites.push(sprite);

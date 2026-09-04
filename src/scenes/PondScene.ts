@@ -269,8 +269,8 @@ export class PondScene extends Phaser.Scene {
     this.urchinSpawner = new UrchinSpawner(this, WORLD_WIDTH, START_Y - URCHIN_START_OFFSET, (y) =>
       this.reefClusterSpawner.isWithinAnyClusterBand(y),
     );
-    this.physics.add.overlap(this.lumi.sprite, this.urchinSpawner.group, () => {
-      this.handleHazardHit("erizo");
+    this.physics.add.overlap(this.lumi.sprite, this.urchinSpawner.group, (_lumiObj, urchinObj) => {
+      this.handleHazardHit("erizo", urchinObj as Phaser.Physics.Arcade.Image);
     });
 
     // Tiburones: segundo enemigo, más arriba que la medusa. Patrullan de
@@ -279,8 +279,8 @@ export class PondScene extends Phaser.Scene {
       x: this.lumi.sprite.x,
       y: this.lumi.sprite.y,
     }));
-    this.physics.add.overlap(this.lumi.sprite, this.sharkSpawner.group, () => {
-      this.handleHazardHit("tiburon");
+    this.physics.add.overlap(this.lumi.sprite, this.sharkSpawner.group, (_lumiObj, sharkObj) => {
+      this.handleHazardHit("tiburon", sharkObj as Phaser.Physics.Arcade.Image);
     });
 
     // Pez grande: NO mata, solo empuja lejos a Lumi — un estorbo, no un
@@ -292,8 +292,8 @@ export class PondScene extends Phaser.Scene {
 
     // Calamares: tercer enemigo, todavía más arriba. Dan impulsos rápidos.
     this.squidSpawner = new SquidSpawner(this, WORLD_WIDTH, START_Y - SQUID_START_OFFSET);
-    this.physics.add.overlap(this.lumi.sprite, this.squidSpawner.group, () => {
-      this.handleHazardHit("calamar");
+    this.physics.add.overlap(this.lumi.sprite, this.squidSpawner.group, (_lumiObj, squidObj) => {
+      this.handleHazardHit("calamar", squidObj as Phaser.Physics.Arcade.Image);
     });
 
     // Corriente de agua: último obstáculo de la Zona 1. No es un overlap:
@@ -447,9 +447,10 @@ export class PondScene extends Phaser.Scene {
     }
 
     // Empujoncito hacia atrás para separarla del peligro que la golpeó —
-    // en la dirección opuesta a la que ya llevaba, o aleatoria si estaba
-    // quieta. No todos los peligros pasan su propio sprite (solo la
-    // medusa), así que no siempre se puede empujar "lejos de la fuente".
+    // lejos de la fuente cuando el peligro tiene sprite propio (los 4
+    // animales), o en la dirección opuesta a la que ya llevaba (coral,
+    // que no tiene un único trozo que señalar) o aleatoria si estaba
+    // quieta.
     const body = this.lumi.sprite.body as Phaser.Physics.Arcade.Body;
     const awayX = sourceSprite ? this.lumi.sprite.x - sourceSprite.x : -body.velocity.x;
     const direction = awayX === 0 ? (Math.random() < 0.5 ? -1 : 1) : Math.sign(awayX);

@@ -26,7 +26,12 @@ export class Urchin {
     this.sprite.refreshBody();
     // Pedido explícito: hitbox ajustada al cuerpo real de púas, no a las
     // esquinas vacías del lienzo — medido sobre urchin.png (846x680).
-    (this.sprite.body as Phaser.Physics.Arcade.StaticBody).setSize(406, 355).setOffset(220, 162);
+    // Multiplicado por `scale`: un StaticBody no escala el tamaño/offset
+    // automáticamente con setScale() (confirmado con un probe en juego —
+    // la hitbox se quedaba ~2.7x más grande que el dibujo visible).
+    (this.sprite.body as Phaser.Physics.Arcade.StaticBody)
+      .setSize(406 * scale, 355 * scale)
+      .setOffset(220 * scale, 162 * scale);
 
     this.baseY = y;
     this.phase = Phaser.Math.FloatBetween(0, Math.PI * 2);

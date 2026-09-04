@@ -48,7 +48,14 @@ export class Jellyfish {
     // chocaban sin tocar el dibujo. Se ajusta al cuerpo/campana real (no a
     // las esquinas del lienzo, que incluyen tentáculos finos y huecos
     // vacíos) — medido sobre jellyfish.png (431x604).
-    (this.sprite.body as Phaser.Physics.Arcade.StaticBody).setSize(209, 325).setOffset(112, 140);
+    // Phaser NO escala el tamaño/offset del body con setScale() en un
+    // StaticBody (confirmado con un probe en juego: se quedaba fijo en
+    // los píxeles nativos aunque el sprite estuviera a escala ~0.16, una
+    // hitbox 3 veces más grande que el dibujo — bug real que mataba desde
+    // muy lejos). Hay que multiplicar por `scale` a mano.
+    (this.sprite.body as Phaser.Physics.Arcade.StaticBody)
+      .setSize(209 * scale, 325 * scale)
+      .setOffset(112 * scale, 140 * scale);
 
     this.baseX = x;
     this.baseY = y;
