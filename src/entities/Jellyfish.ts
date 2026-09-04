@@ -1,24 +1,31 @@
 import Phaser from "phaser";
 import { BlinkEyes } from "@/systems/BlinkEyes";
 
-const BOB_AMPLITUDE = 10;
-const BOB_SPEED = 0.55;
-const DRIFT_AMPLITUDE = 35;
-const DRIFT_SPEED = 0.35;
 // La campana "respira": se estrecha en horizontal justo cuando se estira en
 // vertical (y viceversa), como el pulso real de nado de una medusa, en vez
-// de un escalado uniforme que se siente más como un simple latido.
+// de un escalado uniforme que se siente más como un simple latido. Igual
+// en los 4 tipos de movimiento — lo que cambia entre ellos es solo el
+// desplazamiento (deriva), no el "aliento" de la campana.
 const PULSE_AMOUNT = 0.09;
 const PULSE_SPEED = 1.1;
 // Balanceo de rotación leve: da sensación de ir a la deriva, no clavada en
-// el sitio.
+// el sitio. Igual en los 4 tipos.
 const ROTATION_AMOUNT = 0.05;
 const ROTATION_SPEED = 0.4;
 
 /**
- * Primer enemigo: una medusa que flota con un vaivén suave (arriba/abajo,
- * deriva lateral, un pulso leve de "nado") — hay que esquivarla, tocarla es
- * game over.
+ * 4 patrones de deriva distintos (pedido explícito: variedad de
+ * movimiento, no todas las medusas iguales) — cada instancia elige uno al
+ * azar en el constructor. El cuerpo físico (estático) se queda en su
+ * posición nominal de spawn: el vaivén es puramente visual, igual que
+ * antes (ver comentario en update()).
+ */
+type JellyfishMovementType = "deriva_calma" | "deriva_amplia" | "pulso_vertical" | "orbita_lenta";
+const MOVEMENT_TYPES: JellyfishMovementType[] = ["deriva_calma", "deriva_amplia", "pulso_vertical", "orbita_lenta"];
+
+/**
+ * Primer enemigo: una medusa que flota con un vaivén suave — hay que
+ * esquivarla, tocarla es game over.
  */
 export class Jellyfish {
   readonly sprite: Phaser.Physics.Arcade.Image;
@@ -26,6 +33,7 @@ export class Jellyfish {
   private baseY: number;
   private baseScale: number;
   private phase: number;
+  private readonly movementType: JellyfishMovementType;
   private readonly blinkEyes: BlinkEyes;
 
   constructor(scene: Phaser.Scene, x: number, y: number, scale: number) {
@@ -45,6 +53,7 @@ export class Jellyfish {
     this.baseY = y;
     this.baseScale = scale;
     this.phase = Phaser.Math.FloatBetween(0, Math.PI * 2);
+    this.movementType = Phaser.Utils.Array.GetRandom(MOVEMENT_TYPES);
 
     // Posiciones medidas directamente sobre jellyfish.png (431x604, origen
     // en el centro): los dos ojos están en (129, 168) y (298, 166).
@@ -63,12 +72,47 @@ export class Jellyfish {
     this.blinkEyes.destroy();
   }
 
+  /** Cada tipo mueve x/y con una fórmula distinta a partir del mismo reloj
+   * (t + this.phase), para que el patrón se note claro de un vistazo. */
+  private computeOffset(t: number): { dx: number; dy: number } {
+    switch (this.movementType) {
+      case "deriva_calma":
+        // El original: vaivén suave, más horizontal que vertical.
+        return {
+          dx: Math.sin(t * 0.35 + this.phase) * 35,
+          dy: Math.sin(t * 0.55 + this.phase) * 10,
+        };
+      case "deriva_amplia":
+        // Recorrido lateral mucho más amplio y lento, como una patrulla de
+        // lado a lado en vez de un simple balanceo en el sitio.
+        return {
+          dx: Math.sin(t * 0.2 + this.phase) * 95,
+          dy: Math.sin(t * 0.4 + this.phase) * 8,
+        };
+      case "pulso_vertical":
+        // Sube y baja marcado, casi sin desviarse de lado — se "respira"
+        // verticalmente en vez de derivar.
+        return {
+          dx: Math.sin(t * 0.3 + this.phase) * 12,
+          dy: Math.sin(t * 0.5 + this.phase) * 48,
+        };
+      case "orbita_lenta":
+        // Único patrón realmente circular: x e y comparten fase (seno y
+        // coseno), trazando una órbita perezosa en vez de un vaivén recto.
+        return {
+          dx: Math.cos(t * 0.28 + this.phase) * 42,
+          dy: Math.sin(t * 0.28 + this.phase) * 24,
+        };
+    }
+  }
+
   /** Movimiento puramente visual: el cuerpo físico se queda en su posición
    * nominal, el vaivén es pequeño y no afecta al overlap de forma notable. */
   update(time: number) {
     const t = time / 1000;
-    this.sprite.y = this.baseY + Math.sin(t * BOB_SPEED + this.phase) * BOB_AMPLITUDE;
-    this.sprite.x = this.baseX + Math.sin(t * DRIFT_SPEED + this.phase) * DRIFT_AMPLITUDE;
+    const { dx, dy } = this.computeOffset(t);
+    this.sprite.x = this.baseX + dx;
+    this.sprite.y = this.baseY + dy;
 
     const pulse = Math.sin(t * PULSE_SPEED + this.phase);
     this.sprite.setScale(

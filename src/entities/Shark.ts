@@ -1,5 +1,12 @@
 import Phaser from "phaser";
-import { SHARK_PATROL_SPEED } from "@/config/GameConfig";
+import {
+  SHARK_CHASE_DURATION_MS,
+  SHARK_CHASE_SPEED,
+  SHARK_CHASE_TRIGGER_RANGE_X,
+  SHARK_CHASE_TRIGGER_RANGE_Y,
+  SHARK_PATROL_RANGE,
+  SHARK_PATROL_SPEED,
+} from "@/config/GameConfig";
 import { BlinkEyes } from "@/systems/BlinkEyes";
 
 const BOB_AMPLITUDE = 14;
@@ -10,6 +17,7 @@ const TILT_AMOUNT = 0.09;
 // nadando activamente y no solo flotando de lado a lado.
 const TAIL_PULSE_AMOUNT = 0.05;
 const TAIL_PULSE_SPEED = 3.2;
+const WORLD_MARGIN_X = 80;
 
 /**
  * Segundo enemigo: un tiburón que patrulla de un lado a otro dentro de un
@@ -19,6 +27,12 @@ const TAIL_PULSE_SPEED = 3.2;
  * que un cuerpo estático fijo en el punto de aparición siga sirviendo de
  * hitbox. El radio es local (no todo el ancho del mundo) para que el
  * vaivén se note claramente mientras Lumi lo tiene a la vista.
+ *
+ * Progresión (pedido explícito): los tiburones marcados `canChase` (ver
+ * SharkSpawner — solo los que aparecen ya cerca del final de la Zona 1)
+ * pueden lanzarse UNA vez, si Lumi pasa cerca, en una persecución corta a
+ * mayor velocidad antes de volver a su patrulla normal — nunca de forma
+ * permanente.
  */
 export class Shark {
   readonly sprite: Phaser.Physics.Arcade.Image;
@@ -28,6 +42,8 @@ export class Shark {
   private phase: number;
   private direction: 1 | -1;
   private readonly blinkEyes: BlinkEyes;
+  private hasChased = false;
+  private chasingUntil = 0;
 
   constructor(
     scene: Phaser.Scene,
@@ -36,6 +52,9 @@ export class Shark {
     scale: number,
     private minX: number,
     private maxX: number,
+    private readonly worldWidth: number,
+    private readonly canChase: boolean,
+    private readonly getLumiPosition: () => { x: number; y: number },
   ) {
     this.sprite = scene.physics.add.image(x, y, "shark");
     this.sprite.setScale(scale);
@@ -68,22 +87,52 @@ export class Shark {
     this.blinkEyes.destroy();
   }
 
+  private maybeStartChase(time: number) {
+    if (!this.canChase || this.hasChased) return;
+    const lumi = this.getLumiPosition();
+    const closeEnough =
+      Math.abs(lumi.x - this.sprite.x) < SHARK_CHASE_TRIGGER_RANGE_X &&
+      Math.abs(lumi.y - this.sprite.y) < SHARK_CHASE_TRIGGER_RANGE_Y;
+    if (!closeEnough) return;
+    this.hasChased = true;
+    this.chasingUntil = time + SHARK_CHASE_DURATION_MS;
+  }
+
   update(time: number) {
     const t = time / 1000;
 
-    if (this.sprite.x >= this.maxX && this.direction === 1) {
-      this.direction = -1;
-      this.sprite.setFlipX(false);
-    } else if (this.sprite.x <= this.minX && this.direction === -1) {
-      this.direction = 1;
-      this.sprite.setFlipX(true);
+    this.maybeStartChase(time);
+    const chasing = time < this.chasingUntil;
+
+    if (chasing) {
+      const lumi = this.getLumiPosition();
+      this.direction = lumi.x >= this.sprite.x ? 1 : -1;
+      this.sprite.setFlipX(this.direction === 1);
+      this.sprite.setVelocityX(SHARK_CHASE_SPEED * this.direction);
+    } else {
+      if (this.hasChased && this.chasingUntil !== 0) {
+        // La persecución acaba de terminar: recentra el radio de patrulla
+        // alrededor de donde quedó, recortado a los bordes del mundo, para
+        // no dejarlo "colgado" fuera de su rango original de vaivén.
+        this.minX = Math.max(WORLD_MARGIN_X, this.sprite.x - SHARK_PATROL_RANGE);
+        this.maxX = Math.min(this.worldWidth - WORLD_MARGIN_X, this.sprite.x + SHARK_PATROL_RANGE);
+        this.chasingUntil = 0;
+      }
+
+      if (this.sprite.x >= this.maxX && this.direction === 1) {
+        this.direction = -1;
+        this.sprite.setFlipX(false);
+      } else if (this.sprite.x <= this.minX && this.direction === -1) {
+        this.direction = 1;
+        this.sprite.setFlipX(true);
+      }
+      // Reafirmar la velocidad TODOS los frames, no solo al girar: al añadir
+      // el sprite al grupo físico de Phaser (ver SharkSpawner), el grupo
+      // resetea la velocidad a 0 justo después de que el constructor la fija
+      // — sin esto el tiburón se quedaba parado para siempre (nunca llegaba a
+      // un borde para volver a fijarla).
+      this.sprite.setVelocityX(SHARK_PATROL_SPEED * this.direction);
     }
-    // Reafirmar la velocidad TODOS los frames, no solo al girar: al añadir
-    // el sprite al grupo físico de Phaser (ver SharkSpawner), el grupo
-    // resetea la velocidad a 0 justo después de que el constructor la fija
-    // — sin esto el tiburón se quedaba parado para siempre (nunca llegaba a
-    // un borde para volver a fijarla).
-    this.sprite.setVelocityX(SHARK_PATROL_SPEED * this.direction);
 
     this.sprite.y = this.baseY + Math.sin(t * BOB_SPEED + this.phase) * BOB_AMPLITUDE;
     this.sprite.rotation = Math.sin(t * BOB_SPEED + this.phase) * TILT_AMOUNT * this.direction;

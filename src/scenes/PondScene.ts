@@ -252,7 +252,10 @@ export class PondScene extends Phaser.Scene {
 
     // Tiburones: segundo enemigo, más arriba que la medusa. Patrullan de
     // lado a lado en vez de solo derivar.
-    this.sharkSpawner = new SharkSpawner(this, WORLD_WIDTH, START_Y - SHARK_START_OFFSET);
+    this.sharkSpawner = new SharkSpawner(this, WORLD_WIDTH, START_Y - SHARK_START_OFFSET, () => ({
+      x: this.lumi.sprite.x,
+      y: this.lumi.sprite.y,
+    }));
     this.physics.add.overlap(this.lumi.sprite, this.sharkSpawner.group, () => {
       this.handleHazardHit("tiburon");
     });

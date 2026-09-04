@@ -1,6 +1,13 @@
 import Phaser from "phaser";
 import { Shark } from "@/entities/Shark";
-import { SHARK_MAX_GAP, SHARK_MIN_GAP, SHARK_PATROL_RANGE, SHARK_SCALE } from "@/config/GameConfig";
+import {
+  SHARK_CHASE_MIN_OFFSET,
+  SHARK_MAX_GAP,
+  SHARK_MIN_GAP,
+  SHARK_PATROL_RANGE,
+  SHARK_SCALE,
+  START_Y,
+} from "@/config/GameConfig";
 
 const SPAWN_LOOKAHEAD = 900;
 const DESPAWN_MARGIN = 1200;
@@ -19,6 +26,7 @@ export class SharkSpawner {
     private scene: Phaser.Scene,
     private worldWidth: number,
     startY: number,
+    private readonly getLumiPosition: () => { x: number; y: number },
   ) {
     this.group = scene.physics.add.group();
     this.highestY = startY;
@@ -33,7 +41,11 @@ export class SharkSpawner {
     // mundo.
     const minX = Math.max(WORLD_MARGIN_X, x - SHARK_PATROL_RANGE);
     const maxX = Math.min(this.worldWidth - WORLD_MARGIN_X, x + SHARK_PATROL_RANGE);
-    const shark = new Shark(this.scene, x, y, scale, minX, maxX);
+    // Progresión (pedido explícito): solo los tiburones que ya aparecen
+    // cerca del final de la Zona 1 pueden lanzar la persecución puntual —
+    // los primeros que ve el jugador se quedan en patrulla simple.
+    const canChase = START_Y - y >= SHARK_CHASE_MIN_OFFSET;
+    const shark = new Shark(this.scene, x, y, scale, minX, maxX, this.worldWidth, canChase, this.getLumiPosition);
     this.group.add(shark.sprite);
     this.sharks.push(shark);
     if (y < this.highestY) this.highestY = y;

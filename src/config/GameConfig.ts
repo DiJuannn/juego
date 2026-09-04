@@ -88,6 +88,16 @@ export const SHARK_SCALE = 0.22;
 export const SHARK_PATROL_SPEED = 130;
 export const SHARK_PATROL_RANGE = 260; // px a cada lado del punto de aparición
 
+// Progresión del tiburón: los que aparecen ya cerca del final de la Zona 1
+// pueden, una única vez cada uno (nunca de forma permanente), lanzarse en
+// una persecución corta hacia Lumi si pasa cerca — un evento puntual que
+// culmina la progresión del enemigo, no un comportamiento nuevo constante.
+export const SHARK_CHASE_MIN_OFFSET = 5000; // altura ~500: solo tiburones a partir de aquí pueden perseguir
+export const SHARK_CHASE_TRIGGER_RANGE_X = 260;
+export const SHARK_CHASE_TRIGGER_RANGE_Y = 240;
+export const SHARK_CHASE_SPEED = 240;
+export const SHARK_CHASE_DURATION_MS = 2200;
+
 // Calamares: tercer enemigo, más arriba todavía (altura ~500) — impulsos
 // rápidos en vez de patrulla constante, para que cada peligro se esquive
 // de forma distinta.
