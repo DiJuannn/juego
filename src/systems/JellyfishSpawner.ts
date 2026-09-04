@@ -1,6 +1,7 @@
 import Phaser from "phaser";
 import { Jellyfish } from "@/entities/Jellyfish";
-import { JELLYFISH_MAX_GAP, JELLYFISH_MIN_GAP, JELLYFISH_SCALE } from "@/config/GameConfig";
+import { JELLYFISH_MAX_GAP, JELLYFISH_MIN_GAP, JELLYFISH_SCALE, START_Y } from "@/config/GameConfig";
+import { isHazardAllowed } from "@/config/Zone1Segments";
 
 const SPAWN_LOOKAHEAD = 900;
 const DESPAWN_MARGIN = 1200;
@@ -31,6 +32,9 @@ export class JellyfishSpawner {
     // un coral estrecho — ahí el carril libre tiene que quedar garantizado
     // sin ningún animal encima.
     if (this.isWithinCoralBand?.(y)) return;
+    // Progresión de Zona 1 en tramos (ver Zone1Segments): la medusa no
+    // aparece en los tramos de descanso ni antes de su propia introducción.
+    if (!isHazardAllowed(START_Y - y)) return;
     const x = Phaser.Math.Between(MARGIN_X, this.worldWidth - MARGIN_X);
     const scale = JELLYFISH_SCALE * Phaser.Math.FloatBetween(0.85, 1.15);
     const jelly = new Jellyfish(this.scene, x, y, scale);

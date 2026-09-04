@@ -8,6 +8,7 @@ import {
   SHARK_SCALE,
   START_Y,
 } from "@/config/GameConfig";
+import { isHazardAllowed } from "@/config/Zone1Segments";
 
 const SPAWN_LOOKAHEAD = 900;
 const DESPAWN_MARGIN = 1200;
@@ -33,6 +34,8 @@ export class SharkSpawner {
   }
 
   private spawnAt(y: number) {
+    // Progresión de Zona 1 en tramos (ver Zone1Segments).
+    if (!isHazardAllowed(START_Y - y)) return;
     const scale = SHARK_SCALE * Phaser.Math.FloatBetween(0.9, 1.1);
     const x = Phaser.Math.Between(this.worldWidth * 0.3, this.worldWidth * 0.7);
     // Radio local alrededor del punto de aparición, recortado a los bordes

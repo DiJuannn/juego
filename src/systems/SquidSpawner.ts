@@ -1,6 +1,7 @@
 import Phaser from "phaser";
 import { Squid } from "@/entities/Squid";
-import { SQUID_MAX_GAP, SQUID_MIN_GAP, SQUID_SCALE } from "@/config/GameConfig";
+import { SQUID_MAX_GAP, SQUID_MIN_GAP, SQUID_SCALE, START_Y } from "@/config/GameConfig";
+import { isHazardAllowed } from "@/config/Zone1Segments";
 
 const SPAWN_LOOKAHEAD = 900;
 const DESPAWN_MARGIN = 1200;
@@ -23,6 +24,8 @@ export class SquidSpawner {
   }
 
   private spawnAt(y: number) {
+    // Progresión de Zona 1 en tramos (ver Zone1Segments).
+    if (!isHazardAllowed(START_Y - y)) return;
     const scale = SQUID_SCALE * Phaser.Math.FloatBetween(0.9, 1.1);
     const x = Phaser.Math.Between(this.worldWidth * 0.3, this.worldWidth * 0.7);
     const squid = new Squid(this.scene, x, y, scale, RANGE_MARGIN_X, this.worldWidth - RANGE_MARGIN_X);

@@ -1,6 +1,7 @@
 import Phaser from "phaser";
 import { BigFish } from "@/entities/BigFish";
-import { BIG_FISH_MAX_GAP, BIG_FISH_MIN_GAP, BIG_FISH_SCALE } from "@/config/GameConfig";
+import { BIG_FISH_MAX_GAP, BIG_FISH_MIN_GAP, BIG_FISH_SCALE, START_Y } from "@/config/GameConfig";
+import { isHazardAllowed } from "@/config/Zone1Segments";
 
 const SPAWN_LOOKAHEAD = 900;
 const DESPAWN_MARGIN = 1200;
@@ -23,6 +24,8 @@ export class BigFishSpawner {
   }
 
   private spawnAt(y: number) {
+    // Progresión de Zona 1 en tramos (ver Zone1Segments).
+    if (!isHazardAllowed(START_Y - y)) return;
     const scale = BIG_FISH_SCALE * Phaser.Math.FloatBetween(0.9, 1.1);
     const x = Phaser.Math.Between(this.worldWidth * 0.3, this.worldWidth * 0.7);
     const fish = new BigFish(this.scene, x, y, scale, PATROL_MARGIN_X, this.worldWidth - PATROL_MARGIN_X);

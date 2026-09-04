@@ -1,6 +1,7 @@
 import Phaser from "phaser";
 import { Urchin } from "@/entities/Urchin";
-import { URCHIN_MAX_GAP, URCHIN_MIN_GAP, URCHIN_SCALE } from "@/config/GameConfig";
+import { URCHIN_MAX_GAP, URCHIN_MIN_GAP, URCHIN_SCALE, START_Y } from "@/config/GameConfig";
+import { isHazardAllowed } from "@/config/Zone1Segments";
 
 const SPAWN_LOOKAHEAD = 900;
 const DESPAWN_MARGIN = 1200;
@@ -27,6 +28,8 @@ export class UrchinSpawner {
     // coral estrecho — ahí el carril libre tiene que quedar garantizado sin
     // ningún animal encima.
     if (this.isWithinCoralBand?.(y)) return;
+    // Progresión de Zona 1 en tramos (ver Zone1Segments).
+    if (!isHazardAllowed(START_Y - y)) return;
     const x = Phaser.Math.Between(120, this.worldWidth - 120);
     const scale = URCHIN_SCALE * Phaser.Math.FloatBetween(0.9, 1.1);
     const urchin = new Urchin(this.scene, x, y, scale);

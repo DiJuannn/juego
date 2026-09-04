@@ -1,6 +1,7 @@
 import Phaser from "phaser";
 import { CoralWall } from "@/entities/CoralWall";
-import { CORAL_MAX_GAP, CORAL_MIN_GAP } from "@/config/GameConfig";
+import { CORAL_MAX_GAP, CORAL_MIN_GAP, START_Y } from "@/config/GameConfig";
+import { isHazardAllowed } from "@/config/Zone1Segments";
 
 const SPAWN_LOOKAHEAD = 900;
 const DESPAWN_MARGIN = 1200;
@@ -29,6 +30,8 @@ export class CoralSpawner {
   }
 
   private spawnAt(y: number) {
+    // Progresión de Zona 1 en tramos (ver Zone1Segments).
+    if (!isHazardAllowed(START_Y - y)) return;
     const gapSide = Math.random() < 0.5 ? "left" : "right";
     const wall = new CoralWall(this.scene, this.worldWidth, y, gapSide);
     for (const chunk of wall.sprites) this.group.add(chunk);
