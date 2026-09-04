@@ -12,8 +12,13 @@
 // boost/ ya no se usa: la pose dedicada no convencía, el impulso del
 // nenúfar ahora reutiliza la animación swim_up (ver Lumi.ts). El archivo
 // se queda en disco por si se retoma más adelante, solo se quitó de aquí.
+//
+// idle bajó de 4 a 3: el idle_02 original tenía la cola completamente hacia
+// el lado izquierdo (asimétrica respecto a los otros 3, que la llevan más
+// centrada) y se veía raro en el ciclo — se quitó del todo y se
+// renumeraron los que quedaban (el antiguo idle_03 pasó a ser idle_02, etc).
 export const LUMI_FRAME_COUNT: Record<string, number> = {
-  idle: 4,
+  idle: 3,
   sleep: 3,
   swim_right: 4,
   swim_up: 4,

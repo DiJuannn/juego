@@ -60,6 +60,28 @@ superficie (zona 8) los colores vuelven a ser claros y cálidos. El cambio de
 paleta se implementa como tinte de escena (ver `ZoneManager`), no repintando
 cada asset por zona.
 
+## Profundidad y atmósfera (referencia del usuario, para Zona 2 en adelante)
+
+El usuario compartió una imagen de referencia para que los fondos no se
+sientan planos como el estanque actual (capas de rocas + plantas + cielo
+liso). Cualidades a llevar a las zonas nuevas, dentro del mismo estilo
+acuarela pastel de siempre (nada de esto cambia el lenguaje visual, solo lo
+enriquece):
+
+- **Rayos de luz marcados** atravesando el agua de arriba a abajo, no solo
+  un degradado de cielo liso.
+- **Estructuras/ruinas hundidas** en el fondo lejano (arcos, columnas,
+  siluetas tipo pequeñas construcciones de piedra) — dan sensación de mundo
+  con historia, no solo terreno natural.
+- **Fauna en varias profundidades a la vez**: peces pequeños muy cerca de
+  cámara y otros mucho más lejos/difuminados en el mismo plano, en vez de
+  un único plano de peces de fondo.
+- **Más variación de color y textura** en rocas/coral (parches, vetas,
+  degradados suaves) en vez de un tono plano por elemento.
+
+Esto es dirección artística para cuando generemos el arte de la Zona 2 en
+adelante (tarea pendiente), no un cambio inmediato de código.
+
 ## Prohibido (recordatorio, ya en CLAUDE.md)
 
 Pixel art, 3D, fotorrealismo, anime, cel-shading fuerte, contornos negros,

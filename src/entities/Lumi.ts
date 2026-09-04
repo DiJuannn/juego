@@ -1,5 +1,5 @@
 import Phaser from "phaser";
-import { LUMI_DRIFT_SPEED, LUMI_SCALE, LUMI_SWIM_SPEED } from "@/config/GameConfig";
+import { LUMI_DRIFT_SPEED, LUMI_SCALE, LUMI_SWIM_SPEED, SWIM_SIDE_SCALE_CORRECTION } from "@/config/GameConfig";
 import { frameKey } from "@/config/LumiAnimConfig";
 import type { DirectionVector } from "@/systems/InputController";
 
@@ -17,6 +17,11 @@ type LumiState =
 const BOOST_DURATION_MS = 550;
 // Pedido explícito: que el nenúfar impulse más hacia arriba.
 const BOOST_SPEED = LUMI_SWIM_SPEED * 2.9;
+// El boost cortaba en seco de velocidad máxima a velocidad normal en el
+// último frame — se notaba raro. Los últimos BOOST_EASE_MS bajan la
+// velocidad a la mitad de forma gradual, así el salto que queda al
+// terminar de verdad es mucho más pequeño.
+const BOOST_EASE_MS = 150;
 
 /**
  * Envuelve el sprite físico de Lumi y decide qué animación reproducir
@@ -55,9 +60,13 @@ export class Lumi {
     // nenúfar se activara "desde lejos". Un cuerpo más ajustado al torso
     // (coordenadas en el espacio del frame sin escalar, 1047x1024) hace
     // que el contacto se sienta real.
+    // Pedido explícito: seguía sintiéndose que "chocan las cosas sin
+    // tocarlas" — se encoge más todavía, y más pequeña que la silueta
+    // visible del personaje a propósito (mejor errar por ese lado que por
+    // el de "me tocó y no debería haber pasado nada").
     const body = this.sprite.body as Phaser.Physics.Arcade.Body;
-    body.setSize(360, 460);
-    body.setOffset(343, 300);
+    body.setSize(240, 320);
+    body.setOffset(403, 370);
     this.sprite.play("idle");
 
     this.diagonalA = scene.add.image(x, y, frameKey("swim_diagonal", 1)).setScale(LUMI_SCALE).setVisible(false);
@@ -98,10 +107,13 @@ export class Lumi {
 
     if (this.boostRemainingMs > 0) {
       this.boostRemainingMs -= deltaMs;
+      const easeFactor =
+        this.boostRemainingMs < BOOST_EASE_MS ? Math.max(this.boostRemainingMs, 0) / BOOST_EASE_MS : 1;
+      const boostSpeed = BOOST_SPEED * (0.5 + 0.5 * easeFactor);
       // El empuje vertical del propulsor manda, pero el jugador sigue
       // pudiendo dirigirse a los lados mientras dura — no es una pérdida
       // de control, es un impulso hacia arriba con dirección libre.
-      body.setVelocity(direction.x * LUMI_SWIM_SPEED, -BOOST_SPEED);
+      body.setVelocity(direction.x * LUMI_SWIM_SPEED, -boostSpeed);
       // La pose "boost" dedicada no convencía visualmente: el impulso
       // reutiliza la propia animación de nadar hacia arriba (más partículas
       // de por medio, ver PondScene), no un pose nuevo.
@@ -149,6 +161,10 @@ export class Lumi {
     return state === "swim_up_right" || state === "swim_up_left" || state === "swim_down_right" || state === "swim_down_left";
   }
 
+  private static isSideSwim(state: LumiState): boolean {
+    return state === "swim_right" || state === "swim_left";
+  }
+
   /** Arranca (una sola vez) el fundido cruzado infinito entre las dos
    * imágenes diagonales. Se queda corriendo de fondo aunque no se vea. */
   private ensureDiagonalFade() {
@@ -184,6 +200,12 @@ export class Lumi {
       this.diagonalA.setVisible(false);
       this.diagonalB.setVisible(false);
     }
+
+    // El arte de swim_right/swim_left está dibujado sensiblemente más
+    // grande que el resto de poses dentro del mismo lienzo (ver
+    // SWIM_SIDE_SCALE_CORRECTION) — se compensa aquí, no es una elección de
+    // diseño sino corregir una inconsistencia real del asset.
+    this.sprite.setScale(Lumi.isSideSwim(next) ? LUMI_SCALE * SWIM_SIDE_SCALE_CORRECTION : LUMI_SCALE);
 
     switch (next) {
       case "idle":

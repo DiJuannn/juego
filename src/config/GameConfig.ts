@@ -26,7 +26,15 @@ export const START_Y = 700;
 // pantalla" de STYLE_GUIDE.md — avisado, no es un descuido.
 export const LUMI_SCALE = 0.075 * 3 * 1.2;
 
-export const LUMI_SWIM_SPEED = 220; // px/seg
+// Pedido explícito: Lumi se sentía lenta. Subido desde 220.
+export const LUMI_SWIM_SPEED = 260; // px/seg
+
+// El arte de swim_right/swim_left está dibujado sensiblemente más grande
+// que el de idle/swim_up/diagonal dentro del mismo lienzo (~57% más grande
+// de cabeza a cabeza, medido) — no es una pose distinta, es una
+// inconsistencia real del asset. Se corrige por código con un multiplicador
+// extra solo en esos dos estados en vez de regenerar el arte.
+export const SWIM_SIDE_SCALE_CORRECTION = 0.64;
 
 // Hundimiento suave cuando Lumi no nada activamente: sin esto no habría
 // tensión ninguna en un juego de escalada (podrías quedarte quieta para
@@ -56,16 +64,21 @@ export const JELLYFISH_SCALE = 0.16;
 // La cámara ya no espera solo a que Lumi suba: sube ella sola a este ritmo
 // (px/seg) sin parar, mucho más despacio que nadar a tope, para que exista
 // presión incluso si el jugador va despacio. Si Lumi sube más rápido que
-// esto, manda su propia velocidad (ver PondScene.update).
-export const CAMERA_AUTO_RISE_SPEED = 22;
+// esto, manda su propia velocidad (ver PondScene.update). Pedido explícito:
+// un poco más rápido que antes.
+export const CAMERA_AUTO_RISE_SPEED = 30;
 
 // Tiburones: segundo enemigo, "poco a poco" tras la medusa — empiezan a
 // aparecer más arriba (altura ~300, dentro de la Zona 1) y patrullan de
-// lado a lado en vez de solo derivar como la medusa.
+// lado a lado en vez de solo derivar como la medusa. Patrullan un radio
+// local (no todo el ancho del mundo) para que el vaivén se note dentro del
+// tiempo que dura el encuentro, no una sola pasada en una dirección.
 export const SHARK_START_OFFSET = 3000; // px por encima de START_Y (altura ~300)
 export const SHARK_MIN_GAP = 1200;
 export const SHARK_MAX_GAP = 2000;
 export const SHARK_SCALE = 0.22;
+export const SHARK_PATROL_SPEED = 130;
+export const SHARK_PATROL_RANGE = 260; // px a cada lado del punto de aparición
 
 // Calamares: tercer enemigo, más arriba todavía (altura ~500) — impulsos
 // rápidos en vez de patrulla constante, para que cada peligro se esquive

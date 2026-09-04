@@ -1,10 +1,10 @@
 import Phaser from "phaser";
 import { Shark } from "@/entities/Shark";
-import { SHARK_MAX_GAP, SHARK_MIN_GAP, SHARK_SCALE } from "@/config/GameConfig";
+import { SHARK_MAX_GAP, SHARK_MIN_GAP, SHARK_PATROL_RANGE, SHARK_SCALE } from "@/config/GameConfig";
 
 const SPAWN_LOOKAHEAD = 900;
 const DESPAWN_MARGIN = 1200;
-const PATROL_MARGIN_X = 80;
+const WORLD_MARGIN_X = 80;
 
 /**
  * Segundo enemigo: tiburones que patrullan de lado a lado. Igual patrón de
@@ -27,7 +27,13 @@ export class SharkSpawner {
   private spawnAt(y: number) {
     const scale = SHARK_SCALE * Phaser.Math.FloatBetween(0.9, 1.1);
     const x = Phaser.Math.Between(this.worldWidth * 0.3, this.worldWidth * 0.7);
-    const shark = new Shark(this.scene, x, y, scale, PATROL_MARGIN_X, this.worldWidth - PATROL_MARGIN_X);
+    // Radio local alrededor del punto de aparición, recortado a los bordes
+    // del mundo — así el vaivén se nota dentro del tiempo que Lumi lo tiene
+    // a la vista, en vez de una sola pasada de un lado a otro de todo el
+    // mundo.
+    const minX = Math.max(WORLD_MARGIN_X, x - SHARK_PATROL_RANGE);
+    const maxX = Math.min(this.worldWidth - WORLD_MARGIN_X, x + SHARK_PATROL_RANGE);
+    const shark = new Shark(this.scene, x, y, scale, minX, maxX);
     this.group.add(shark.sprite);
     this.sharks.push(shark);
     if (y < this.highestY) this.highestY = y;
