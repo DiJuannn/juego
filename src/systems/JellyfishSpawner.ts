@@ -48,7 +48,6 @@ export class JellyfishSpawner {
     this.jellies = this.jellies.filter((jelly) => {
       if (jelly.sprite.y > cameraBottomY + DESPAWN_MARGIN) {
         this.group.remove(jelly.sprite, true, true);
-        jelly.destroy();
         return false;
       }
       jelly.update(time);

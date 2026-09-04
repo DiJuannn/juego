@@ -1,5 +1,5 @@
 import Phaser from "phaser";
-import { BlinkEyes } from "@/systems/BlinkEyes";
+import { BlinkTimer } from "@/systems/BlinkTimer";
 
 const BOB_AMPLITUDE = 10;
 const BOB_SPEED = 0.7;
@@ -73,7 +73,8 @@ export class Squid {
   private nextDashAt: number;
   private readonly patrolType: SquidPatrolType;
   private readonly tuning: (typeof PATROL_TUNING)[SquidPatrolType];
-  private readonly blinkEyes: BlinkEyes;
+  private readonly blinkTimer = new BlinkTimer();
+  private isBlinking = false;
 
   constructor(
     scene: Phaser.Scene,
@@ -102,23 +103,6 @@ export class Squid {
     this.tuning = PATROL_TUNING[this.patrolType];
     this.nextDashAt = Phaser.Math.Between(this.tuning.dashMinIntervalMs, this.tuning.dashMaxIntervalMs);
     this.sprite.setVelocityX(this.tuning.driftSpeed * this.direction);
-
-    // Ojos medidos sobre squid.png (927x762, origen en el centro): centros
-    // en (503.7, 389.5) y (680.4, 464.9) — asimétricos porque el dibujo está
-    // en 3/4, no de frente.
-    this.blinkEyes = new BlinkEyes(
-      scene,
-      this.sprite,
-      [
-        { x: 40.2, y: 8.5, radius: 28 },
-        { x: 216.9, y: 83.9, radius: 30 },
-      ],
-      5.01,
-    );
-  }
-
-  destroy() {
-    this.blinkEyes.destroy();
   }
 
   update(time: number) {
@@ -139,6 +123,13 @@ export class Squid {
     const speed = time < this.dashingUntil ? dashSpeed : driftSpeed;
     this.sprite.setVelocityX(speed * this.direction);
     this.sprite.y = this.baseY + Math.sin(t * BOB_SPEED + this.phase) * BOB_AMPLITUDE;
-    this.blinkEyes.update(time);
+
+    // Parpadeo: arte de verdad (squid_blink.png, generado con Gemini a
+    // partir de este mismo sprite), no un Graphics dibujado por código.
+    const blinking = this.blinkTimer.isBlinking(time);
+    if (blinking !== this.isBlinking) {
+      this.isBlinking = blinking;
+      this.sprite.setTexture(blinking ? "squid_blink" : "squid");
+    }
   }
 }

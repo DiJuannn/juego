@@ -1,5 +1,5 @@
 import Phaser from "phaser";
-import { BlinkEyes } from "@/systems/BlinkEyes";
+import { BlinkTimer } from "@/systems/BlinkTimer";
 
 // La campana "respira": se estrecha en horizontal justo cuando se estira en
 // vertical (y viceversa), como el pulso real de nado de una medusa, en vez
@@ -34,7 +34,8 @@ export class Jellyfish {
   private baseScale: number;
   private phase: number;
   private readonly movementType: JellyfishMovementType;
-  private readonly blinkEyes: BlinkEyes;
+  private readonly blinkTimer = new BlinkTimer();
+  private isBlinking = false;
 
   constructor(scene: Phaser.Scene, x: number, y: number, scale: number) {
     this.sprite = scene.physics.add.staticImage(x, y, "jellyfish");
@@ -54,22 +55,6 @@ export class Jellyfish {
     this.baseScale = scale;
     this.phase = Phaser.Math.FloatBetween(0, Math.PI * 2);
     this.movementType = Phaser.Utils.Array.GetRandom(MOVEMENT_TYPES);
-
-    // Posiciones medidas directamente sobre jellyfish.png (431x604, origen
-    // en el centro): los dos ojos están en (129, 168) y (298, 166).
-    this.blinkEyes = new BlinkEyes(
-      scene,
-      this.sprite,
-      [
-        { x: -86.5, y: -134.3, radius: 15 },
-        { x: 82.5, y: -135.9, radius: 15 },
-      ],
-      5.01,
-    );
-  }
-
-  destroy() {
-    this.blinkEyes.destroy();
   }
 
   /** Cada tipo mueve x/y con una fórmula distinta a partir del mismo reloj
@@ -120,6 +105,15 @@ export class Jellyfish {
       this.baseScale * (1 - pulse * PULSE_AMOUNT * 0.6),
     );
     this.sprite.rotation = Math.sin(t * ROTATION_SPEED + this.phase) * ROTATION_AMOUNT;
-    this.blinkEyes.update(time);
+
+    // Parpadeo: arte de verdad (jellyfish_blink.png, generado con Gemini a
+    // partir de este mismo sprite), no un Graphics dibujado por código —
+    // solo se cambia la textura durante la breve ventana que marca
+    // BlinkTimer.
+    const blinking = this.blinkTimer.isBlinking(time);
+    if (blinking !== this.isBlinking) {
+      this.isBlinking = blinking;
+      this.sprite.setTexture(blinking ? "jellyfish_blink" : "jellyfish");
+    }
   }
 }

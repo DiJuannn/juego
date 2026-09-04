@@ -44,7 +44,6 @@ export class UrchinSpawner {
     this.urchins = this.urchins.filter((urchin) => {
       if (urchin.sprite.y > cameraBottomY + DESPAWN_MARGIN) {
         this.group.remove(urchin.sprite, true, true);
-        urchin.destroy();
         return false;
       }
       urchin.update(time);

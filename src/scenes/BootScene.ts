@@ -66,6 +66,9 @@ export class BootScene extends Phaser.Scene {
     for (const fishKey of FISH_KEYS) {
       this.load.image(fishKey, `/objects/fish/${fishKey}.png`);
     }
+    // Parpadeo del pez grande (reutiliza fish_05, ver BigFish): mismo
+    // criterio que el resto de criaturas, arte de verdad, no Graphics.
+    this.load.image("fish_05_blink", "/objects/fish/fish_05_blink.png");
 
     this.load.image("lily_pad_01", "/objects/lily_pad/lily_pad_01.png");
 
@@ -78,6 +81,13 @@ export class BootScene extends Phaser.Scene {
     this.load.image("squid", "/objects/enemies/squid.png");
     this.load.image("urchin", "/objects/enemies/urchin.png");
     this.load.image("coral", "/objects/enemies/coral.png");
+    // Parpadeo: arte de verdad (ojos cerrados) generado con Gemini a partir
+    // de cada sprite base, ver systems/BlinkTimer — nunca un Graphics
+    // dibujado por código.
+    this.load.image("jellyfish_blink", "/objects/enemies/jellyfish_blink.png");
+    this.load.image("shark_blink", "/objects/enemies/shark_blink.png");
+    this.load.image("squid_blink", "/objects/enemies/squid_blink.png");
+    this.load.image("urchin_blink", "/objects/enemies/urchin_blink.png");
     this.load.image("shield_bubble", "/objects/powerups/shield_bubble.png");
     this.load.image("coin", "/objects/powerups/coin.png");
     this.load.image("boost_bubble", "/objects/powerups/boost_bubble.png");

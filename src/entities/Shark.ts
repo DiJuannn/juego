@@ -7,7 +7,7 @@ import {
   SHARK_PATROL_RANGE,
   SHARK_PATROL_SPEED,
 } from "@/config/GameConfig";
-import { BlinkEyes } from "@/systems/BlinkEyes";
+import { BlinkTimer } from "@/systems/BlinkTimer";
 
 const BOB_AMPLITUDE = 14;
 const BOB_SPEED = 0.5;
@@ -41,7 +41,8 @@ export class Shark {
   private baseScaleY: number;
   private phase: number;
   private direction: 1 | -1;
-  private readonly blinkEyes: BlinkEyes;
+  private readonly blinkTimer = new BlinkTimer();
+  private isBlinking = false;
   private hasChased = false;
   private chasingUntil = 0;
 
@@ -77,14 +78,6 @@ export class Shark {
     this.direction = Math.random() < 0.5 ? 1 : -1;
     this.sprite.setFlipX(this.direction === 1);
     this.sprite.setVelocityX(SHARK_PATROL_SPEED * this.direction);
-
-    // Ojo único (dibujo de perfil), medido sobre shark.png (1191x697,
-    // origen en el centro): centro en (290.7, 395.9).
-    this.blinkEyes = new BlinkEyes(scene, this.sprite, [{ x: -304.8, y: 47.4, radius: 25 }], 5.01);
-  }
-
-  destroy() {
-    this.blinkEyes.destroy();
   }
 
   private maybeStartChase(time: number) {
@@ -142,6 +135,13 @@ export class Shark {
       this.baseScaleX * (1 + pulse * TAIL_PULSE_AMOUNT),
       this.baseScaleY * (1 - pulse * TAIL_PULSE_AMOUNT * 0.5),
     );
-    this.blinkEyes.update(time);
+
+    // Parpadeo: arte de verdad (shark_blink.png, generado con Gemini a
+    // partir de este mismo sprite), no un Graphics dibujado por código.
+    const blinking = this.blinkTimer.isBlinking(time);
+    if (blinking !== this.isBlinking) {
+      this.isBlinking = blinking;
+      this.sprite.setTexture(blinking ? "shark_blink" : "shark");
+    }
   }
 }

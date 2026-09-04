@@ -60,7 +60,6 @@ export class SharkSpawner {
     this.sharks = this.sharks.filter((shark) => {
       if (shark.sprite.y > cameraBottomY + DESPAWN_MARGIN) {
         this.group.remove(shark.sprite, true, true);
-        shark.destroy();
         return false;
       }
       shark.update(time);

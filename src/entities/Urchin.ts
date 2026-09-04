@@ -1,5 +1,5 @@
 import Phaser from "phaser";
-import { BlinkEyes } from "@/systems/BlinkEyes";
+import { BlinkTimer } from "@/systems/BlinkTimer";
 
 const BOB_AMPLITUDE = 5;
 const BOB_SPEED = 0.35;
@@ -14,7 +14,8 @@ export class Urchin {
   readonly sprite: Phaser.Physics.Arcade.Image;
   private baseY: number;
   private phase: number;
-  private readonly blinkEyes: BlinkEyes;
+  private readonly blinkTimer = new BlinkTimer();
+  private isBlinking = false;
 
   constructor(scene: Phaser.Scene, x: number, y: number, scale: number) {
     this.sprite = scene.physics.add.staticImage(x, y, "urchin");
@@ -29,26 +30,17 @@ export class Urchin {
 
     this.baseY = y;
     this.phase = Phaser.Math.FloatBetween(0, Math.PI * 2);
-
-    // Ojos medidos sobre urchin.png (846x680, origen en el centro): centros
-    // en (202.8, 313.9) y (397.8, 341.1).
-    this.blinkEyes = new BlinkEyes(
-      scene,
-      this.sprite,
-      [
-        { x: -220.2, y: -26.1, radius: 20 },
-        { x: -25.2, y: 1.1, radius: 20 },
-      ],
-      5.01,
-    );
-  }
-
-  destroy() {
-    this.blinkEyes.destroy();
   }
 
   update(time: number) {
     this.sprite.y = this.baseY + Math.sin((time / 1000) * BOB_SPEED + this.phase) * BOB_AMPLITUDE;
-    this.blinkEyes.update(time);
+
+    // Parpadeo: arte de verdad (urchin_blink.png, generado con Gemini a
+    // partir de este mismo sprite), no un Graphics dibujado por código.
+    const blinking = this.blinkTimer.isBlinking(time);
+    if (blinking !== this.isBlinking) {
+      this.isBlinking = blinking;
+      this.sprite.setTexture(blinking ? "urchin_blink" : "urchin");
+    }
   }
 }
