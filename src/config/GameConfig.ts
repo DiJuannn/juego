@@ -183,7 +183,14 @@ export const SHARK_MAX_GAP = 2000 * 1.6 * 2;
 // se tocan (ver URCHIN_SCALE/JELLYFISH_SCALE).
 export const SHARK_SCALE = 0.22 * 0.8;
 export const SHARK_PATROL_SPEED = 130;
-export const SHARK_PATROL_RANGE = 260; // px a cada lado del punto de aparición
+// Pedido explícito: "que recorra todo el tramo" — antes (260px a cada
+// lado) el radio quedaba muy recortado por WORLD_MARGIN_X en la mayoría de
+// puntos de aparición (spawnea entre 0.3-0.7 de WORLD_WIDTH), así que en la
+// práctica solo cubría ~55% del ancho del mundo, se leía como un vaivén
+// corto en el centro. Con un radio mayor que el propio ancho del mundo, el
+// recorte a los márgenes (ver Shark.place/maybeStartChase) garantiza que
+// SIEMPRE patrulla de punta a punta, sea cual sea su x de spawn.
+export const SHARK_PATROL_RANGE = 1000; // px a cada lado del punto de aparición (recortado a los márgenes del mundo)
 
 // Progresión del tiburón: los que aparecen ya cerca del final de la Zona 1
 // pueden, una única vez cada uno (nunca de forma permanente), lanzarse en
@@ -208,8 +215,9 @@ export const SQUID_SCALE = 0.18 * 0.8; // -20%, ver SHARK_SCALE
 // a esquivar, no una criatura que persigue. Su primera aparición la decide
 // el nivel scripteado del Tramo 1 (ver Zone1Level.ts), igual que el
 // tiburón; estos valores solo rigen su cadencia aleatoria a partir de ahí.
-export const URCHIN_MIN_GAP = 900 * 1.6 * 2;
-export const URCHIN_MAX_GAP = 1500 * 1.6 * 2;
+// Pedido explícito: "los pinchos un poco más separados".
+export const URCHIN_MIN_GAP = 900 * 1.6 * 2 * 1.4;
+export const URCHIN_MAX_GAP = 1500 * 1.6 * 2 * 1.4;
 export const URCHIN_SCALE = 0.17;
 
 // Pez grande: reutiliza el arte de pez ya existente (fish_05) a mayor

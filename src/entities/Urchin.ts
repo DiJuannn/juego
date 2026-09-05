@@ -37,8 +37,12 @@ export class Urchin {
     this.phase = Phaser.Math.FloatBetween(0, Math.PI * 2);
   }
 
+  /** Mismo motivo que Jellyfish.update(): un StaticBody no sigue sprite.x/y
+   * asignado a mano, hay que reposicionar el body explícitamente con
+   * reset() aunque aquí el bamboleo sea pequeño. */
   update(time: number) {
-    this.sprite.y = this.baseY + Math.sin((time / 1000) * BOB_SPEED + this.phase) * BOB_AMPLITUDE;
+    const y = this.baseY + Math.sin((time / 1000) * BOB_SPEED + this.phase) * BOB_AMPLITUDE;
+    (this.sprite.body as Phaser.Physics.Arcade.StaticBody).reset(this.sprite.x, y);
 
     // Parpadeo: arte de verdad (urchin_blink.png, generado con Gemini a
     // partir de este mismo sprite), no un Graphics dibujado por código.

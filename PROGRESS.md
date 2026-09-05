@@ -824,6 +824,67 @@ funciona **hoy**, verificado en el código — no lo que el diseño aspira a ten
     (un empujón modesto, no otro salto grande).
   - `npx tsc --noEmit` limpio. Playtest automático sigue completando el
     recorrido sin errores.
+- **Ronda de corrección tras feedback duro del usuario** ("le falta mucho
+  mucho mucho... no sé qué le falta pero le falta algo"), a partir de dos
+  capturas reales de móvil. En vez de seguir ajustando números a ciegas, se
+  auditó el código en busca de bugs reales de comportamiento — se
+  encontraron varios:
+  - **Hitbox de medusa/erizo rota de verdad** (esto es probablemente lo que
+    el usuario percibía como "las físicas no funcionan"): `Jellyfish`/
+    `Urchin` usan `StaticBody` y movían `sprite.x/y` a mano para el vaivén
+    (hasta ±95px en el patrón "deriva_amplia"), pero un `StaticBody` de
+    Arcade Physics NO resincroniza su posición solo porque se mueva el
+    `GameObject` — a diferencia de un body dinámico (tiburón/calamar/pez
+    grande), que sí se resincroniza solo cada step y por eso esos tres iban
+    bien. El body estático se quedaba clavado en el punto de spawn: Lumi
+    podía morir lejos de la medusa visible, o cruzarla ilesa. Arreglado en
+    `Jellyfish.update`/`Urchin.update`: en vez de asignar `sprite.x/y`
+    directo, se llama a `body.reset(x, y)` (API de Phaser para
+    `StaticBody`), que reposiciona GameObject+body a la vez conservando el
+    `setSize`/`setOffset` ya ajustado al dibujo real. Verificado en juego:
+    el centro del body ahora sigue al sprite frame a frame (antes se
+    quedaba fijo).
+  - **"El tiburón solo recorre un tramo muy pequeño"**: cierto —
+    `SHARK_PATROL_RANGE` (260px a cada lado del spawn) quedaba recortado
+    por los márgenes del mundo en la mayoría de puntos de aparición
+    (spawnea entre 0.3-0.7 de `WORLD_WIDTH`), así que en la práctica
+    cubría ~55% del ancho del mundo en vez de sentirse como una patrulla de
+    punta a punta. Subido a 1000 (mayor que el propio `WORLD_WIDTH`), así
+    el recorte a los márgenes garantiza que siempre cubre casi todo el
+    ancho, sea cual sea su x de spawn. Verificado registrando su x cada
+    200ms durante 4s: recorrió de 564 a 88 (casi todo el rango 80-610).
+  - **"Piezas laterales que se ven como un glitch"**: las capturas del
+    usuario mostraban un borrón translúcido superpuesto a Lumi/estrella —
+    eran las piezas `role:"background"` de `reef_boulder_rock` (escala
+    0.08-0.09, alpha 0.35-0.4) que se añadieron rondas atrás como "eco de
+    profundidad" en `diagonalLeft`/`centerTwoPaths`/`lateralWall`. En la
+    práctica, una roca borrosa y pequeña superpuesta al cúmulo principal se
+    lee como un error de render, no como fondo lejano. Se retiraron las 3
+    (el resto de cada plantilla, que ya eran obstáculos reales a opacidad
+    completa, no se toca).
+  - **Fondo sin sensación de continuidad** (tarea pendiente desde hace
+    rondas, "no se lee como infinito con decoración continua"): confirmado
+    que `rocks_back`/`distant_plants`/`foreground_plants` se colocan UNA
+    sola vez cerca de `START_Y` y quedan atrás para siempre al subir (por
+    diseño, como el suelo en Doodle Jump) — pero eso deja el resto de la
+    escalada como solo el tile de cielo/agua más la fauna dispersa, sin
+    ninguna decoración ambiental en los tramos largos entre cúmulos de
+    arrecife. Nuevo `AmbientDecorSpawner.ts`: reutiliza EXACTAMENTE los
+    mismos assets ya cargados para el arrecife (`reef_boulder_rock`,
+    `decor_pebble`, `decor_starfish` — cero arte nuevo, cumpliendo
+    CLAUDE.md), pegados de verdad al borde del mundo (0-5% del ancho, muy
+    por fuera del `EDGE_INSET` de 0.18 de los obstáculos reales) a escala
+    pequeña y opacidad 0.3-0.45, sin colisión, reciclándose con el mismo
+    patrón que el resto de spawners (`highestY` + lookahead + despawn).
+    Verificado en juego que aparecen solo pegados al borde (x=9/15/20/24/29
+    sobre 690, y x=684 en el lado derecho) y que el playtest automático
+    sigue completando el recorrido sin errores.
+  - **Erizos más separados**: pedido explícito ("los pinchos un poco más
+    separados") — `URCHIN_MIN_GAP`/`MAX_GAP` ×1.4. No afecta al combo
+    "erizos en línea + hueco + nenúfar" scripteado a mano, que tiene sus
+    propias posiciones fijas en `Zone1Level.ts`.
+  - `npx tsc --noEmit` limpio. Playtest automático completa el recorrido
+    sin errores en dos corridas distintas.
 
 # PENDIENTE
 
@@ -833,33 +894,26 @@ funciona **hoy**, verificado en el código — no lo que el diseño aspira a ten
 - Arte y diseño propios para la Zona 2 ("Arrecife") en adelante.
 - Conectar la animación de "dormir" (`sleep/`, el asset ya existe) a un trigger
   real de inactividad del jugador — hoy no se usa en ningún sitio del código.
-- Corregir la continuidad del fondo: la decoración (rocas/coral) se concentra en
-  una franja y deja un tramo largo vacío antes de repetirse, así que no se lee
-  como "infinito con decoración continua" (pedido explícito del usuario,
-  encolado, no iniciado).
 - Revisar el resto del checklist de animación por criatura de la revisión de
   Zona 1 (más allá del parpadeo, que ya está) si se retoma esa pasada.
+- La continuidad del fondo tuvo una primera pasada (`AmbientDecorSpawner`,
+  ver EN PROGRESO) reutilizando assets ya existentes — si al usuario le
+  sigue faltando densidad/variedad tras probarlo en el móvil, iterar sobre
+  `MIN_GAP`/`MAX_GAP`/`KEYS` de ese spawner antes que sobre nada más.
 
 # BUGS / PROBLEMAS
 
-- Fondo sin distribución continua de decoración (ver PENDIENTE arriba).
+(ninguno abierto conocido a fecha de esta ronda — ver EN PROGRESO para los
+que se cerraron)
 
 # PRÓXIMA TAREA
 
-Esperar la validación del usuario sobre el Tramo 1 de la Zona 1
-(`config/Zone1Level.ts`, ver EN PROGRESO) — le mandé fotos de cada combo y
-un vídeo del recorrido. Según lo que diga:
-- Si pide ajustar densidad/posiciones/qué criatura va con qué cúmulo,
-  iterar sobre `ZONE1_LEVEL_ENTRIES` (son solo datos, cambios rápidos).
-- Si el tramo 1 queda bien: diseñar el Tramo 2 (4000 en adelante, ver
-  PENDIENTE) siguiendo el mismo patrón de `spawnExact` ya construido.
-- Después: variaciones del mismo esqueleto para que no sea idéntico entre
-  intentos (pedido explícito, para más adelante, no antes de que el
-  esqueleto fijo esté aprobado).
-
-El fondo (`background_far.png`/`rocks_back.png`) y el prototipo de
-`ReefCluster` ya están aprobados y no se tocan salvo pedido explícito.
-
-Pendiente aparte (no bloquea lo anterior): corregir la continuidad del
-fondo actual (franja decorada seguida de un tramo largo vacío antes de
-repetirse) — ver detalle en GAME_DESIGN.md (sección ENVIRONMENT).
+Esperar la reacción del usuario a esta ronda de correcciones (hitbox de
+medusa/erizo, patrulla del tiburón, piezas-glitch retiradas, fondo con
+`AmbientDecorSpawner`, erizos más separados) probada en su móvil real.
+Según lo que diga:
+- Si el juego ya "se siente vivo": retomar el roadmap normal — Tramo 2 en
+  adelante, variaciones de esqueleto, Zona 2.
+- Si sigue faltando algo puntual: pedir que describa el momento exacto
+  (altura/zona/qué estaba haciendo) en vez de re-tunear números a ciegas —
+  ya se agotó ese enfoque una vez esta sesión sin resultado.

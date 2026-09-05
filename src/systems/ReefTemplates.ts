@@ -162,9 +162,6 @@ function diagonalLeft(worldWidth: number, centerY: number): ReefClusterSpec {
     // a la masa del borde, nunca sobre la ruta guía.
     piece({ key: "decor_starfish", x: fromEdge(worldWidth, "left", 0.17), y: centerY - 30, scale: 0.28, role: "obstacle" }),
     piece({ key: "decor_pebble", x: fromEdge(worldWidth, "left", 0.12), y: centerY + 200, scale: 0.32, role: "obstacle" }),
-    // Fondo: un eco pequeño y difuminado del arrecife más allá del hueco,
-    // para dar profundidad sin ocupar la ruta.
-    piece({ key: "reef_boulder_rock", x: fromEdge(worldWidth, "right", 0.08), y: centerY - 30, scale: 0.09, role: "background", alpha: 0.4 }),
   ];
 
   const path = [
@@ -213,7 +210,6 @@ function centerTwoPaths(worldWidth: number, centerY: number): ReefClusterSpec {
     // demás piezas de esta lista, deliberadamente NO está pegada a un
     // lateral: el hueco libre a su alrededor sigue siendo amplio de sobra.
     piece({ key: "decor_pebble", x: worldWidth * 0.5, y: centerY + 200, scale: 0.3, role: "obstacle" }),
-    piece({ key: "reef_boulder_rock", x: fromEdge(worldWidth, "left", 0.1), y: centerY - 10, scale: 0.08, role: "background", alpha: 0.35 }),
   ];
 
   // Serpentea por el centro: abajo se aparta hacia la derecha (huyendo de
@@ -336,9 +332,6 @@ function lateralWall(worldWidth: number, centerY: number): ReefClusterSpec {
     }),
     piece({ key: "decor_starfish", x: fromEdge(worldWidth, side, 0.28), y: centerY + 30, scale: 0.3, role: "obstacle" }),
     piece({ key: "decor_pebble", x: fromEdge(worldWidth, side, 0.13), y: centerY + 250, scale: 0.3, role: "obstacle" }),
-    // Fondo: un eco pequeño y difuminado del lado abierto, para que no se
-    // sienta completamente vacío sin invadir la ruta.
-    piece({ key: "reef_boulder_rock", x: fromEdge(worldWidth, side, 0.85), y: centerY + 10, scale: 0.09, role: "background", alpha: 0.35 }),
   ];
 
   // El carril libre queda en el lado contrario a la masa, con margen

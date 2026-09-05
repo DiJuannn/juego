@@ -98,13 +98,17 @@ export class Jellyfish {
     }
   }
 
-  /** Movimiento puramente visual: el cuerpo físico se queda en su posición
-   * nominal, el vaivén es pequeño y no afecta al overlap de forma notable. */
+  /** El vaivén mueve la hitbox de verdad: un StaticBody no resincroniza su
+   * posición solo porque se le mueva sprite.x/y (a diferencia de un body
+   * dinámico) — quedaba clavado en el punto de spawn mientras el dibujo se
+   * desviaba hasta 95px en "deriva_amplia", así que Lumi podía morir lejos
+   * de la medusa visible o pasar ilesa justo encima de ella. body.reset()
+   * reposiciona GameObject+body a la vez, conservando el setSize/setOffset
+   * ya ajustado al cuerpo real. */
   update(time: number) {
     const t = time / 1000;
     const { dx, dy } = this.computeOffset(t);
-    this.sprite.x = this.baseX + dx;
-    this.sprite.y = this.baseY + dy;
+    (this.sprite.body as Phaser.Physics.Arcade.StaticBody).reset(this.baseX + dx, this.baseY + dy);
 
     const pulse = Math.sin(t * PULSE_SPEED + this.phase);
     this.sprite.setScale(

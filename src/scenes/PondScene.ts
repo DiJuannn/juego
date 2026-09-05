@@ -21,6 +21,7 @@ import {
 import { ZONE1_LEVEL_END_OFFSET, ZONE1_LEVEL_ENTRIES } from "@/config/Zone1Level";
 import { BigFish } from "@/entities/BigFish";
 import { Lumi } from "@/entities/Lumi";
+import { AmbientDecorSpawner } from "@/systems/AmbientDecorSpawner";
 import { BackgroundFishField } from "@/systems/BackgroundFishField";
 import { BigFishSpawner } from "@/systems/BigFishSpawner";
 import { BubbleField } from "@/systems/BubbleField";
@@ -52,6 +53,7 @@ export class PondScene extends Phaser.Scene {
   private inputController!: InputController;
   private skyLayer!: ParallaxLayer;
   private fishField!: BackgroundFishField;
+  private ambientDecorSpawner!: AmbientDecorSpawner;
   private lilyPadSpawner!: LilyPadSpawner;
   private jellyfishSpawner!: JellyfishSpawner;
   private sharkSpawner!: SharkSpawner;
@@ -120,6 +122,13 @@ export class PondScene extends Phaser.Scene {
     // competir visualmente con Lumi. Se reciclan con la cámara (ver
     // BackgroundFishField.update), no dependen de una altura de mundo fija.
     this.fishField = new BackgroundFishField(this, WORLD_WIDTH, cam.height, 0.5, 0.25);
+
+    // Decoración ambiental sin colisión que rellena los tramos largos entre
+    // cúmulos de arrecife (pedido pendiente: "no se lee como infinito con
+    // decoración continua" — ver AmbientDecorSpawner). Reutiliza los mismos
+    // assets ya cargados para el arrecife, pegados al borde y a baja
+    // opacidad para no confundirse nunca con un obstáculo real.
+    this.ambientDecorSpawner = new AmbientDecorSpawner(this, WORLD_WIDTH, START_Y);
 
     // Rocas/plantas son decoración de la zona de salida — el "fondo del
     // estanque" de verdad. Se anclan cerca de START_Y (no del viejo fondo
@@ -722,6 +731,7 @@ export class PondScene extends Phaser.Scene {
 
     this.skyLayer.update(cam);
     this.fishField.update(time, delta, cam.scrollY, cam.height);
+    this.ambientDecorSpawner.update(cam.scrollY, cam.scrollY + cam.height);
     this.lilyPadSpawner.update(cam.scrollY, cam.scrollY + cam.height, time);
     this.shieldPickupSpawner.update(cam.scrollY, cam.scrollY + cam.height, time);
     this.reefClusterSpawner.update(cam.scrollY, cam.scrollY + cam.height, time);
