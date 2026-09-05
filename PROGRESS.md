@@ -170,6 +170,23 @@ funciona **hoy**, verificado en el código — no lo que el diseño aspira a ten
      lados.
   Playtest automatizado (zigzag simple) sigue pasando sin golpes tras
   estos 4 cambios.
+  **6ª tanda, revisión de la 5ª**: dos ajustes puntuales.
+  1. `reef_coral_branch` queda FUERA de la reducción de escala del 85% —
+     "el de coral... ese así grandote me gustaba", pedido explícito de
+     mantenerlo en su tamaño grande original. Las otras dos ramas largas
+     (`reef_branch_straight`, `reef_branch_hook`) se quedan al 85%.
+  2. `reef_branch_straight` deja de espejarse por completo: viendo la
+     versión con `flipX` en el lado derecho, el usuario pidió "el espejo
+     de ese, y ponlo en ese mismo lado" — es decir, en la derecha usar
+     también la orientación nativa (sin espejar), no la espejada. Es la
+     única excepción a la convención "coral a la izquierda de fábrica,
+     espejar para la derecha" que comparten las otras 3 ramas
+     (`NEVER_FLIP_KEYS` en `ReefTemplates.ts`) — con esta rama en
+     concreto, el coral queda apuntando al interior y la parte lisa toca
+     el borde, al revés que las demás, por pedido explícito. Verificado
+     con Playwright reproduciendo exactamente la posición/origen que usa
+     `lateralWall` a cada lado. Playtest automatizado sigue pasando sin
+     golpes.
 - Se abandonó la idea de un fondo de escena pintado como imagen única
   (se había generado un primer ejemplo con Gemini, nunca integrado) — el
   usuario confirmó explícitamente que quiere mantener el fondo actual

@@ -42,7 +42,8 @@ function piece(p: PieceInput): ReefPieceSpec {
  * plantilla que usa una rama como columna vertebral elige una al azar en
  * vez de repetir siempre `reef_coral_branch`. Todas comparten la misma
  * convención: el coral está concentrado en su lado IZQUIERDO de fábrica,
- * así que al usarlas entrando por la derecha hay que espejarlas (flipX).
+ * así que al usarlas entrando por la derecha hay que espejarlas (flipX) —
+ * salvo `reef_branch_straight`, ver NEVER_FLIP_KEYS más abajo.
  */
 const BRANCH_VARIANTS = ["reef_coral_branch", "reef_branch_straight", "reef_branch_hook", "reef_branch_short"];
 
@@ -50,14 +51,28 @@ function pickBranch(): string {
   return Phaser.Utils.Array.GetRandom(BRANCH_VARIANTS);
 }
 
-// Las ramas "largas" (todas menos branch_short) dejan menos hueco libre que
-// las demás piezas a igual `scale` nominal — pedido explícito del usuario:
-// "las que son largas que sea un poco más pequeño para que dé más espacio".
-// branch_short ya es compacta de por sí, se queda con la escala pedida tal cual.
-const LONG_BRANCH_KEYS = new Set(["reef_coral_branch", "reef_branch_straight", "reef_branch_hook"]);
+// Las ramas "largas" dejan menos hueco libre que las demás piezas a igual
+// `scale` nominal — pedido explícito del usuario: "las que son largas que
+// sea un poco más pequeño para que dé más espacio". reef_coral_branch
+// queda fuera a propósito: "el de coral... ese así grandote me gustaba"
+// (pedido explícito de mantenerlo en su tamaño grande original tras ver
+// las 4 ya reducidas). branch_short ya es compacta de por sí.
+const LONG_BRANCH_KEYS = new Set(["reef_branch_straight", "reef_branch_hook"]);
 
 function branchScale(key: string, base: number): number {
   return LONG_BRANCH_KEYS.has(key) ? base * 0.85 : base;
+}
+
+// reef_branch_straight es la única excepción a "el coral está a la
+// izquierda de fábrica, espejar para el lado derecho" — pedido explícito
+// del usuario tras ver el espejo en el lado derecho: "simplemente el
+// espejo, haz el espejo de ese [el ya espejado] y ponlo en ese mismo
+// lado", es decir, en el lado derecho usar la orientación nativa (sin
+// espejar) también, no la espejada.
+const NEVER_FLIP_KEYS = new Set(["reef_branch_straight"]);
+
+function branchFlipX(key: string, wantFlip: boolean): boolean {
+  return wantFlip && !NEVER_FLIP_KEYS.has(key);
 }
 
 /**
@@ -165,7 +180,7 @@ function sCurveEdges(worldWidth: number, centerY: number): ReefClusterSpec {
       y: midY - 30,
       scale: branchScale(sCurveBranchKey, 0.4),
       rotation: -0.1,
-      flipX: true,
+      flipX: branchFlipX(sCurveBranchKey, true),
       role: "obstacle",
     }),
     piece({ key: "decor_starfish", x: worldWidth * 0.8, y: midY - 100, scale: 0.3, role: "decoration" }),
@@ -232,7 +247,7 @@ function lateralWall(worldWidth: number, centerY: number): ReefClusterSpec {
       y: centerY - 60,
       scale: branchScale(wallBranchKey, 0.5),
       rotation: 0.02,
-      flipX: side === "right",
+      flipX: branchFlipX(wallBranchKey, side === "right"),
       role: "obstacle",
     }),
     piece({ key: "decor_starfish", x: fromEdge(0.2), y: centerY + 30, scale: 0.3, role: "decoration" }),
