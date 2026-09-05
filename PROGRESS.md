@@ -187,6 +187,12 @@ funciona **hoy**, verificado en el código — no lo que el diseño aspira a ten
      con Playwright reproduciendo exactamente la posición/origen que usa
      `lateralWall` a cada lado. Playtest automatizado sigue pasando sin
      golpes.
+  **7ª tanda**: "ahora haz lo mismo con el otro" — mismo tratamiento
+  (`NEVER_FLIP_KEYS`) aplicado a `reef_branch_hook`: en el lado derecho
+  también usa su orientación nativa sin espejar. Con esto, de las 4
+  variantes de rama solo `reef_coral_branch` y `reef_branch_short` siguen
+  la convención general de espejarse hacia la derecha. Verificado igual
+  que branch_straight, playtest sigue pasando.
 - Se abandonó la idea de un fondo de escena pintado como imagen única
   (se había generado un primer ejemplo con Gemini, nunca integrado) — el
   usuario confirmó explícitamente que quiere mantener el fondo actual
