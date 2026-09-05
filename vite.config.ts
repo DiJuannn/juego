@@ -8,7 +8,16 @@ const rootDir = import.meta.dirname;
 // ese directorio como raíz pública: un archivo en
 // /assets/characters/lumi/idle/idle_01.png queda disponible en
 // /characters/lumi/idle/idle_01.png tanto en dev como en el build final.
+// GitHub Pages sirve el proyecto bajo /juego/ (no en la raíz del
+// dominio), así que las rutas de assets/JS necesitan ese prefijo — pero
+// SOLO ahí: en local (npm run dev/preview) o en cualquier otro hosting
+// que sirva desde la raíz, base debe seguir siendo "/". El workflow de
+// deploy (.github/workflows/deploy-pages.yml) es el único que define
+// GITHUB_PAGES=true al compilar.
+const base = process.env.GITHUB_PAGES ? "/juego/" : "/";
+
 export default defineConfig({
+  base,
   publicDir: "assets",
   resolve: {
     alias: {

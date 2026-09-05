@@ -1,3 +1,5 @@
+import { assetPath } from "@/config/assetPath";
+
 // Manifiesto de qué frames existen REALMENTE ahora mismo en
 // /assets/characters/lumi/. Esto no es una lista deseada, es un reflejo
 // exacto del contenido actual del disco — cuando se añadan más frames a
@@ -39,7 +41,7 @@ export const LUMI_FPS = 8; // pedido en el ejemplo de STYLE_GUIDE.md
 
 export function framePath(folder: string, index: number): string {
   const n = String(index).padStart(2, "0");
-  return `/characters/lumi/${folder}/${folder}_${n}.png`;
+  return assetPath(`/characters/lumi/${folder}/${folder}_${n}.png`);
 }
 
 export function frameKey(folder: string, index: number): string {

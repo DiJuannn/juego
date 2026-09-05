@@ -327,6 +327,29 @@ funciona **hoy**, verificado en el código — no lo que el diseño aspira a ten
   móvil — el filtro `pointer: coarse` evita que salte en una ventana de
   escritorio ancha y baja (verificado: sigue mostrando el juego a 900×400
   sin táctil; sí muestra el aviso a 780×360 con táctil).
+- **Despliegue automático a GitHub Pages** (`.github/workflows/deploy-pages.yml`)
+  — pedido explícito: "dime las instrucciones paso a paso para ponerlo en
+  el móvil". Cada push a `claude/axolotl-3d-game-1rl3bw` recompila
+  (`npm run build`) y publica en GitHub Pages, sin depender de tener un
+  ordenador encendido ni compartir wifi con el móvil.
+  **Bug real encontrado y arreglado antes de publicarlo**: GitHub Pages
+  sirve el proyecto bajo `/juego/`, no en la raíz del dominio. Vite ya
+  sabe aplicar ese prefijo a lo que él mismo procesa (el bundle JS, vía
+  `base` en `vite.config.ts`, solo activo en el build de CI mediante la
+  variable `GITHUB_PAGES`), pero las ~30 rutas de carga de Phaser
+  (`this.load.image(...)` en `BootScene.ts`, más `framePath()` de
+  `LumiAnimConfig.ts`) son strings sueltos en tiempo de ejecución que
+  Vite no toca — probado sirviendo el build real bajo un subpath local
+  (`python -m http.server` + carpeta `/juego`): 64 peticiones de assets a
+  404 antes del arreglo, 0 después. Arreglado con un helper compartido,
+  `assetPath()` (`src/config/assetPath.ts`), que antepone
+  `import.meta.env.BASE_URL` a cada ruta — envuelve todas las llamadas de
+  `BootScene.ts` y `framePath()`. Verificado de nuevo bajo el subpath
+  simulado (0 peticiones fallidas, captura real del juego cargando bien)
+  y en modo dev normal (`base` sigue siendo `/`, sin regresión).
+  Paso manual pendiente del usuario (una vez): activar "GitHub Actions"
+  como fuente en Settings → Pages del repo — después la URL
+  `https://dijuannn.github.io/juego/` queda siempre actualizada.
 
 # PENDIENTE
 

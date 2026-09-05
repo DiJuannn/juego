@@ -1,0 +1,48 @@
+name: Deploy to GitHub Pages
+
+# Pedido explícito del usuario: poder probar el juego en el móvil sin
+# depender de un servidor de desarrollo ni de compartir wifi con un
+# ordenador. Cada push a esta rama recompila y publica en GitHub Pages —
+# solo hace falta activar "GitHub Actions" como fuente en Settings > Pages
+# una vez (ver PROGRESS.md).
+on:
+  push:
+    branches:
+      - claude/axolotl-3d-game-1rl3bw
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+        env:
+          GITHUB_PAGES: "true"
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
