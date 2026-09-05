@@ -217,6 +217,21 @@ funciona **hoy**, verificado en el código — no lo que el diseño aspira a ten
   `scripts/gen_asset.py` conserva los flags `--background`/`--aspect-ratio`
   añadidos para ese intento (útiles para cualquier fondo futuro), pero no
   hay ningún plan activo de generar más secciones pintadas.
+- **`background_far.png` revertido a la versión "solo mar"**: la versión
+  que había en el repo (desde el commit `8484ef7`, bastante anterior a
+  todo el trabajo de `ReefCluster` de esta sesión) tenía arcos/columnas de
+  piedra tipo ruinas dibujados directamente en la capa de fondo lejana —
+  el usuario, tras aprobar los obstáculos de `ReefCluster`, pidió
+  "mejora el fondo... que se vea solo mar como estaba antes". Restaurado
+  con `git show <commit>:<path>` a la versión de `70c0da8` (gradiente de
+  agua con rayos de luz, sin ninguna estructura dibujada — la versión
+  inmediatamente anterior a que se añadieran esos arcos), que ya era la
+  pensada para repetirse como `TileSprite` en `ParallaxLayer`. Sin cambios
+  de código: `rocks_back.png` (el cúmulo de rocas redondeadas pequeño) no
+  tenía este problema, se queda igual. Verificado con Playwright en varios
+  puntos de scroll (incluido un salto de 20000px) sin costuras visibles;
+  playtest automatizado sigue pasando (background es puramente visual, no
+  toca colisiones).
 
 # PENDIENTE
 
