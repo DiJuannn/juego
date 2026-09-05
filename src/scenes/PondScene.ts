@@ -185,6 +185,14 @@ export class PondScene extends Phaser.Scene {
         this.lilyPadSpawner.consume(padObj as Phaser.Physics.Arcade.Image);
       },
     );
+    // Camino de monedas encima de cada nenúfar, hasta donde llega su
+    // impulso (ver LilyPadSpawner.spawnAt) — mismo criterio de recompensa
+    // que las monedas guía del arrecife.
+    this.physics.add.overlap(this.lumi.sprite, this.lilyPadSpawner.coinGroup, (_lumiObj, coinObj) => {
+      this.coinCount += 1;
+      this.coinText.setText(`Monedas: ${this.coinCount}`);
+      this.lilyPadSpawner.consumeCoin(coinObj as Phaser.Physics.Arcade.Image);
+    });
 
     // Power-up de escudo: aparece antes que la propia medusa. Absorbe UN
     // golpe letal (ver consumeShield) — se recoge igual que un nenúfar.

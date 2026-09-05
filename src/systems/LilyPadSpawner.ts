@@ -1,6 +1,12 @@
 import Phaser from "phaser";
+import { CoinPickup } from "@/entities/CoinPickup";
 import { LilyPad } from "@/entities/LilyPad";
-import { LILY_PAD_MAX_GAP, LILY_PAD_MIN_GAP } from "@/config/GameConfig";
+import {
+  LILY_PAD_BOOST_DISTANCE,
+  LILY_PAD_MAX_GAP,
+  LILY_PAD_MIN_GAP,
+  REEF_COIN_SPACING,
+} from "@/config/GameConfig";
 
 const SPAWN_LOOKAHEAD = 900;
 const DESPAWN_MARGIN = 1200;
@@ -14,7 +20,9 @@ const PAD_MARGIN_X = 120;
  */
 export class LilyPadSpawner {
   readonly group: Phaser.Physics.Arcade.StaticGroup;
+  readonly coinGroup: Phaser.Physics.Arcade.StaticGroup;
   private pads: LilyPad[] = [];
+  private coins: CoinPickup[] = [];
   private highestY: number;
 
   constructor(
@@ -24,6 +32,7 @@ export class LilyPadSpawner {
     startY: number,
   ) {
     this.group = scene.physics.add.staticGroup();
+    this.coinGroup = scene.physics.add.staticGroup();
     this.highestY = startY;
     this.spawnAt(startX, startY);
   }
@@ -33,6 +42,17 @@ export class LilyPadSpawner {
     this.group.add(pad.sprite);
     this.pads.push(pad);
     if (y < this.highestY) this.highestY = y;
+
+    // Pedido explícito: "encima de cada nenúfar pondría monedas hasta
+    // donde propulse" — un camino de monedas en la misma X, desde justo
+    // encima del nenúfar hasta la distancia real que recorre su impulso
+    // (ver LILY_PAD_BOOST_DISTANCE, calculada a partir de la velocidad/
+    // duración reales del boost, no a ojo).
+    for (let dy = REEF_COIN_SPACING; dy <= LILY_PAD_BOOST_DISTANCE; dy += REEF_COIN_SPACING) {
+      const coin = new CoinPickup(this.scene, x, y - dy);
+      this.coinGroup.add(coin.sprite);
+      this.coins.push(coin);
+    }
   }
 
   update(cameraTopY: number, cameraBottomY: number, time: number) {
@@ -50,6 +70,15 @@ export class LilyPadSpawner {
       pad.update(time);
       return true;
     });
+
+    this.coins = this.coins.filter((coin) => {
+      if (coin.sprite.y > cameraBottomY + DESPAWN_MARGIN) {
+        this.coinGroup.remove(coin.sprite, true, true);
+        return false;
+      }
+      coin.update(time);
+      return true;
+    });
   }
 
   /** Al usarlo, el nenúfar hace un pop y desaparece en vez de quedarse ahí
@@ -61,5 +90,13 @@ export class LilyPadSpawner {
     this.group.remove(pad.sprite, false, false);
     this.pads = this.pads.filter((p) => p !== pad);
     pad.playUseAnimationAndDestroy(this.scene, () => {});
+  }
+
+  consumeCoin(pickupSprite: Phaser.Physics.Arcade.Image) {
+    const coin = this.coins.find((c) => c.sprite === pickupSprite);
+    if (!coin) return;
+    this.coinGroup.remove(coin.sprite, false, false);
+    this.coins = this.coins.filter((c) => c !== coin);
+    coin.playPickupAndDestroy(this.scene, () => {});
   }
 }

@@ -70,18 +70,47 @@ export const LUMI_DRIFT_SPEED = 55; // px/seg, hacia abajo
 export const LUMI_SCREEN_ANCHOR_Y = 0.48;
 
 // Nenúfares: separación vertical entre uno y el siguiente al generarlos
-// según Lumi sube. Pedido explícito: que no salgan tan seguido.
-export const LILY_PAD_MIN_GAP = 320;
-export const LILY_PAD_MAX_GAP = 520;
+// según Lumi sube. Pedido explícito: que no salgan tan seguido. Pedido
+// posterior: "bajaría un 50% su spawn" — el doble de separación es la
+// mitad de frecuencia.
+export const LILY_PAD_MIN_GAP = 320 * 2;
+export const LILY_PAD_MAX_GAP = 520 * 2;
 
 // Pedido explícito: 70% más pequeños que el tamaño nativo del recorte.
 export const LILY_PAD_SCALE = 0.3;
 
-// Pedido explícito: "el propulsor del nenúfar bájale un 20%" — solo el
-// impulso del nenúfar (Lumi.triggerBoost), no el del power-up de boost
-// (Lumi.triggerSuperBoost, ver SUPER_BOOST_SPEED_MULT), que usa la misma
-// BOOST_SPEED base pero no se toca aquí.
-export const LILY_PAD_BOOST_MULT = 0.8;
+// Velocidad/duración base del impulso: compartidas por el nenúfar
+// (Lumi.triggerBoost, con LILY_PAD_BOOST_MULT abajo) y el power-up de
+// boost (Lumi.triggerSuperBoost, con SUPER_BOOST_SPEED_MULT/
+// SUPER_BOOST_DURATION_MS) — moved aquí desde Lumi.ts (antes locales sin
+// exportar) porque LILY_PAD_BOOST_DISTANCE, más abajo, necesita
+// calcular con ellas cuánto avanza el impulso del nenúfar en píxeles.
+export const BOOST_BASE_SPEED = LUMI_SWIM_SPEED * 2.9;
+export const BOOST_DURATION_MS = 550;
+// Últimos BOOST_EASE_MS del impulso: la velocidad baja de forma gradual
+// de 100% a 50% en vez de cortar en seco a la velocidad normal.
+export const BOOST_EASE_MS = 150;
+
+// Pedido explícito: "el propulsor del nenúfar bájale un 20%", y una
+// ronda después "le bajaría un 20% más su propulsor" — 0.8 y luego
+// 0.8*0.8. Solo el impulso del nenúfar (Lumi.triggerBoost), no el del
+// power-up de boost (Lumi.triggerSuperBoost, ver SUPER_BOOST_SPEED_MULT),
+// que usa la misma BOOST_BASE_SPEED pero no se toca aquí.
+export const LILY_PAD_BOOST_MULT = 0.8 * 0.8;
+
+// Pedido explícito: "encima de cada nenúfar pondría monedas hasta donde
+// propulse" — distancia que de verdad recorre Lumi durante el impulso
+// del nenúfar, para trazar un camino de monedas hasta ahí (ver
+// LilyPadSpawner.spawnAt). Calculada a partir de las constantes de
+// arriba en vez de puesta a mano, para que si se vuelve a tocar la
+// velocidad/duración del impulso esta distancia seguga siendo la real:
+// velocidad plena durante (BOOST_DURATION_MS - BOOST_EASE_MS), luego
+// velocidad media (75% de la plena) durante los BOOST_EASE_MS de bajada
+// lineal de 100% a 50%.
+const LILY_PAD_BOOST_FULL_SPEED = BOOST_BASE_SPEED * LILY_PAD_BOOST_MULT;
+export const LILY_PAD_BOOST_DISTANCE =
+  LILY_PAD_BOOST_FULL_SPEED * ((BOOST_DURATION_MS - BOOST_EASE_MS) / 1000) +
+  LILY_PAD_BOOST_FULL_SPEED * 0.75 * (BOOST_EASE_MS / 1000);
 
 // Si Lumi cae más allá de esto por debajo del borde inferior de la
 // cámara, se considera que ha caído del todo: game over.

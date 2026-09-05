@@ -724,6 +724,52 @@ funciona **hoy**, verificado en el código — no lo que el diseño aspira a ten
     recorrido sin errores. Captura del mismo hueco reef→medusa muestra
     ahora agua completamente abierta (ni siquiera se alcanza a ver el
     cúmulo de arrecife en el mismo encuadre).
+- **Cuatro pedidos más en la misma línea, tras responder "¿hasta qué
+  capa/zona llevamos?" con: solo existe contenido propio de la Zona 1
+  (Estanque) — Tramo 1+2 diseñados a mano llegan hasta altura ~2080, y
+  más allá de eso los mismos peligros de Zona 1 siguen apareciendo al
+  azar para siempre (Zonas 2-8 son solo datos de tinte/nombre en
+  ZoneConfig.ts, sin arte ni diseño propio todavía).**
+  - **Nenúfares -50% de frecuencia de spawn**: `LILY_PAD_MIN_GAP`/
+    `LILY_PAD_MAX_GAP` ×2 (320→640, 520→1040) — el doble de separación es
+    la mitad de frecuencia. Verificado midiendo los huecos reales entre
+    nenúfares generados en juego (~937-943px, dentro del rango nuevo).
+  - **Monedas encima de cada nenúfar, hasta donde propulsa**: pedido
+    explícito: "encima de cada nenúfar pondría monedas hasta donde
+    propulse". `LilyPadSpawner` gana su propio `coinGroup` (mismo patrón
+    que `ReefClusterSpawner.coinGroup`: `consumeCoin`, filtrado/despawn en
+    `update()`) — cada nenúfar nuevo (`spawnAt`) traza una columna de
+    monedas en su misma X, desde justo encima hasta la distancia real que
+    recorre el impulso. Esa distancia (`LILY_PAD_BOOST_DISTANCE`, nueva
+    en `GameConfig.ts`) se CALCULA a partir de la velocidad/duración
+    reales del boost (no a ojo): velocidad plena durante
+    `BOOST_DURATION_MS - BOOST_EASE_MS`, luego velocidad media (75% de la
+    plena) durante el resto por la rampa de bajada — para poder
+    calcularla, `BOOST_BASE_SPEED`/`BOOST_DURATION_MS`/`BOOST_EASE_MS` se
+    movieron de constantes locales sin exportar en `Lumi.ts` a
+    exportadas en `GameConfig.ts`. Wireado en `PondScene.ts` con su
+    propio `physics.add.overlap`. Verificado con captura: columna de
+    monedas visible justo encima de un nenúfar real en juego.
+  - **Propulsor del nenúfar, 20% más abajo todavía**: "le bajaría un 20%
+    más su propulsor" — `LILY_PAD_BOOST_MULT` pasa de `0.8` a `0.8*0.8`
+    (0.64). Sigue sin tocar el power-up de boost aparte
+    (`SUPER_BOOST_SPEED_MULT`). Verificado: velocidad del primer frame de
+    impulso bajó a 934.96 (con el 0.8 de la ronda anterior) → recalculado
+    con el nuevo 0.64 dentro de `LILY_PAD_BOOST_DISTANCE` para que el
+    camino de monedas siga terminando justo donde de verdad se para el
+    impulso.
+  - **Obstáculos laterales menos recortados**: "los obstáculos de los
+    laterales empiezan muy recortados. Que no se recorten tanto".
+    `reef_boulder_rock` se anclaba al borde con un inset de solo ∓0.02
+    (`edgeX`/`fromEdge` en `ReefTemplates.ts`), dejando la mitad de la
+    roca fuera del área jugable. Nueva constante compartida
+    `EDGE_INSET=0.07` (∓0.07, más del triple) usada tanto por `edgeX`
+    (diagonalLeft/centerTwoPaths/sCurveEdges) como por el inset de
+    `lateralWall` — se ve bastante más roca de verdad dentro de la
+    pantalla sin dejar de leerse pegada al borde. Verificado con captura
+    de una roca real en juego.
+  - `npx tsc --noEmit` limpio. Playtest automático sigue completando el
+    recorrido sin errores.
 
 # PENDIENTE
 

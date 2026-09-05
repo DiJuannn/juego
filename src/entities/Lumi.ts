@@ -1,5 +1,8 @@
 import Phaser from "phaser";
 import {
+  BOOST_BASE_SPEED,
+  BOOST_DURATION_MS,
+  BOOST_EASE_MS,
   LILY_PAD_BOOST_MULT,
   LUMI_DRIFT_SPEED,
   LUMI_SCALE,
@@ -21,15 +24,6 @@ type LumiState =
   | "swim_up_left"
   | "swim_down_right"
   | "swim_down_left";
-
-const BOOST_DURATION_MS = 550;
-// Pedido explícito: que el nenúfar impulse más hacia arriba.
-const BOOST_SPEED = LUMI_SWIM_SPEED * 2.9;
-// El boost cortaba en seco de velocidad máxima a velocidad normal en el
-// último frame — se notaba raro. Los últimos BOOST_EASE_MS bajan la
-// velocidad a la mitad de forma gradual, así el salto que queda al
-// terminar de verdad es mucho más pequeño.
-const BOOST_EASE_MS = 150;
 
 /**
  * Envuelve el sprite físico de Lumi y decide qué animación reproducir
@@ -121,7 +115,7 @@ export class Lumi {
       this.boostRemainingMs -= deltaMs;
       const easeFactor =
         this.boostRemainingMs < BOOST_EASE_MS ? Math.max(this.boostRemainingMs, 0) / BOOST_EASE_MS : 1;
-      const boostSpeed = BOOST_SPEED * this.boostSpeedMult * (0.5 + 0.5 * easeFactor);
+      const boostSpeed = BOOST_BASE_SPEED * this.boostSpeedMult * (0.5 + 0.5 * easeFactor);
       // El empuje vertical del propulsor manda, pero el jugador sigue
       // pudiendo dirigirse a los lados mientras dura — no es una pérdida
       // de control, es un impulso hacia arriba con dirección libre.

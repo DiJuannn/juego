@@ -88,8 +88,15 @@ type Side = "left" | "right";
 // pegada a un borde de verdad, girada 90º para que su parte plana quede
 // contra el lateral — mismo criterio que ya tenía `lateralWall` (ver
 // ReefCluster.ts para el ajuste de hitbox que acompaña a esta rotación).
+// El inset (antes ∓0.02, centrado casi exactamente en el borde) dejaba
+// la mitad de la roca fuera del mundo/cámara — pedido explícito
+// posterior: "los obstáculos de los laterales empiezan muy recortados,
+// que no se recorten tanto". Subido a ∓0.07 para que se vea bastante más
+// roca de verdad dentro del área jugable, sin dejar de leerse pegada al
+// borde.
+const EDGE_INSET = 0.07;
 function edgeX(worldWidth: number, side: Side): number {
-  return side === "left" ? -0.02 * worldWidth : 1.02 * worldWidth;
+  return side === "left" ? EDGE_INSET * worldWidth : (1 - EDGE_INSET) * worldWidth;
 }
 
 function edgeRotation(side: Side): number {
@@ -296,15 +303,15 @@ function lateralWall(worldWidth: number, centerY: number): ReefClusterSpec {
   const wallBranchKey = pickBranch();
 
   const pieces: ReefPieceSpec[] = [
-    // La pieza más cercana al borde se centra casi en el borde mismo (y un
-    // poco más allá, x negativa o > worldWidth es inofensivo: la cámara
-    // nunca llega ahí) — el resto de la masa "sigue" fuera de pantalla.
     // Pedido explícito del usuario: girar la roca 90º según el lado para
     // que su parte plana quede pegada al lateral (ver ReefCluster.ts para
-    // el ajuste de hitbox que acompaña a esta rotación).
+    // el ajuste de hitbox que acompaña a esta rotación). Mismo EDGE_INSET
+    // que edgeX (antes -0.02, casi centrada en el borde mismo, dejaba la
+    // mitad de la roca recortada fuera del mundo — pedido explícito: "que
+    // no se recorten tanto").
     piece({
       key: "reef_boulder_rock",
-      x: fromEdge(worldWidth, side, -0.02),
+      x: fromEdge(worldWidth, side, EDGE_INSET),
       y: centerY + 150,
       scale: 0.46,
       rotation: side === "left" ? Math.PI / 2 : -Math.PI / 2,
