@@ -94,10 +94,11 @@ export class Squid {
     // Pedido explícito: hitbox ajustada al manto/cabeza real, no a los
     // tentáculos sueltos ni al hueco alrededor — medido sobre squid.png
     // (927x762).
-    // Multiplicado por `scale`: un body dinámico no escala el tamaño/
-    // offset con setScale() (confirmado con un probe en juego — la hitbox
-    // se quedaba ~2.5x más grande que el dibujo visible).
-    body.setSize(453 * scale, 407 * scale).setOffset(226 * scale, 166 * scale);
+    // NUNCA multiplicar por `scale` aquí: un body dinámico ya sincroniza
+    // width/height/offset con el scale actual del sprite cada frame (ver
+    // Shark.ts para el detalle) — pre-multiplicar deja el resultado al
+    // cuadrado del scale desde el segundo frame en adelante.
+    body.setSize(453, 407).setOffset(226, 166);
 
     this.baseY = y;
     this.phase = Phaser.Math.FloatBetween(0, Math.PI * 2);

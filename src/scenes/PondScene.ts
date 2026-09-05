@@ -26,6 +26,7 @@ import { BackgroundFishField } from "@/systems/BackgroundFishField";
 import { BigFishSpawner } from "@/systems/BigFishSpawner";
 import { BubbleField } from "@/systems/BubbleField";
 import { CoinSpawner } from "@/systems/CoinSpawner";
+import { CrabSpawner } from "@/systems/CrabSpawner";
 import { CrossfadePlant } from "@/systems/CrossfadePlant";
 import { CurrentZoneSpawner } from "@/systems/CurrentZoneSpawner";
 import { InputController } from "@/systems/InputController";
@@ -41,7 +42,7 @@ import { UrchinSpawner } from "@/systems/UrchinSpawner";
 import { ZoneManager } from "@/systems/ZoneManager";
 import { pondLayerKey, pondPlantFrameKey } from "./BootScene";
 
-type DeathReason = "atras" | "medusa" | "tiburon" | "calamar" | "erizo";
+type DeathReason = "atras" | "medusa" | "tiburon" | "calamar" | "erizo" | "cangrejo";
 
 /**
  * Escalada infinita: la cámara solo sube (nunca retrocede) siguiendo a
@@ -58,6 +59,7 @@ export class PondScene extends Phaser.Scene {
   private jellyfishSpawner!: JellyfishSpawner;
   private sharkSpawner!: SharkSpawner;
   private squidSpawner!: SquidSpawner;
+  private crabSpawner!: CrabSpawner;
   private urchinSpawner!: UrchinSpawner;
   private reefClusterSpawner!: ReefClusterSpawner;
   private bigFishSpawner!: BigFishSpawner;
@@ -315,6 +317,16 @@ export class PondScene extends Phaser.Scene {
       this.handleHazardHit("calamar", squidObj as Phaser.Physics.Arcade.Image);
     });
 
+    // Cangrejos: sexto enemigo (pedido explícito: "veas qué nuevos
+    // enemigos hacer"). Se mueven a trompicones (pausa + ráfaga corta), un
+    // "lenguaje" de movimiento distinto al resto — ver entities/Crab.ts.
+    this.crabSpawner = new CrabSpawner(this, WORLD_WIDTH, START_Y - ZONE1_LEVEL_END_OFFSET, (y) =>
+      this.reefClusterSpawner.isWithinAnyClusterBand(y),
+    );
+    this.physics.add.overlap(this.lumi.sprite, this.crabSpawner.group, (_lumiObj, crabObj) => {
+      this.handleHazardHit("cangrejo", crabObj as Phaser.Physics.Arcade.Image);
+    });
+
     // Zona 1 completa (0 a ZONE1_LEVEL_END_OFFSET, Tramos 1 y 2): nivel
     // diseñado a mano (ver Zone1Level.ts), no generación al azar — pedido
     // explícito del usuario ("como si fuera el Mario Maker"). A partir de
@@ -339,6 +351,9 @@ export class PondScene extends Phaser.Scene {
           break;
         case "squid":
           this.squidSpawner.spawnExact(y, entry.x);
+          break;
+        case "crab":
+          this.crabSpawner.spawnExact(y, entry.x);
           break;
         case "reef":
           this.reefClusterSpawner.spawnExact(y, entry.reefTemplate ?? 0);
@@ -462,6 +477,7 @@ export class PondScene extends Phaser.Scene {
     tiburon: "Te ha mordido un tiburón...",
     calamar: "Un calamar te ha atrapado...",
     erizo: "Te has pinchado con un erizo...",
+    cangrejo: "Un cangrejo te ha pellizcado...",
   };
 
   /** Punto de entrada de los 4 peligros (medusa/tiburón/calamar/erizo): si
@@ -754,6 +770,7 @@ export class PondScene extends Phaser.Scene {
     this.sharkSpawner.update(cam.scrollY, cam.scrollY + cam.height, time);
     this.bigFishSpawner.update(cam.scrollY, cam.scrollY + cam.height, time);
     this.squidSpawner.update(cam.scrollY, cam.scrollY + cam.height, time);
+    this.crabSpawner.update(cam.scrollY, cam.scrollY + cam.height, time);
     this.currentZoneSpawner.update(cam.scrollY, cam.scrollY + cam.height);
 
     // Corriente de agua: empuje lateral aplicado DESPUÉS del movimiento

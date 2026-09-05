@@ -47,7 +47,7 @@
 // cúmulo.
 export const ZONE1_LEVEL_END_OFFSET = 6500 * 1.6 * 2;
 
-export type Zone1LevelEntryType = "jellyfish" | "urchin" | "shark" | "squid" | "bigfish" | "reef" | "lilypad";
+export type Zone1LevelEntryType = "jellyfish" | "urchin" | "shark" | "squid" | "bigfish" | "reef" | "lilypad" | "crab";
 
 export interface Zone1LevelEntry {
   type: Zone1LevelEntryType;
@@ -103,6 +103,7 @@ export const ZONE1_LEVEL_ENTRIES: Zone1LevelEntry[] = [
   { type: "urchin", offset: 17440, x: 470 },
   { type: "lilypad", offset: 17350, x: 345 },
   { type: "squid", offset: 18080, x: 420 },
+  { type: "crab", offset: 18500, x: 350 }, // debut del cangrejo
 
   { type: "reef", offset: 19200, reefTemplate: 3 }, // lateralWall — banda ~[18900,19500]
 

@@ -162,6 +162,10 @@ function diagonalLeft(worldWidth: number, centerY: number): ReefClusterSpec {
     // a la masa del borde, nunca sobre la ruta guía.
     piece({ key: "decor_starfish", x: fromEdge(worldWidth, "left", 0.17), y: centerY - 30, scale: 0.28, role: "obstacle" }),
     piece({ key: "decor_pebble", x: fromEdge(worldWidth, "left", 0.12), y: centerY + 200, scale: 0.32, role: "obstacle" }),
+    // Pieza nueva (pedido explícito: "añade 1-2 piezas nuevas") — acompaña
+    // a la roca del borde, nunca sobre la ruta guía (que va por la derecha,
+    // 0.63-0.73W).
+    piece({ key: "anemone", x: fromEdge(worldWidth, "left", 0.28), y: centerY + 90, scale: 0.32, role: "obstacle" }),
   ];
 
   const path = [
@@ -210,6 +214,9 @@ function centerTwoPaths(worldWidth: number, centerY: number): ReefClusterSpec {
     // demás piezas de esta lista, deliberadamente NO está pegada a un
     // lateral: el hueco libre a su alrededor sigue siendo amplio de sobra.
     piece({ key: "decor_pebble", x: worldWidth * 0.5, y: centerY + 200, scale: 0.3, role: "obstacle" }),
+    // Pieza nueva: concha pegada a la masa de la izquierda, lejos de la
+    // ruta guía (serpentea por 0.3-0.68W).
+    piece({ key: "decor_shell", x: fromEdge(worldWidth, "left", 0.09), y: centerY - 100, scale: 0.26, role: "obstacle" }),
   ];
 
   // Serpentea por el centro: abajo se aparta hacia la derecha (huyendo de

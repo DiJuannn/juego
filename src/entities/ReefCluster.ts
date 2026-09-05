@@ -46,6 +46,11 @@ const HITBOX_FRACTION: Record<string, [number, number, number, number]> = {
   // que el resto de piezas de esta tabla.
   decor_starfish: [0.05, 0.05, 0.95, 0.95],
   decor_pebble: [0.03, 0.05, 0.97, 0.95],
+  // Piezas nuevas (pedido explícito: "añade 1-2 piezas nuevas de
+  // decoración/obstáculo"). decor_shell reutiliza un asset ya existente
+  // (aprobado en estilo, solo estaba sin usar); anemone es arte nuevo.
+  decor_shell: [0.02, 0.02, 0.98, 0.98],
+  anemone: [0.2, 0.14, 0.83, 0.87],
 };
 
 /**

@@ -67,11 +67,14 @@ export class Shark {
     // Pedido explícito: hitbox ajustada al cuerpo real (no a las aletas ni
     // al hueco por encima/debajo) — medido sobre shark.png (1191x697), casi
     // centrado en x así que el flip al patrullar no lo desalinea.
-    // Multiplicado por `scale`: un body dinámico tampoco escala el
-    // tamaño/offset con setScale() (confirmado con un probe en juego — la
-    // hitbox se quedaba ~2.2x más grande que el dibujo visible, matando
-    // desde mucho antes de que el tiburón se viera cerca de verdad).
-    body.setSize(574 * scale, 359 * scale).setOffset(309 * scale, 168 * scale);
+    // NUNCA multiplicar por `scale` aquí: a diferencia de un StaticBody, un
+    // body DINÁMICO sincroniza width/height/offset con el scale actual del
+    // sprite SOLO cada frame (Body.preUpdate → width = sourceWidth * scale
+    // actual) — si ya se pre-multiplica a mano, el resultado queda al
+    // cuadrado del scale desde el segundo frame en adelante (confirmado con
+    // un probe en juego: con scale~0.2 el hitbox real medía ~22px en vez de
+    // los ~115px esperados). Los valores de aquí son SIEMPRE los nativos.
+    body.setSize(574, 359).setOffset(309, 168);
 
     this.baseY = y;
     this.baseScaleX = scale;

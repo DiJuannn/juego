@@ -82,12 +82,20 @@ export class BootScene extends Phaser.Scene {
 
     this.load.image("decor_pebble", assetPath("/objects/decor/pebble.png"));
     this.load.image("decor_starfish", assetPath("/objects/decor/starfish.png"));
+    // Pieza nueva de arrecife (pedido explícito): reutiliza un asset ya
+    // aprobado en estilo que se había quedado sin usar (ver PROGRESS.md,
+    // antes decoración ambiental aleatoria, ahora obstáculo real de nivel).
+    this.load.image("decor_shell", assetPath("/objects/decor/shell.png"));
 
     this.load.image("jellyfish", assetPath("/objects/enemies/jellyfish.png"));
     this.load.image("shark", assetPath("/objects/enemies/shark.png"));
     this.load.image("squid", assetPath("/objects/enemies/squid.png"));
     this.load.image("urchin", assetPath("/objects/enemies/urchin.png"));
     this.load.image("coral", assetPath("/objects/enemies/coral.png"));
+    // Sexto enemigo (pedido explícito: "veas qué nuevos enemigos hacer"),
+    // ver entities/Crab.ts.
+    this.load.image("crab", assetPath("/objects/enemies/crab.png"));
+    this.load.image("crab_blink", assetPath("/objects/enemies/crab_blink.png"));
     // Librería de piezas para ReefCluster (composiciones orgánicas de
     // obstáculos de Zona 1, ver systems/ReefCluster.ts). Tercera tanda,
     // generada directamente a partir de las 3 imágenes de referencia que
@@ -104,6 +112,9 @@ export class BootScene extends Phaser.Scene {
     this.load.image("reef_branch_straight", assetPath("/objects/reef/branch_straight.png"));
     this.load.image("reef_branch_hook", assetPath("/objects/reef/branch_hook.png"));
     this.load.image("reef_branch_short", assetPath("/objects/reef/branch_short.png"));
+    // Anémona: pieza nueva de arrecife (pedido explícito: "veas qué nuevos
+    // enemigos hacer... rediseñar obstáculos"), arte generado con Gemini.
+    this.load.image("anemone", assetPath("/objects/reef/anemone.png"));
     // Parpadeo: arte de verdad (ojos cerrados) generado con Gemini a partir
     // de cada sprite base, ver systems/BlinkTimer — nunca un Graphics
     // dibujado por código.

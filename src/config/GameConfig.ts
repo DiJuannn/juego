@@ -227,6 +227,18 @@ export const URCHIN_SCALE = 0.17;
 // valores solo rigen su cadencia aleatoria a partir de ahí.
 export const BIG_FISH_MIN_GAP = 1300 * 1.6 * 2;
 export const BIG_FISH_MAX_GAP = 2100 * 1.6 * 2;
+
+// Cangrejo: sexto enemigo (pedido explícito: "veas qué nuevos enemigos
+// hacer"). Se mueve a trompicones — quieto una pausa, ráfaga corta y
+// rápida, quieto otra vez — un "lenguaje" de movimiento distinto a los 5
+// peligros ya existentes. Ver entities/Crab.ts.
+export const CRAB_MIN_GAP = 3500;
+export const CRAB_MAX_GAP = 5500;
+export const CRAB_SCALE = 0.14;
+export const CRAB_DASH_SPEED = 230;
+export const CRAB_DASH_DURATION_MS = 220;
+export const CRAB_PAUSE_MIN_MS = 500;
+export const CRAB_PAUSE_MAX_MS = 1100;
 export const BIG_FISH_SCALE = 0.5 * 0.8; // -20%, ver SHARK_SCALE
 export const BIG_FISH_PATROL_SPEED = 60;
 export const BIG_FISH_PUSH_STRENGTH = 300;

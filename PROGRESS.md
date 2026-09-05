@@ -915,6 +915,61 @@ funciona **hoy**, verificado en el código — no lo que el diseño aspira a ten
     playtest automático completa el recorrido.
   - Original respaldado en `/tmp/gen_test/background_far_ORIGINAL_BACKUP.png`
     (fuera del repo) por si hiciera falta comparar o revertir.
+- **Rediseño de animales/obstáculos/monedas + nuevo enemigo** (pedido
+  explícito: "REDISEÑA TODOS LOS ANIMALES Y OBSTACULOS, MONEDAS... VEAS QUE
+  NUEVOS ENEMIGOS HACER"). Se mantiene la regla de siempre: Lumi intocable.
+  Decisión deliberada de NO regenerar jellyfish/shark/squid/urchin/fish_05
+  a ciegas: revisados uno a uno, ya cumplen el estilo y nunca recibieron
+  una queja visual en toda la sesión (solo de comportamiento, ya
+  arreglado) — redibujarlos sin un problema identificado arriesgaba una
+  regresión y romper sus hitbox ya calibradas, sin beneficio claro. La
+  libertad creativa se canalizó donde sí había hueco real: una moneda sin
+  carácter, y "qué nuevos enemigos hacer" es en sí mismo contenido nuevo.
+  - **Moneda rediseñada** (`coin.png`): antes una esfera/perla lisa sin
+    lectura de "tesoro"; ahora perla nacarada cálida con un destello de 4
+    puntas marcado — se lee como objeto valioso incluso a 41px (tamaño real
+    en juego). 2 intentos previos descartados por perder la calidez de
+    color o el destello; el 4º combinó ambos.
+  - **Cangrejo, sexto enemigo nuevo** (`crab.png`/`crab_blink.png` +
+    `entities/Crab.ts` + `systems/CrabSpawner.ts`): mecánica de movimiento
+    propia, distinta a los 5 peligros existentes — quieto una pausa breve,
+    ráfaga corta y rápida (con squash/stretch), quieto otra vez. Patrulla
+    todo el ancho del mundo desde el primer momento (aprendida la lección
+    del tiburón esta sesión, ver ronda anterior). Debut scripteado en
+    `Zone1Level.ts` (offset 18500), tipo `"cangrejo"` añadido a
+    `DeathReason`/`DEATH_MESSAGES`. Verificado en juego: patrón pausa/
+    ráfaga confirmado leyendo su velocidad cada 200ms, hitbox correcta (ver
+    bug de escalado más abajo).
+  - **2 piezas nuevas de arrecife**: `decor_shell` (asset ya existente,
+    aprobado en estilo, que se había quedado sin usar — se reintegra como
+    obstáculo real en `centerTwoPaths`) y `anemone` (arte nuevo, un
+    ramillete de tentáculos ondulados — añadida a `diagonalLeft`). Ninguna
+    reemplaza `coral_branch`/`boulder_rock`, que el usuario ya aprobó
+    explícitamente en rondas anteriores.
+  - **Bug real encontrado al verificar el cangrejo, con impacto en
+    tiburón/calamar/pez grande**: un `Body` dinámico de Arcade Physics
+    sincroniza `width`/`height`/`offset` con el scale ACTUAL del sprite en
+    cada `preUpdate` (multiplica `sourceWidth` por el scale vigente). El
+    código de Shark/Squid/BigFish (y el Crab, escrito copiando el mismo
+    patrón) pre-multiplicaba manualmente por `scale` en `setSize`/
+    `setOffset` — el resultado quedaba al CUADRADO del scale desde el
+    segundo frame en adelante. Verificado en el tiburón real: con
+    scale~0.18, el hitbox esperado era ~103px de ancho y el real medía
+    ~22px — casi 5 veces más pequeño de lo previsto, durante TODA la
+    sesión. El "probe" que originalmente justificó pre-multiplicar (ver
+    rondas antiguas) solo midió el primer frame, antes de que Phaser
+    aplicara su propio ajuste automático. Corregido en los 4 archivos:
+    ahora `setSize`/`setOffset` reciben las dimensiones NATIVAS sin
+    multiplicar, dejando que Phaser aplique el scale correcto solo (esto
+    también corrige, de regalo, que el pulso de cola del tiburón nunca
+    afectaba a su hitbox — ahora sí, cada frame). Jellyfish/Urchin usan
+    `StaticBody`, que no tiene este mecanismo — su multiplicación manual
+    seguía y sigue siendo correcta, no se tocaron.
+  - Verificado: `npx tsc --noEmit` limpio, build de producción real
+    (`GITHUB_PAGES=true vite build`) incluye todos los assets nuevos,
+    playtest automático completa el recorrido, capturas del cangrejo y las
+    piezas nuevas en juego, y lectura directa de `body.width` antes/después
+    del fix confirmando el valor correcto en tiburón y cangrejo.
 - **El usuario reportó "otra vez ese bug" tras el fix anterior** — el
   workflow de GitHub Actions confirmó que el deploy de ese commit se
   completó bien (`success`), así que el archivo corregido SÍ estaba
