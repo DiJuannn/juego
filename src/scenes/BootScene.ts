@@ -115,6 +115,13 @@ export class BootScene extends Phaser.Scene {
     // Anémona: pieza nueva de arrecife (pedido explícito: "veas qué nuevos
     // enemigos hacer... rediseñar obstáculos"), arte generado con Gemini.
     this.load.image("anemone", assetPath("/objects/reef/anemone.png"));
+    // Ronda de "muchos más obstáculos" (pedido explícito): 4 piezas nuevas,
+    // todas diseñadas sin base/silueta de "apoyado en el suelo" para que
+    // se lean bien en cualquier lateral.
+    this.load.image("coral_fan", assetPath("/objects/reef/coral_fan.png"));
+    this.load.image("sponge", assetPath("/objects/reef/sponge.png"));
+    this.load.image("barnacle", assetPath("/objects/reef/barnacle.png"));
+    this.load.image("giant_clam", assetPath("/objects/reef/giant_clam.png"));
     // Parpadeo: arte de verdad (ojos cerrados) generado con Gemini a partir
     // de cada sprite base, ver systems/BlinkTimer — nunca un Graphics
     // dibujado por código.

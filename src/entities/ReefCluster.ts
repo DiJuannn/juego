@@ -37,7 +37,11 @@ const DEPTH_BY_ROLE: Record<ReefDepthRole, number> = {
  * con cualquier escala/reutilización. Aproximado a ojo sobre cada asset. */
 const HITBOX_FRACTION: Record<string, [number, number, number, number]> = {
   reef_coral_branch: [0.0, 0.0, 0.95, 0.9],
-  reef_boulder_rock: [0.02, 0.05, 0.98, 1.0],
+  // Rediseñado (pedido explícito: "ponle una base o sin base para que en
+  // el lado que estén no queden mal puestos") — cúmulo redondeado
+  // omnidireccional en vez de un montículo con base plana, se lee bien
+  // rotado 90º en cualquier dirección. bbox medido sobre el nuevo PNG.
+  reef_boulder_rock: [0.18, 0.28, 0.82, 0.78],
   reef_branch_straight: [0.0, 0.05, 0.98, 0.95],
   reef_branch_hook: [0.0, 0.0, 0.95, 0.95],
   reef_branch_short: [0.0, 0.0, 0.95, 0.95],
@@ -51,6 +55,12 @@ const HITBOX_FRACTION: Record<string, [number, number, number, number]> = {
   // (aprobado en estilo, solo estaba sin usar); anemone es arte nuevo.
   decor_shell: [0.02, 0.02, 0.98, 0.98],
   anemone: [0.2, 0.14, 0.83, 0.87],
+  // Ronda de "muchos más obstáculos" (pedido explícito) — 4 piezas nuevas
+  // más, todas medidas sobre su propio PNG.
+  coral_fan: [0.14, 0.19, 0.87, 0.78],
+  sponge: [0.17, 0.22, 0.84, 0.79],
+  barnacle: [0.2, 0.22, 0.81, 0.79],
+  giant_clam: [0.13, 0.21, 0.87, 0.8],
 };
 
 /**

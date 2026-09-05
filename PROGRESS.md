@@ -970,6 +970,40 @@ funciona **hoy**, verificado en el código — no lo que el diseño aspira a ten
     playtest automático completa el recorrido, capturas del cangrejo y las
     piezas nuevas en juego, y lectura directa de `body.width` antes/después
     del fix confirmando el valor correcto en tiburón y cangrejo.
+- **Rediseño completo de obstáculos de arrecife** (pedido explícito:
+  "REDISEÑAME TODOS LOS OBSTACULOS. PONLE UNA BASE O SIN BASE... CREA
+  MUCHOS MAS OBSTACULOS. PERO NO LOS ACUMULES TODOS EN UN MISMO SITIO").
+  - **`reef_boulder_rock` rediseñado**: el original era un montículo
+    triangular con musgo solo arriba y una base plana clara de "apoyado en
+    el suelo" — al rotarlo 90º/-90º para pegarlo a los laterales (pedido
+    de rondas anteriores) se veía mal (musgo de lado, base plana vertical).
+    Nuevo diseño: cúmulo de 4 rocas redondeadas en bloque compacto casi
+    circular, musgo y coral repartidos por todo el contorno de forma
+    pareja, sin base ni silueta de "apoyado en el suelo". Verificado
+    rotando el PNG 90º y comprobando que se sigue leyendo bien.
+  - **4 piezas nuevas** (todas omnidireccionales, sin base):
+    `coral_fan` (abanico de coral radial), `sponge` (cúmulo de esponjas
+    tubulares), `barnacle` (cúmulo de balanos, perfectamente circular),
+    `giant_clam` (almeja gigante). Cada una pasó por el mismo pipeline de
+    generación + limpieza de transparencia que las rondas anteriores
+    (varios intentos descartados por huecos de fondo atrapados entre
+    ramas, corregidos a mano con la misma técnica de la ronda del cangrejo).
+  - **Redistribución de piezas entre las 4 plantillas** (pedido explícito:
+    "no los acumules todos en un mismo sitio, piensa dónde poner cada
+    uno"): antes `decor_starfish`/`decor_pebble` se repetían en las 4
+    plantillas sin variar — ahora cada plantilla tiene su propio reparto
+    único (`diagonalLeft`→anémona; `centerTwoPaths`→concha+piedra;
+    `sCurveEdges`→esponja+balanos; `lateralWall`→abanico de coral+almeja+
+    estrella), sin que ninguna pieza secundaria se repita en más de una
+    plantilla. Primer intento de `diagonalLeft` con anémona+abanico juntos
+    quedó demasiado amontonado (verificado con captura) — se corrigió
+    dejando una sola pieza grande de acompañamiento por plantilla y
+    moviendo el abanico a `lateralWall`, que tiene más banda vertical
+    libre para repartir piezas sin agolparlas.
+  - Verificado: `npx tsc --noEmit` limpio, build de producción real
+    incluye las 5 imágenes nuevas, playtest automático completa el
+    recorrido, y capturas de las 4 plantillas confirmando composición
+    legible y sin amontonamiento.
 - **El usuario reportó "otra vez ese bug" tras el fix anterior** — el
   workflow de GitHub Actions confirmó que el deploy de ese commit se
   completó bien (`success`), así que el archivo corregido SÍ estaba
