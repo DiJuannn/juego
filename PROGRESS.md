@@ -104,7 +104,13 @@ funciona **hoy**, verificado en el código — no lo que el diseño aspira a ten
   punta), `branch_hook` (horizontal que se curva hacia arriba al final) y
   `branch_short` (más corta y compacta); las plantillas que usan una rama
   eligen una al azar en cada aparición (`pickBranch()` en
-  `ReefTemplates.ts`) en vez de repetir siempre la misma.
+  `ReefTemplates.ts`) en vez de repetir siempre la misma. Las 3 variantes
+  se generaron a partir de la descripción/memoria de la imagen de
+  referencia que el usuario mostró en el chat (no llegó como archivo a
+  tiempo) — el usuario subió esa misma imagen al repo justo después
+  (`reference/branch_variety_ref.png`), así que si hace falta más
+  fidelidad a esas 4 siluetas concretas, ya hay archivo real para
+  regenerar con `--ref` en vez de memoria.
   Verificado con Playwright: las 4 plantillas ciclan sin repetirse, se
   integran visualmente con el fondo existente, la pared lateral se lee
   claramente "saliendo del borde" dejando espacio de sobra en el lado
