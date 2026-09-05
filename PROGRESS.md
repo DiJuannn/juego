@@ -885,6 +885,36 @@ funciona **hoy**, verificado en el código — no lo que el diseño aspira a ten
     propias posiciones fijas en `Zone1Level.ts`.
   - `npx tsc --noEmit` limpio. Playtest automático completa el recorrido
     sin errores en dos corridas distintas.
+- **Línea horizontal dura en el fondo** (nueva captura del usuario tras la
+  ronda anterior — "no me refiero a la medusa, el fondo es lo que digo yo,
+  hay una línea en el fondo"). Diagnóstico con datos, no a ojo: el borde
+  superior de `background_far.png` es notablemente más claro (RGB
+  ~214,239,249) que el inferior (~160,200,216) — un salto real de ~50
+  unidades por canal — y como `ParallaxLayer` lo repite (tile) verticalmente
+  sin parar mientras la cámara sube, cada empalme entre una copia y la
+  siguiente se ve como un corte de color duro. Reproducido en el juego a la
+  misma altura de la captura del usuario (Altura 174) — sale idéntico.
+  - Se probó primero corregir el borde vía el flujo de `lumi-asset-gen`
+    (Gemini, 2 intentos con prompts cada vez más específicos) pero el
+    modelo no puede garantizar un empalme EXACTO a nivel de píxel — ambos
+    intentos dejaban un salto visible, más suave pero real.
+  - Solución final: procesamiento de imagen determinista (no IA), sobre el
+    asset original: los ~220px superiores e inferiores se funden hacia un
+    color objetivo compartido (el promedio de ambos bordes), con una curva
+    `smoothstep`, dejando el tercio central (los rayos de luz) intacto. Al
+    converger ambos bordes exactamente al mismo color, la fila final de una
+    copia y la fila inicial de la siguiente quedan matemáticamente
+    idénticas — empalme perfecto por construcción, no por aproximación.
+    Esto es corrección técnica de un asset ya existente (ajustar
+    iluminación de sus bordes para que tilee), no diseño nuevo ni arte
+    generado — respeta CLAUDE.md.
+  - Verificado: capturas apiladas de dos copias antes/después (el salto
+    desaparece del todo) y captura in-game a 4 alturas distintas cubriendo
+    varios ciclos de repetición (incluida la altura exacta de la captura
+    del usuario) — ninguna muestra ya la línea. `npx tsc --noEmit` limpio,
+    playtest automático completa el recorrido.
+  - Original respaldado en `/tmp/gen_test/background_far_ORIGINAL_BACKUP.png`
+    (fuera del repo) por si hiciera falta comparar o revertir.
 
 # PENDIENTE
 
