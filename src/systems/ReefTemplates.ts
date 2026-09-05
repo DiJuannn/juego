@@ -79,6 +79,31 @@ function branchFlipX(key: string, wantFlip: boolean): boolean {
   return INVERT_FLIP_KEYS.has(key) ? !wantFlip : wantFlip;
 }
 
+type Side = "left" | "right";
+
+// Pedido explícito: "las rocas esas solo que salgan en los laterales...
+// y volteadas 90 grados" — reef_boulder_rock nunca debe quedar flotando
+// suelta en agua abierta (como pasaba en diagonalLeft/centerTwoPaths/
+// sCurveEdges, a un 12-47% del ancho del mundo): en las 4 plantillas sale
+// pegada a un borde de verdad, girada 90º para que su parte plana quede
+// contra el lateral — mismo criterio que ya tenía `lateralWall` (ver
+// ReefCluster.ts para el ajuste de hitbox que acompaña a esta rotación).
+function edgeX(worldWidth: number, side: Side): number {
+  return side === "left" ? -0.02 * worldWidth : 1.02 * worldWidth;
+}
+
+function edgeRotation(side: Side): number {
+  return side === "left" ? Math.PI / 2 : -Math.PI / 2;
+}
+
+// Para una rama que NO está pegada a un borde (diagonalLeft/
+// centerTwoPaths), el mismo criterio de "coral pegado al lado, parte lisa
+// hacia el interior" se traduce en: coral apuntando hacia el borde más
+// cercano según en qué mitad del mundo caiga.
+function towardsRightEdge(x: number, worldWidth: number): boolean {
+  return x >= worldWidth / 2;
+}
+
 /**
  * 1) Diagonal desde la izquierda: la masa de obstáculo crece en diagonal
  * de abajo-izquierda a arriba-derecha, dejando todo el lado derecho
@@ -89,14 +114,23 @@ function branchFlipX(key: string, wantFlip: boolean): boolean {
  */
 function diagonalLeft(worldWidth: number, centerY: number): ReefClusterSpec {
   const branchKey1 = pickBranch();
+  const branchX = worldWidth * 0.28;
   const pieces: ReefPieceSpec[] = [
-    piece({ key: "reef_boulder_rock", x: worldWidth * 0.12, y: centerY + 160, scale: 0.4, rotation: -0.02, role: "obstacle" }),
+    piece({
+      key: "reef_boulder_rock",
+      x: edgeX(worldWidth, "left"),
+      y: centerY + 160,
+      scale: 0.4,
+      rotation: edgeRotation("left"),
+      role: "obstacle",
+    }),
     piece({
       key: branchKey1,
-      x: worldWidth * 0.28,
+      x: branchX,
       y: centerY - 40,
       scale: branchScale(branchKey1, 0.5),
       rotation: -0.04,
+      flipX: branchFlipX(branchKey1, towardsRightEdge(branchX, worldWidth)),
       role: "obstacle",
     }),
     // Decoración: crece pegada a los obstáculos, sin colisión.
@@ -126,14 +160,23 @@ function diagonalLeft(worldWidth: number, centerY: number): ReefClusterSpec {
  */
 function centerTwoPaths(worldWidth: number, centerY: number): ReefClusterSpec {
   const branchKey1 = pickBranch();
+  const branchX = worldWidth * 0.55;
   const pieces: ReefPieceSpec[] = [
-    piece({ key: "reef_boulder_rock", x: worldWidth * 0.47, y: centerY + 50, scale: 0.42, rotation: -0.02, role: "obstacle" }),
+    piece({
+      key: "reef_boulder_rock",
+      x: edgeX(worldWidth, "left"),
+      y: centerY + 50,
+      scale: 0.42,
+      rotation: edgeRotation("left"),
+      role: "obstacle",
+    }),
     piece({
       key: branchKey1,
-      x: worldWidth * 0.55,
+      x: branchX,
       y: centerY - 130,
       scale: branchScale(branchKey1, 0.36),
       rotation: 0.08,
+      flipX: branchFlipX(branchKey1, towardsRightEdge(branchX, worldWidth)),
       role: "obstacle",
     }),
     piece({ key: "decor_starfish", x: worldWidth * 0.37, y: centerY + 95, scale: 0.3, role: "decoration" }),
@@ -173,7 +216,14 @@ function sCurveEdges(worldWidth: number, centerY: number): ReefClusterSpec {
 
   const pieces: ReefPieceSpec[] = [
     // Banda superior: entra por la izquierda.
-    piece({ key: "reef_boulder_rock", x: worldWidth * 0.16, y: topY, scale: 0.38, rotation: -0.02, role: "obstacle" }),
+    piece({
+      key: "reef_boulder_rock",
+      x: edgeX(worldWidth, "left"),
+      y: topY,
+      scale: 0.38,
+      rotation: edgeRotation("left"),
+      role: "obstacle",
+    }),
     piece({ key: "decor_shell", x: worldWidth * 0.26, y: topY + 90, scale: 0.28, role: "decoration" }),
 
     // Banda media: entra por la derecha — espejada (ver BRANCH_VARIANTS),
@@ -189,9 +239,17 @@ function sCurveEdges(worldWidth: number, centerY: number): ReefClusterSpec {
     }),
     piece({ key: "decor_starfish", x: worldWidth * 0.8, y: midY - 100, scale: 0.3, role: "decoration" }),
 
-    // Banda inferior: entra por la izquierda otra vez, con distinto
-    // alcance que la superior (para que no se lea como un espejo).
-    piece({ key: "reef_boulder_rock", x: worldWidth * 0.2, y: bottomY, scale: 0.34, rotation: 0.03, role: "obstacle" }),
+    // Banda inferior: entra por la izquierda otra vez — el "distinto
+    // alcance" respecto a la superior ahora lo da la decoración (la roca
+    // en sí va pegada al borde en ambas, ver edgeX).
+    piece({
+      key: "reef_boulder_rock",
+      x: edgeX(worldWidth, "left"),
+      y: bottomY,
+      scale: 0.34,
+      rotation: edgeRotation("left"),
+      role: "obstacle",
+    }),
     piece({ key: "decor_pebble", x: worldWidth * 0.3, y: bottomY - 90, scale: 0.3, role: "decoration" }),
   ];
 

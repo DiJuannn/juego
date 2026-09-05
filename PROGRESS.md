@@ -268,6 +268,29 @@ funciona **hoy**, verificado en el código — no lo que el diseño aspira a ten
   no es evidencia sólida de que sea injusto para un jugador real que sí ve
   el hueco, pero queda anotado para que el usuario lo juzgue jugando él
   mismo.
+- **`reef_boulder_rock` ahora sale SIEMPRE de un lateral de verdad, en las
+  4 plantillas** — el usuario vio una captura real con dos rocas flotando
+  en agua abierta (`diagonalLeft` a un 12% del ancho, `centerTwoPaths` en
+  el centro exacto, 47%) y pidió "las rocas esas solo que salgan en los
+  laterales... y volteadas 90 grados". `diagonalLeft`/`centerTwoPaths`/
+  las dos rocas de `sCurveEdges` se movieron al borde izquierdo real
+  (mismo `edgeX`/`edgeRotation` que ya usaba `lateralWall`) — `diagonalLeft`
+  y `sCurveEdges` ya crecían conceptualmente "desde la izquierda", así que
+  encaja con su propio diseño; `centerTwoPaths` pierde parte de su
+  simetría original pero se prioriza el pedido explícito. Esto reveló que
+  esas 3 plantillas nunca espejaban su rama según el lado (a diferencia de
+  `sCurveEdges`/`lateralWall`, que sí lo hacían) — pedido implícito ("el
+  coral modo espejo") resuelto con una regla general nueva,
+  `towardsRightEdge()`: si la rama cae en la mitad derecha del cúmulo,
+  espejar (coral hacia ese lado); si cae en la izquierda, no — mismo
+  criterio de "coral pegado al lado más cercano, parte lisa hacia el
+  interior" que ya regía en las piezas pegadas a un borde de verdad.
+  Verificado leyendo `sprite.flipX`/`sprite.rotation` directamente de las
+  4 plantillas forzadas con `spawnExact` (no a ojo, que ya llevó a un
+  diagnóstico equivocado en el propio proceso) — las 9 piezas de obstáculo
+  coinciden exactamente con lo esperado. Playtest sigue en línea con antes
+  (background/posición de piezas, no toca colisión salvo la rotación de
+  las rocas, ya validada en rondas anteriores).
 
 # PENDIENTE
 
