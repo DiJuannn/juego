@@ -98,12 +98,17 @@ const HITBOX_FRACTION: Record<string, [number, number, number, number]> = {
  * rectángulo alineado a ejes (como estos), incluido el jitter de rotación
  * de unos pocos grados que ya llevan casi todas las piezas.
  */
-function rotatedFractionalBody(
+/** AABB del recorte `frac` de una textura, ya escalado y girado, en
+ * coordenadas centradas en el sprite (su pivote de rotación, origen 0.5/0.5
+ * por defecto) — la pieza compartida que necesitan tanto el cálculo del
+ * body (`rotatedFractionalBody`) como el de posición a ras de borde
+ * (`edgeFlushX`), para no repetir la trigonometría en dos sitios. */
+function rotatedAABB(
   tex: HTMLImageElement,
   frac: [number, number, number, number],
   rotation: number,
   scale: number,
-): { w: number; h: number; offsetX: number; offsetY: number } {
+): { xmin: number; xmax: number; ymin: number; ymax: number; dW: number; dH: number } {
   const [fx0, fy0, fx1, fy1] = frac;
   const dW = tex.width * scale;
   const dH = tex.height * scale;
@@ -111,8 +116,6 @@ function rotatedFractionalBody(
   const sin = Math.sin(rotation);
   const rotate = (x: number, y: number): [number, number] => [x * cos - y * sin, x * sin + y * cos];
 
-  // AABB del recorte ya girado, en coordenadas de mundo centradas en el
-  // sprite (su pivote de rotación, el origen 0.5/0.5 por defecto).
   const a = (fx0 - 0.5) * dW;
   const b = (fx1 - 0.5) * dW;
   const c = (fy0 - 0.5) * dH;
@@ -120,8 +123,20 @@ function rotatedFractionalBody(
   const corners = [rotate(a, c), rotate(b, c), rotate(a, d), rotate(b, d)];
   const xs = corners.map(([x]) => x);
   const ys = corners.map(([, y]) => y);
-  const xmin = Math.min(...xs);
-  const ymin = Math.min(...ys);
+
+  return { xmin: Math.min(...xs), xmax: Math.max(...xs), ymin: Math.min(...ys), ymax: Math.max(...ys), dW, dH };
+}
+
+function rotatedFractionalBody(
+  tex: HTMLImageElement,
+  frac: [number, number, number, number],
+  rotation: number,
+  scale: number,
+): { w: number; h: number; offsetX: number; offsetY: number } {
+  const { xmin, xmax, ymin, ymax, dW, dH } = rotatedAABB(tex, frac, rotation, scale);
+  const cos = Math.cos(rotation);
+  const sin = Math.sin(rotation);
+  const rotate = (x: number, y: number): [number, number] => [x * cos - y * sin, x * sin + y * cos];
 
   // Posición base que `refreshBody()` ya deja en el body (su
   // `getTopLeft()`, ver comentario arriba): la esquina sin rotar
@@ -129,11 +144,38 @@ function rotatedFractionalBody(
   const [baseX, baseY] = rotate(-0.5 * dW, -0.5 * dH);
 
   return {
-    w: Math.max(...xs) - xmin,
-    h: Math.max(...ys) - ymin,
+    w: xmax - xmin,
+    h: ymax - ymin,
     offsetX: xmin - baseX,
     offsetY: ymin - baseY,
   };
+}
+
+// Pedido explícito del usuario tras varias rondas subiendo EDGE_INSET a
+// ciegas (0.02→0.07→0.18) sin acertar: "A MI NO ME IMPORTA QUE TENGAN BASE
+// Y SEAN LARGOS. LO QUE ME IMPORTABA ERA... QUE NO HAYA ESPACIOS VISIBLES
+// SI TIENEN BASES ENTRE LA BASE Y EL LATERAL DE LA PANTALLA". Medido con
+// `body.position` en juego: con EDGE_INSET=0.18 y el tamaño de pieza actual
+// quedaba un hueco real de ~67px entre la roca y el borde del mundo — una
+// fracción fija nunca da con el valor exacto porque depende del tamaño real
+// de cada pieza (que cambia con `scale`, con el jitter de escala, y con la
+// rotación). En vez de seguir ajustando una constante a ojo, esto calcula
+// la posición EXACTA para que el borde visible de la pieza (ya rotada y
+// escalada) toque el borde real del mundo, con un pequeño solape
+// `OVERLAP_PX` a propósito para garantizar cero hueco incluso con el jitter
+// de escala (ese solape queda fuera del mundo, invisible).
+const EDGE_FLUSH_OVERLAP_PX = 10;
+
+function edgeFlushX(
+  tex: HTMLImageElement,
+  frac: [number, number, number, number],
+  rotation: number,
+  scale: number,
+  worldWidth: number,
+  side: "left" | "right",
+): number {
+  const { xmin, xmax } = rotatedAABB(tex, frac, rotation, scale);
+  return side === "left" ? -EDGE_FLUSH_OVERLAP_PX - xmin : worldWidth + EDGE_FLUSH_OVERLAP_PX - xmax;
 }
 
 export interface ReefPieceSpec {
@@ -145,6 +187,12 @@ export interface ReefPieceSpec {
   flipX?: boolean;
   role: ReefDepthRole;
   alpha?: number;
+  /** Si se da, IGNORA `x` y coloca la pieza a ras del borde del mundo (con
+   * el solape de `EDGE_FLUSH_OVERLAP_PX` para garantizar cero hueco) en vez
+   * de a una fracción fija de `worldWidth` — ver comentario de
+   * `edgeFlushX`. Solo tiene efecto en piezas `role:"obstacle"` (necesita
+   * la textura real cargada). */
+  edgeFlush?: "left" | "right";
 }
 
 export interface ReefClusterSpec {
@@ -158,26 +206,66 @@ export interface ReefClusterSpec {
   yBottom: number;
 }
 
+// Pedido explícito del usuario: "me gustaría que los que algunos tengan
+// animación. LAS ROCAS NO. pero corales y tal estaria bien que tuvieran una
+// leve animacion bonita". Solo las piezas tipo roca (el "boulder" grande y
+// el guijarro, que se leen como objeto inerte) quedan fuera; el resto
+// (ramas de coral, anémona, abanico, esponja, balano, almeja, estrella,
+// concha) respira con un pulso de escala muy sutil.
+const NO_BREATHE_KEYS = new Set(["reef_boulder_rock", "decor_pebble"]);
+
+// Amplitud/periodo pensados para que se note como un detalle vivo, no como
+// un parpadeo — ±4% de escala, ciclo de 2.6-4.2s, con fase aleatoria por
+// pieza para que no respiren todas a la vez (mismo criterio que el jitter
+// de JITTER_SCALE/JITTER_ROT en ReefTemplates: variación sutil pieza a
+// pieza, nunca sincronizada).
+const BREATHE_AMPLITUDE = 0.04;
+const BREATHE_PERIOD_MIN = 2600;
+const BREATHE_PERIOD_MAX = 4200;
+
+interface BreathingObstacle {
+  sprite: Phaser.Physics.Arcade.Image;
+  baseScale: number;
+  periodMs: number;
+  phase: number;
+  // Tamaño/offset de body "base" (al pulso=1, ver rotatedFractionalBody) —
+  // solo existen si la pieza tiene HITBOX_FRACTION. Como esos valores son
+  // proporcionales a `scale` (con la rotación fija), re-escalarlos por el
+  // pulso actual mantiene el body exactamente sincronizado con el dibujo
+  // sin repetir la trigonometría cada frame (mismo bug que Jellyfish/Urchin
+  // en su día: la hitbox debe seguir el sway visual, no quedarse fija).
+  body?: { w: number; h: number; offsetX: number; offsetY: number };
+}
+
 export class ReefCluster {
   readonly obstacleSprites: Phaser.Physics.Arcade.Image[] = [];
   private readonly decorSprites: Phaser.GameObjects.Image[] = [];
+  private readonly breathingObstacles: BreathingObstacle[] = [];
   readonly yTop: number;
   readonly yBottom: number;
 
-  constructor(scene: Phaser.Scene, spec: ReefClusterSpec) {
+  constructor(scene: Phaser.Scene, spec: ReefClusterSpec, worldWidth: number) {
     this.yTop = spec.yTop;
     this.yBottom = spec.yBottom;
 
     for (const piece of spec.pieces) {
       if (piece.role === "obstacle") {
-        const sprite = scene.physics.add.staticImage(piece.x, piece.y, piece.key);
+        const frac = HITBOX_FRACTION[piece.key];
+
+        let x = piece.x;
+        if (piece.edgeFlush && frac) {
+          const tex = scene.textures.get(piece.key).getSourceImage() as HTMLImageElement;
+          x = edgeFlushX(tex, frac, piece.rotation ?? 0, piece.scale, worldWidth, piece.edgeFlush);
+        }
+
+        const sprite = scene.physics.add.staticImage(x, piece.y, piece.key);
         sprite.setScale(piece.scale);
         sprite.setDepth(DEPTH_BY_ROLE.obstacle);
         if (piece.rotation) sprite.setRotation(piece.rotation);
         if (piece.flipX) sprite.setFlipX(true);
         sprite.refreshBody();
 
-        const frac = HITBOX_FRACTION[piece.key];
+        let baseBody: { w: number; h: number; offsetX: number; offsetY: number } | undefined;
         if (frac) {
           // Phaser NO escala el tamaño/offset del body con el scale del
           // sprite (confirmado con un probe en juego: un body creado con
@@ -190,9 +278,20 @@ export class ReefCluster {
           const tex = scene.textures.get(piece.key).getSourceImage() as HTMLImageElement;
           const { w, h, offsetX, offsetY } = rotatedFractionalBody(tex, frac, piece.rotation ?? 0, piece.scale);
           (sprite.body as Phaser.Physics.Arcade.StaticBody).setSize(w, h).setOffset(offsetX, offsetY);
+          baseBody = { w, h, offsetX, offsetY };
         }
 
         this.obstacleSprites.push(sprite);
+
+        if (!NO_BREATHE_KEYS.has(piece.key)) {
+          this.breathingObstacles.push({
+            sprite,
+            baseScale: piece.scale,
+            periodMs: Phaser.Math.FloatBetween(BREATHE_PERIOD_MIN, BREATHE_PERIOD_MAX),
+            phase: Phaser.Math.FloatBetween(0, Math.PI * 2),
+            body: baseBody,
+          });
+        }
       } else {
         const img = scene.add.image(piece.x, piece.y, piece.key);
         img.setScale(piece.scale);
@@ -201,6 +300,17 @@ export class ReefCluster {
         if (piece.flipX) img.setFlipX(true);
         if (piece.alpha !== undefined) img.setAlpha(piece.alpha);
         this.decorSprites.push(img);
+      }
+    }
+  }
+
+  update(time: number) {
+    for (const obstacle of this.breathingObstacles) {
+      const pulse = 1 + BREATHE_AMPLITUDE * Math.sin((time / obstacle.periodMs) * Math.PI * 2 + obstacle.phase);
+      obstacle.sprite.setScale(obstacle.baseScale * pulse);
+      if (obstacle.body) {
+        const { w, h, offsetX, offsetY } = obstacle.body;
+        (obstacle.sprite.body as Phaser.Physics.Arcade.StaticBody).setSize(w * pulse, h * pulse).setOffset(offsetX * pulse, offsetY * pulse);
       }
     }
   }

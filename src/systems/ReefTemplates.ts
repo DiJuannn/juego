@@ -48,6 +48,19 @@ function piece(p: PieceInput): ReefPieceSpec {
   return { ...p, scale: jitterScale(p.scale), rotation: jitterRot(p.rotation ?? 0) };
 }
 
+// Pedido explícito: "mejora la composición del nivel... créame un nivel
+// espectacular". `ReefCluster` ya tenía un rol "background" (más atrás,
+// sin colisión — ver DEPTH_BY_ROLE) pensado justo para sugerir que el
+// arrecife sigue más allá del cúmulo jugable, pero ninguna plantilla lo
+// usaba: las 4 solo colocaban piezas "obstacle". Cada plantilla suma ahora
+// un único acento así — pequeño, semitransparente, en una esquina libre de
+// su propia composición — que da profundidad sin añadir dificultad ni
+// amontonar el primer plano (no colisiona, así que no compite con el hueco
+// real de paso).
+function bgAccent(key: string, x: number, y: number, scale: number): ReefPieceSpec {
+  return piece({ key, x, y, scale, alpha: 0.4, role: "background" });
+}
+
 /**
  * Familia de "repisa/rama" (mismo ancla de estilo, generadas a partir de
  * `reef_coral_branch`) — pedido explícito del usuario: "necesito que
@@ -101,21 +114,12 @@ type Side = "left" | "right";
 // pegada a un borde de verdad, girada 90º para que su parte plana quede
 // contra el lateral — mismo criterio que ya tenía `lateralWall` (ver
 // ReefCluster.ts para el ajuste de hitbox que acompaña a esta rotación).
-// El inset (antes ∓0.02, centrado casi exactamente en el borde) dejaba
-// la mitad de la roca fuera del mundo/cámara — pedido explícito: "los
-// obstáculos de los laterales empiezan muy recortados, que no se
-// recorten tanto" (subido primero a 0.07). Probado en un móvil real
-// seguía sin verse casi nada ("no se ven nada de nada o solo lateral
-// puntita se alcanza a ver en el cel... ponlos más para dentro") — subido
-// bastante más, a 0.18, y el resto de piezas "obstacle" de cada plantilla
-// (ramas/estrella/piedra, no las de fondo/decoración lejana) suben sus
-// propios `fromEdge` un +0.08 parejo, para que toda la masa del cúmulo se
-// meta más adentro, no solo la roca.
-const EDGE_INSET = 0.18;
-function edgeX(worldWidth: number, side: Side): number {
-  return side === "left" ? EDGE_INSET * worldWidth : (1 - EDGE_INSET) * worldWidth;
-}
-
+// La posición X real de estas piezas ya no se calcula aquí (antes con un
+// inset en fracción de `worldWidth`, ajustado a ojo varias veces y nunca
+// sin hueco visible) sino con `edgeFlush` — ver `ReefPieceSpec.edgeFlush`
+// y `edgeFlushX` en ReefCluster.ts, que calculan la X exacta a partir de la
+// geometría real (textura, hitbox, rotación y escala) para que el borde
+// visible de la pieza quede a ras del límite del mundo, sin hueco.
 function edgeRotation(side: Side): number {
   return side === "left" ? Math.PI / 2 : -Math.PI / 2;
 }
@@ -154,7 +158,8 @@ function diagonalLeft(worldWidth: number, centerY: number): ReefClusterSpec {
   const pieces: ReefPieceSpec[] = [
     piece({
       key: "reef_boulder_rock",
-      x: edgeX(worldWidth, "left"),
+      x: 0,
+      edgeFlush: "left",
       y: centerY + 160,
       scale: 0.4,
       rotation: edgeRotation("left"),
@@ -175,6 +180,9 @@ function diagonalLeft(worldWidth: number, centerY: number): ReefClusterSpec {
     // anémona va arriba del todo, lejos de la roca (y+160) y la rama
     // (y-40), en vez de justo al lado.
     piece({ key: "anemone", x: fromEdge(worldWidth, "left", 0.14), y: centerY - 210, scale: 0.28, role: "obstacle" }),
+    // Acento de fondo: lejos del lado abierto (derecha), sugiere que el
+    // arrecife sigue más allá sin invadir el carril libre.
+    bgAccent("reef_coral_branch", worldWidth * 0.93, centerY + 60, 0.16),
   ];
 
   const path = [
@@ -202,7 +210,8 @@ function centerTwoPaths(worldWidth: number, centerY: number): ReefClusterSpec {
   const pieces: ReefPieceSpec[] = [
     piece({
       key: "reef_boulder_rock",
-      x: edgeX(worldWidth, "left"),
+      x: 0,
+      edgeFlush: "left",
       y: centerY + 50,
       scale: 0.42,
       rotation: edgeRotation("left"),
@@ -225,6 +234,10 @@ function centerTwoPaths(worldWidth: number, centerY: number): ReefClusterSpec {
     // Pieza nueva: concha bien arriba de la roca (y+50), lejos de la ruta
     // guía (serpentea por 0.3-0.68W) y sin pegarse al cúmulo de abajo.
     piece({ key: "decor_shell", x: fromEdge(worldWidth, "left", 0.06), y: centerY - 190, scale: 0.24, role: "obstacle" }),
+    // Acento de fondo: esquina inferior derecha, la más despejada de esta
+    // composición (la roca queda a la izquierda, la rama arriba a la
+    // derecha).
+    bgAccent("reef_branch_short", worldWidth * 0.88, centerY + 180, 0.14),
   ];
 
   // Serpentea por el centro: abajo se aparta hacia la derecha (huyendo de
@@ -255,7 +268,8 @@ function sCurveEdges(worldWidth: number, centerY: number): ReefClusterSpec {
     // Banda superior: entra por la izquierda.
     piece({
       key: "reef_boulder_rock",
-      x: edgeX(worldWidth, "left"),
+      x: 0,
+      edgeFlush: "left",
       y: topY,
       scale: 0.38,
       rotation: edgeRotation("left"),
@@ -283,7 +297,8 @@ function sCurveEdges(worldWidth: number, centerY: number): ReefClusterSpec {
     // en sí va pegada al borde en ambas, ver edgeX).
     piece({
       key: "reef_boulder_rock",
-      x: edgeX(worldWidth, "left"),
+      x: 0,
+      edgeFlush: "left",
       y: bottomY,
       scale: 0.34,
       rotation: edgeRotation("left"),
@@ -292,6 +307,9 @@ function sCurveEdges(worldWidth: number, centerY: number): ReefClusterSpec {
     // Balanos pegados al fondo de la banda — mismo lado que el cúmulo
     // inferior pero bien por debajo, no encima.
     piece({ key: "barnacle", x: fromEdge(worldWidth, "left", 0.3), y: bottomY + 110, scale: 0.22, role: "obstacle" }),
+    // Acento de fondo: esquina inferior derecha, la única sin ninguna otra
+    // pieza de esta banda (rock+barnacle quedan a la izquierda).
+    bgAccent("decor_starfish", fromEdge(worldWidth, "right", 0.06), bottomY + 90, 0.14),
   ];
 
   // La ruta serpentea: derecha (abajo) -> izquierda (medio) -> derecha
@@ -324,14 +342,12 @@ function lateralWall(worldWidth: number, centerY: number): ReefClusterSpec {
 
   const pieces: ReefPieceSpec[] = [
     // Pedido explícito del usuario: girar la roca 90º según el lado para
-    // que su parte plana quede pegada al lateral (ver ReefCluster.ts para
-    // el ajuste de hitbox que acompaña a esta rotación). Mismo EDGE_INSET
-    // que edgeX (antes -0.02, casi centrada en el borde mismo, dejaba la
-    // mitad de la roca recortada fuera del mundo — pedido explícito: "que
-    // no se recorten tanto").
+    // que su parte plana quede pegada al lateral, a ras del borde real sin
+    // hueco (ver edgeFlushX en ReefCluster.ts).
     piece({
       key: "reef_boulder_rock",
-      x: fromEdge(worldWidth, side, EDGE_INSET),
+      x: 0,
+      edgeFlush: side,
       y: centerY + 150,
       scale: 0.46,
       rotation: side === "left" ? Math.PI / 2 : -Math.PI / 2,
@@ -357,6 +373,15 @@ function lateralWall(worldWidth: number, centerY: number): ReefClusterSpec {
     piece({ key: "coral_fan", x: fromEdge(worldWidth, side, 0.16), y: centerY - 260, scale: 0.22, role: "obstacle" }),
     piece({ key: "giant_clam", x: fromEdge(worldWidth, side, 0.3), y: centerY + 100, scale: 0.26, role: "obstacle" }),
     piece({ key: "decor_starfish", x: fromEdge(worldWidth, side, 0.13), y: centerY + 260, scale: 0.28, role: "obstacle" }),
+    // Acento de fondo: en el lado abierto (el contrario a la pared), lejos
+    // de la ruta guía que serpentea por `openCenterX` — sugiere más
+    // arrecife sin invadir el carril libre.
+    bgAccent(
+      "reef_boulder_rock",
+      side === "left" ? worldWidth * 0.94 : worldWidth * 0.06,
+      centerY - 100,
+      0.16,
+    ),
   ];
 
   // El carril libre queda en el lado contrario a la masa, con margen

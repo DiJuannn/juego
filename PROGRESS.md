@@ -1099,6 +1099,63 @@ funciona **hoy**, verificado en el código — no lo que el diseño aspira a ten
     2200) muestran la transición Estanque→Arrecife→Océano abierto fluida
     y sin ninguna costura, con el nombre de zona del HUD cambiando en
     sincronía.
+- **Hueco visible en las piezas pegadas al lateral, arreglado de raíz** —
+  pedido explícito del usuario tras varias rondas subiendo `EDGE_INSET` a
+  ciegas (0.02→0.07→0.18) sin acertar: "A MI NO ME IMPORTA QUE TENGAN BASE
+  Y SEAN LARGOS. LO QUE ME IMPORTABA ERA... QUE NO HAYA ESPACIOS VISIBLES
+  SI TIENEN BASES ENTRE LA BASE Y EL LATERAL DE LA PANTALLA. ESA ES MI
+  MAYOR PROBLEMA." Diagnóstico real (con `body.position.x`, no
+  `getBounds()` — este último mide el frame completo del sprite,
+  transparente incluido, y disimulaba el problema): con `EDGE_INSET=0.18`
+  quedaba un hueco real de ~67px entre `reef_boulder_rock` y el borde del
+  mundo. Una fracción fija nunca podía acertar porque el tamaño real de
+  cada pieza cambia con `scale`, el jitter y la rotación.
+  - Solución: `rotatedAABB()` (en `ReefCluster.ts`, compartida con el
+    cálculo de hitbox ya existente) calcula la caja delimitadora real del
+    recorte de textura ya rotado y escalado; `edgeFlushX()` usa eso para
+    despejar la coordenada X exacta que deja el borde visible de la pieza
+    tocando el límite del mundo, con un solape de 10px a propósito
+    (invisible, fuera del mundo) para blindar contra el jitter de escala.
+  - Nuevo campo `ReefPieceSpec.edgeFlush?: "left"|"right"` sustituye a los
+    `edgeX()`/`fromEdge(...,EDGE_INSET)` que se ajustaban a ojo — los 4
+    usos de `reef_boulder_rock` en `ReefTemplates.ts` (las 4 plantillas)
+    lo usan ahora; `EDGE_INSET`/`edgeX` quedaron sin uso y se borraron.
+  - Verificado con `body.position.x`/`width` (no capturas, que en esta
+    sesión ya dieron falsos positivos y negativos varias veces): 36
+    muestras independientes (las 4 plantillas × ambos lados × jitter de
+    escala variado) dan exactamente el solape de 10px pedido, nunca un
+    hueco. `npx tsc --noEmit` limpio, playtest automático sin errores.
+- **Animación leve de "respiración" en las piezas de coral (no en las
+  rocas)** — pedido explícito: "me gustaría que los que algunos tengan
+  animación. LAS ROCAS NO. pero corales y tal estaria bien que tuvieran
+  una leve animacion bonita." `reef_boulder_rock` y `decor_pebble` (las
+  dos piezas que se leen como roca inerte) quedan fuera; el resto (las 4
+  ramas de coral, anémona, abanico, esponja, balano, almeja, estrella,
+  concha) pulsa de escala ±4% en un ciclo de 2.6-4.2s con fase aleatoria
+  por pieza (para que no respiren todas sincronizadas).
+  - Cuidado explícito con un bug ya conocido de esta sesión (#57, hitbox
+    de medusa/erizo desincronizada de su sway visual): como el tamaño y
+    offset del `StaticBody` de cada pieza son proporcionales a `scale` a
+    rotación fija, `ReefCluster.update(time)` reescala el body por el
+    mismo factor de pulso cada frame — sin repetir la trigonometría, y
+    sin que la hitbox se quede fija mientras el dibujo respira.
+  - Verificado midiendo `body.width`/`scaleX` en dos instantes separados
+    por 1.2s en las 4 plantillas: el ratio de cambio del body coincide
+    exactamente con el ratio de cambio de `scaleX`, confirmando que la
+    hitbox sigue el pulso visual sin desincronizarse.
+- **Composición del nivel enriquecida con el rol "background" ya existente
+  pero sin usar** — pedido explícito: "MEJORARAS LA COMPOSICION DEL NIVEL
+  TENIENDO EN CUENTA LAS NUEVAS MEJORAS... CREAME UN NIVEL ESPECTACULAR".
+  `ReefCluster` ya tenía 4 capas de profundidad (fondo/decoración/
+  obstáculo/primer plano) pero las 4 plantillas solo usaban "obstacle" —
+  se añadió un acento de fondo (`bgAccent()`) por plantilla: una pieza
+  pequeña, semitransparente (alpha 0.4) y sin colisión, en la esquina más
+  despejada de cada composición, para sugerir que el arrecife sigue más
+  allá del cúmulo jugable sin añadir dificultad ni amontonar el primer
+  plano.
+  - Verificado: `npx tsc --noEmit` limpio, playtest automático completa el
+    recorrido sin errores, build de producción real
+    (`GITHUB_PAGES=true vite build`) exitoso.
 
 # PENDIENTE
 
@@ -1122,12 +1179,12 @@ que se cerraron)
 
 # PRÓXIMA TAREA
 
-Esperar la reacción del usuario a esta ronda de correcciones (hitbox de
-medusa/erizo, patrulla del tiburón, piezas-glitch retiradas, fondo con
-`AmbientDecorSpawner`, erizos más separados) probada en su móvil real.
-Según lo que diga:
-- Si el juego ya "se siente vivo": retomar el roadmap normal — Tramo 2 en
-  adelante, variaciones de esqueleto, Zona 2.
+Esperar la reacción del usuario a esta ronda (hueco lateral arreglado de
+raíz con `edgeFlush`, respiración leve en las piezas de coral, acentos de
+fondo nuevos en las 4 plantillas) probada en su móvil real. Según lo que
+diga:
+- Si el arrecife ya "se siente terminado": retomar el roadmap normal —
+  Tramo 2 en adelante, variaciones de esqueleto, Zona 2.
 - Si sigue faltando algo puntual: pedir que describa el momento exacto
   (altura/zona/qué estaba haciendo) en vez de re-tunear números a ciegas —
   ya se agotó ese enfoque una vez esta sesión sin resultado.

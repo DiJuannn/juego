@@ -86,7 +86,7 @@ export class ReefClusterSpawner {
   private place(y: number, templateIndex: number) {
     const template = REEF_TEMPLATES[templateIndex];
     const spec = template(this.worldWidth, y);
-    const cluster = new ReefCluster(this.scene, spec);
+    const cluster = new ReefCluster(this.scene, spec, this.worldWidth);
     for (const sprite of cluster.obstacleSprites) this.group.add(sprite);
     this.clusters.push(cluster);
     this.spawnCoinsAlongPath(spec.path);
@@ -113,6 +113,7 @@ export class ReefClusterSpawner {
         cluster.destroy();
         return false;
       }
+      cluster.update(time);
       return true;
     });
 
