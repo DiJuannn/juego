@@ -63,14 +63,15 @@ function branchScale(key: string, base: number): number {
   return LONG_BRANCH_KEYS.has(key) ? base * 0.85 : base;
 }
 
-// reef_branch_straight y reef_branch_hook son la excepción a "el coral
+// reef_branch_straight y reef_branch_short son la excepción a "el coral
 // está a la izquierda de fábrica, espejar para el lado derecho" — pedido
 // explícito del usuario tras ver el espejo en el lado derecho:
 // "simplemente el espejo, haz el espejo de ese [el ya espejado] y ponlo
 // en ese mismo lado", es decir, en el lado derecho usar la orientación
-// nativa (sin espejar) también, no la espejada. Mismo pedido aplicado
-// después a branch_hook ("haz lo mismo con el otro").
-const NEVER_FLIP_KEYS = new Set(["reef_branch_straight", "reef_branch_hook"]);
+// nativa (sin espejar) también, no la espejada. reef_branch_hook se
+// probó con el mismo cambio y se revirtió ("ese no era, ese estaba
+// bien") — se queda espejándose normalmente en la derecha.
+const NEVER_FLIP_KEYS = new Set(["reef_branch_straight", "reef_branch_short"]);
 
 function branchFlipX(key: string, wantFlip: boolean): boolean {
   return wantFlip && !NEVER_FLIP_KEYS.has(key);
