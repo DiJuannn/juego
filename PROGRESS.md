@@ -187,16 +187,28 @@ funciona **hoy**, verificado en el código — no lo que el diseño aspira a ten
      con Playwright reproduciendo exactamente la posición/origen que usa
      `lateralWall` a cada lado. Playtest automatizado sigue pasando sin
      golpes.
-  **7ª tanda**: "ahora haz lo mismo con el otro" — primer intento aplicado
-  a `reef_branch_hook`, pero el usuario aclaró que ESE no era ("ese estaba
-  bien") — revertido, `reef_branch_hook` se queda espejándose
-  normalmente en la derecha, como las demás. El pedido era en realidad
-  `reef_branch_short`: mismo tratamiento (`NEVER_FLIP_KEYS`) — en el lado
-  derecho también usa su orientación nativa sin espejar. Con esto, de las
-  4 variantes de rama, `reef_branch_straight` y `reef_branch_short` usan
-  siempre su orientación nativa (nunca se espejan), y `reef_coral_branch`/
-  `reef_branch_hook` siguen la convención general (se espejan hacia la
-  derecha). Verificado igual que branch_straight, playtest sigue pasando.
+  **7ª tanda**: "ahora haz lo mismo con el otro" — dos intentos fallidos
+  (`reef_branch_hook`, luego `reef_branch_short`), ambos revertidos: el
+  usuario aclaró en los dos casos que esa pieza ya estaba bien y no era a
+  la que se refería. Las 3 ramas menos `reef_branch_straight` volvieron a
+  la convención general (espejar hacia la derecha).
+  **8ª tanda**: el usuario mandó una captura real del juego con dos
+  `reef_branch_straight` (contexto izquierda y derecha, ambas nativas tras
+  la 6ª tanda) y aclaró exactamente qué faltaba: "DERECHA BIEN, izquierda
+  poner espejo. SOLO ESO" — es decir, la orientación nativa (sin espejar)
+  SÍ es la correcta para el contexto derecha (ya lo teníamos), pero el
+  contexto izquierda necesita el espejo — justo AL REVÉS de la convención
+  general de las otras 3 ramas (que espejan a la derecha, no a la
+  izquierda). `branchFlipX()` pasó de "nunca espejar esta clave" a
+  "invertir la decisión general para esta clave" (`INVERT_FLIP_KEYS`):
+  para `reef_branch_straight`, sin espejo cuando el resto pediría espejo
+  (derecha) y con espejo cuando el resto NO lo pediría (izquierda).
+  Verificado con un probe sobre los clusters reales generados por
+  `ReefClusterSpawner` (filtrando por la extensión vertical del cúmulo
+  para distinguir `lateralWall`/`sCurveEdges` de las plantillas que no
+  gestionan flipX) — los 9 casos de `lateralWall` encontrados coinciden:
+  izquierda con `flipX=true`, derecha con `flipX=false`, sin excepciones.
+  Playtest automatizado sigue pasando sin golpes.
 - Se abandonó la idea de un fondo de escena pintado como imagen única
   (se había generado un primer ejemplo con Gemini, nunca integrado) — el
   usuario confirmó explícitamente que quiere mantener el fondo actual

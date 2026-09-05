@@ -43,7 +43,8 @@ function piece(p: PieceInput): ReefPieceSpec {
  * vez de repetir siempre `reef_coral_branch`. Todas comparten la misma
  * convención: el coral está concentrado en su lado IZQUIERDO de fábrica,
  * así que al usarlas entrando por la derecha hay que espejarlas (flipX) —
- * salvo `reef_branch_straight`, ver NEVER_FLIP_KEYS más abajo.
+ * salvo `reef_branch_straight`, que va exactamente al revés (ver
+ * INVERT_FLIP_KEYS más abajo).
  */
 const BRANCH_VARIANTS = ["reef_coral_branch", "reef_branch_straight", "reef_branch_hook", "reef_branch_short"];
 
@@ -64,17 +65,18 @@ function branchScale(key: string, base: number): number {
 }
 
 // reef_branch_straight es la excepción a "el coral está a la izquierda de
-// fábrica, espejar para el lado derecho" — pedido explícito del usuario
-// tras ver el espejo en el lado derecho: "simplemente el espejo, haz el
-// espejo de ese [el ya espejado] y ponlo en ese mismo lado", es decir, en
-// el lado derecho usar la orientación nativa (sin espejar) también, no la
-// espejada. reef_branch_hook y reef_branch_short se probaron con el mismo
-// cambio y se revirtieron (el usuario indicó que no eran esos) — se
-// quedan espejándose normalmente en la derecha.
-const NEVER_FLIP_KEYS = new Set(["reef_branch_straight"]);
+// fábrica, espejar para el lado derecho": va EXACTAMENTE AL REVÉS —
+// pedido explícito del usuario viendo un par real en el juego (uno en
+// contexto izquierda, otro en contexto derecha): "DERECHA BIEN, izquierda
+// poner espejo. SOLO ESO" — o sea, sin espejar cuando el contexto general
+// pediría espejo (derecha) y espejada cuando el contexto general NO
+// pediría espejo (izquierda). reef_branch_hook y reef_branch_short se
+// probaron con la versión "nunca espejar" y se revirtieron (el usuario
+// indicó que no eran esos) — se quedan con la convención normal.
+const INVERT_FLIP_KEYS = new Set(["reef_branch_straight"]);
 
 function branchFlipX(key: string, wantFlip: boolean): boolean {
-  return wantFlip && !NEVER_FLIP_KEYS.has(key);
+  return INVERT_FLIP_KEYS.has(key) ? !wantFlip : wantFlip;
 }
 
 /**
