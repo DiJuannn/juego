@@ -3,7 +3,6 @@ import { assetPath } from "@/config/assetPath";
 import { LUMI_FRAME_COUNT, frameKey, framePath } from "@/config/LumiAnimConfig";
 import { registerLumiAnimations } from "@/systems/AnimationRegistry";
 import { FISH_KEYS } from "@/systems/BackgroundFishField";
-import { DECOR_KEYS } from "@/systems/BackgroundDecorSpawner";
 
 // Capas de fondo fijas (una sola imagen). water_overlay.png no se ha
 // generado todavía — se omite y se reporta, no se inventa un reemplazo.

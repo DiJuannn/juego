@@ -484,22 +484,78 @@ funciona **hoy**, verificado en el código — no lo que el diseño aspira a ten
     a `LumiBubbleTrail`. Playtest automático sigue completando el
     recorrido. Capturas confirman el tamaño nuevo de Lumi, la cruceta más
     arriba y la ausencia de burbujas de propulsión.
+- **Ejecutado el plan de reestructuración aprobado por el usuario**
+  ("vale hagamos eso"), más una corrección: "lumi ponlo del tamaño que
+  estaba antes, me confundí, quería decir que lo hicieras más rápido un
+  30% más rápido".
+  - `LUMI_SCALE` vuelve a `0.075*3*1.2*0.9` (el aumento de la ronda
+    anterior era un malentendido). `LUMI_SWIM_SPEED` sube un 30% real
+    (310 → 403) — verificado leyendo `body.velocity.y` con la flecha
+    arriba pulsada.
+  - **Bug real encontrado de camino**: varias X de `ZONE1_LEVEL_ENTRIES`
+    (700/1000/1050) eran herencia del `WORLD_WIDTH` viejo (1376px) y
+    quedaron fuera de los límites físicos del mundo actual (600px, Lumi
+    colisiona con los bordes — `physics.world.setBounds`) tras la ronda
+    en que se achicó el mapa: esos peligros estaban colocados en el aire,
+    inalcanzables. Todas las X del Tramo 1 se corrigieron a `[110,490]`;
+    el combo final (3400-4000) además se reordenó en zigzag deliberado
+    (350/150/450/250) en vez de valores sueltos — verificado leyendo la
+    posición real de cada sprite en juego (0 fuera de rango).
+  - **Tramo 2 (4000-6500) diseñado a mano**, mismo criterio que el Tramo
+    1 (nunca un peligro solo, bandas de los ReefCluster respetadas con
+    margen ~50-100px): 3 cúmulos de arrecife más, debut del calamar (dos
+    apariciones) y un gauntlet final (medusa + pez grande) justo antes de
+    la corriente de agua (6500). `SquidSpawner` no tenía `spawnExact` ni
+    seguía el patrón de `ZONE1_LEVEL_END_OFFSET` (usaba su propio
+    `SQUID_START_OFFSET` aparte) — se le añadió, igual que al resto.
+  - **Más orden**: `SharkSpawner`/`BigFishSpawner`/`SquidSpawner` ahora
+    reciben el mismo `isWithinAnyClusterBand` que ya tenían medusa/erizo,
+    para que ningún peligro caiga por casualidad encima de la banda de un
+    cúmulo de arrecife (antes solo aplicaba a 2 de los 6 peligros).
+  - **Estrellas/piedras dejan de ser decoración ambiental aleatoria y
+    pasan a ser obstáculos de nivel**: `BackgroundDecorSpawner.ts`
+    (spawner de fondo puramente aleatorio) se retira del todo — import,
+    instanciación y `update()` en `PondScene.ts`, archivo borrado, y el
+    campo `decorKeys` (ya sin uso real, `ZoneManager` nunca lo leía) se
+    quita de `ZoneConfig.ts`. Las piezas `decor_starfish`/`decor_pebble`
+    que YA estaban colocadas a mano dentro de cada plantilla de
+    `ReefTemplates.ts` (antes `role:"decoration"`, sin colisión) pasan a
+    `role:"obstacle"` — bloquean como el resto del cúmulo, sin hacer daño
+    (mismo collider ya wireado). Se añadieron sus `HITBOX_FRACTION` en
+    `ReefCluster.ts`. Verificado que ninguna quedó encima de la ruta guía
+    de su plantilla (a ojo contra las coordenadas del `path`) y con un
+    test de colisión real (teletransportar a Lumi encima de una y correr
+    física 30 frames: vidas intactas, `isGameOver` en `false`, posición
+    de Lumi desplazada por el collider).
+  - **Monedas en fila/diagonal con separación constante**
+    (`CoinSpawner.ts`): el arco curvo (`COIN_GROUP_ARC_SPREAD`, cada
+    moneda desplazada según su distancia al centro del grupo) se
+    reemplaza por un paso horizontal CONSTANTE por moneda
+    (`COIN_GROUP_DIAGONAL_STEP=45`) — 1/3 de los grupos en fila recta
+    (paso 0), el resto en diagonal, siempre hacia el centro del mundo
+    (nunca hacia el borde más cercano) para que ninguna moneda quede
+    recortada contra el límite en un mundo tan angosto. Además, su
+    cadencia aleatoria ya no arranca casi desde el inicio (`START_Y -
+    200`) sino en `ZONE1_LEVEL_END_OFFSET` (6500): por debajo de eso las
+    monedas ya las coloca cada `ReefCluster` siguiendo su propia ruta —
+    tener los dos sistemas a la vez ahí era parte de lo que se veía
+    desordenado. Verificado leyendo las monedas reales del grupo: filas
+    con X idéntica, diagonales con paso de exactamente 45px entre moneda
+    y moneda, ninguna fuera de `[110,490]`.
+  - Las rutas curvas de cada `ReefCluster` (las monedas-guía que trazan
+    el hueco seguro) NO se tocaron — son guía de navegación real, no solo
+    decoración, y forzarlas a una línea recta arriesgaba romper su
+    función de esquivar el obstáculo. Dentro de cada segmento ya tenían
+    espaciado constante; el "desorden" percibido venía de los dos
+    sistemas de monedas solapados (ya arreglado arriba), no de esto.
+  - `npx tsc --noEmit` limpio. Playtest automático llegó a altura 669 sin
+    game over (antes de esta ronda solía rondar 280-300 en la misma
+    ventana de prueba) — mejora esperada: subida más rápida + arrecife/
+    estrella/piedra ya no matan, solo bloquean.
 
 # PENDIENTE
 
-- **Bloqueante, esperando aprobación del usuario**: plan de
-  reestructuración de obstáculos/enemigos de la Zona 1 (mapa más angosto
-  = más difícil, nivel "desordenado", estrellas/piedras sueltas pasan a
-  ser obstáculos de nivel, monedas en fila/diagonal con separación
-  constante) — mandado como plan de texto, no implementado todavía. Una
-  vez el usuario dé el visto bueno (o pida cambios), ejecutar sobre
-  `ZONE1_LEVEL_ENTRIES` (`Zone1Level.ts`), `ReefTemplates.ts`,
-  `BackgroundDecorSpawner.ts` (probablemente retirado del todo) y
-  `CoinSpawner.ts`/`ReefClusterSpawner.spawnCoinsAlongPath`.
-- Diseñar el Tramo 2 de la Zona 1 (4000 en adelante: introducir el
-  calamar, gauntlet final, corriente) — pendiente de que el usuario dé el
-  visto bueno al Tramo 1 primero.
-- Una vez el Tramo 1 esté aprobado y estable: variaciones del mismo
+- Una vez el Tramo 1+2 esté aprobado y estable: variaciones del mismo
   esqueleto para que no sea idéntico entre intentos (pedido explícito,
   para después).
 - Arte y diseño propios para la Zona 2 ("Arrecife") en adelante.

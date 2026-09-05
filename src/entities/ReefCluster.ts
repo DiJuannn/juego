@@ -41,6 +41,11 @@ const HITBOX_FRACTION: Record<string, [number, number, number, number]> = {
   reef_branch_straight: [0.0, 0.05, 0.98, 0.95],
   reef_branch_hook: [0.0, 0.0, 0.95, 0.95],
   reef_branch_short: [0.0, 0.0, 0.95, 0.95],
+  // Estrella/piedra pasaron de decoración a obstáculo real (pedido
+  // explícito del usuario) — necesitan su propia caja de colisión, igual
+  // que el resto de piezas de esta tabla.
+  decor_starfish: [0.05, 0.05, 0.95, 0.95],
+  decor_pebble: [0.03, 0.05, 0.97, 0.95],
 };
 
 /**

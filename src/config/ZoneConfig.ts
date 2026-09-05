@@ -1,5 +1,4 @@
 import { FISH_KEYS } from "@/systems/BackgroundFishField";
-import { DECOR_KEYS } from "@/systems/BackgroundDecorSpawner";
 import { START_Y } from "./GameConfig";
 
 /**
@@ -8,12 +7,11 @@ import { START_Y } from "./GameConfig";
  * ajustar jugando, sin tener que pensar en píxeles de mundo.
  *
  * IMPORTANTE: de momento zonas 2-8 son solo DATOS de progresión (tinte de
- * profundidad + nombre), reutilizando el arte de la Zona 1 (fishKeys/
- * decorKeys). Esto es intencional: el refactor de esta tarea no genera arte
- * nuevo, solo deja el sistema listo para que cada zona reciba su propio
- * arte (tarea "Zona 2: Arrecife" y siguientes) sin tocar el motor otra vez.
- * Sustituir fishKeys/decorKeys por sets propios de cada zona cuando ese
- * arte exista.
+ * profundidad + nombre), reutilizando el arte de la Zona 1 (fishKeys). Esto
+ * es intencional: el refactor de esta tarea no genera arte nuevo, solo deja
+ * el sistema listo para que cada zona reciba su propio arte (tarea "Zona 2:
+ * Arrecife" y siguientes) sin tocar el motor otra vez. Sustituir fishKeys
+ * por un set propio de cada zona cuando ese arte exista.
  */
 export interface ZoneDefinition {
   id: number;
@@ -24,7 +22,6 @@ export interface ZoneDefinition {
    * la zona (no en la transición). 0 = sin tinte (Zona 1, look actual). */
   tint: { color: number; alpha: number };
   fishKeys: string[];
-  decorKeys: string[];
 }
 
 /** Medio ancho de la banda de transición (en unidades de Altura) a cada
@@ -43,7 +40,6 @@ export const ZONES: ZoneDefinition[] = [
     altitudeStart: 0,
     tint: { color: 0x000000, alpha: 0 },
     fishKeys: FISH_KEYS,
-    decorKeys: DECOR_KEYS,
   },
   {
     id: 2,
@@ -51,7 +47,6 @@ export const ZONES: ZoneDefinition[] = [
     altitudeStart: 750,
     tint: { color: 0x000000, alpha: 0 }, // TODO: sin arte propio todavía
     fishKeys: FISH_KEYS,
-    decorKeys: DECOR_KEYS,
   },
   {
     id: 3,
@@ -59,7 +54,6 @@ export const ZONES: ZoneDefinition[] = [
     altitudeStart: 2000,
     tint: { color: 0x3a6fa8, alpha: 0.08 },
     fishKeys: FISH_KEYS,
-    decorKeys: DECOR_KEYS,
   },
   {
     id: 4,
@@ -67,7 +61,6 @@ export const ZONES: ZoneDefinition[] = [
     altitudeStart: 3750,
     tint: { color: 0x2d4f8a, alpha: 0.18 },
     fishKeys: FISH_KEYS,
-    decorKeys: DECOR_KEYS,
   },
   {
     id: 5,
@@ -75,7 +68,6 @@ export const ZONES: ZoneDefinition[] = [
     altitudeStart: 5500,
     tint: { color: 0x1c2f5e, alpha: 0.32 },
     fishKeys: FISH_KEYS,
-    decorKeys: DECOR_KEYS,
   },
   {
     id: 6,
@@ -83,7 +75,6 @@ export const ZONES: ZoneDefinition[] = [
     altitudeStart: 7000,
     tint: { color: 0x24205c, alpha: 0.3 },
     fishKeys: FISH_KEYS,
-    decorKeys: DECOR_KEYS,
   },
   {
     id: 7,
@@ -91,7 +82,6 @@ export const ZONES: ZoneDefinition[] = [
     altitudeStart: 8500,
     tint: { color: 0x3a6fa8, alpha: 0.1 },
     fishKeys: FISH_KEYS,
-    decorKeys: DECOR_KEYS,
   },
   {
     id: 8,
@@ -99,7 +89,6 @@ export const ZONES: ZoneDefinition[] = [
     altitudeStart: 10000,
     tint: { color: 0xfff2c4, alpha: 0.1 },
     fishKeys: FISH_KEYS,
-    decorKeys: DECOR_KEYS,
   },
 ];
 

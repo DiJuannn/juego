@@ -14,7 +14,6 @@ import {
   SHIELD_AURA_ALPHA,
   SHIELD_AURA_SCALE,
   SHIELD_START_OFFSET,
-  SQUID_START_OFFSET,
   START_Y,
   WORLD_HEIGHT,
   WORLD_WIDTH,
@@ -22,7 +21,6 @@ import {
 import { ZONE1_LEVEL_END_OFFSET, ZONE1_LEVEL_ENTRIES } from "@/config/Zone1Level";
 import { BigFish } from "@/entities/BigFish";
 import { Lumi } from "@/entities/Lumi";
-import { BackgroundDecorSpawner } from "@/systems/BackgroundDecorSpawner";
 import { BackgroundFishField } from "@/systems/BackgroundFishField";
 import { BigFishSpawner } from "@/systems/BigFishSpawner";
 import { BoostPickupSpawner } from "@/systems/BoostPickupSpawner";
@@ -66,7 +64,6 @@ export class PondScene extends Phaser.Scene {
   private shieldPickupSpawner!: ShieldPickupSpawner;
   private coinSpawner!: CoinSpawner;
   private boostPickupSpawner!: BoostPickupSpawner;
-  private decorSpawner!: BackgroundDecorSpawner;
   private zoneManager!: ZoneManager;
   private zoneText!: Phaser.GameObjects.Text;
   private livesSystem!: LivesSystem;
@@ -125,10 +122,6 @@ export class PondScene extends Phaser.Scene {
     // competir visualmente con Lumi. Se reciclan con la cámara (ver
     // BackgroundFishField.update), no dependen de una altura de mundo fija.
     this.fishField = new BackgroundFishField(this, WORLD_WIDTH, cam.height, 0.5, 0.25);
-
-    // Objetos de fondo (piedras, conchas, estrellas): decoración pura, sin
-    // colisión, para que la subida no se sienta tan vacía entre nenúfares.
-    this.decorSpawner = new BackgroundDecorSpawner(this, WORLD_WIDTH, START_Y, 1.8, 0.4);
 
     // Rocas/plantas son decoración de la zona de salida — el "fondo del
     // estanque" de verdad. Se anclan cerca de START_Y (no del viejo fondo
@@ -214,8 +207,12 @@ export class PondScene extends Phaser.Scene {
 
     // Monedas: recompensa + guía visual de ruta (ver CoinSpawner, que las
     // agrupa en arcos/líneas en vez de soltarlas al azar). Empiezan desde
-    // el arranque, antes que cualquier peligro.
-    this.coinSpawner = new CoinSpawner(this, WORLD_WIDTH, START_Y - 200);
+    // el arranque, antes que cualquier peligro. Su cadencia aleatoria no
+    // empieza hasta ZONE1_LEVEL_END_OFFSET — por debajo de eso, las
+    // monedas ya las coloca cada ReefCluster siguiendo su propia ruta (ver
+    // ReefClusterSpawner.spawnCoinsAlongPath); tener los dos sistemas a la
+    // vez ahí era parte de lo que se veía desordenado (pedido explícito).
+    this.coinSpawner = new CoinSpawner(this, WORLD_WIDTH, START_Y - ZONE1_LEVEL_END_OFFSET);
     this.physics.add.overlap(this.lumi.sprite, this.coinSpawner.group, (_lumiObj, coinObj) => {
       this.coinCount += 1;
       this.coinText.setText(`Monedas: ${this.coinCount}`);
@@ -271,33 +268,43 @@ export class PondScene extends Phaser.Scene {
 
     // Tiburones: segundo enemigo, más arriba que la medusa. Patrullan de
     // lado a lado en vez de solo derivar.
-    this.sharkSpawner = new SharkSpawner(this, WORLD_WIDTH, START_Y - ZONE1_LEVEL_END_OFFSET, () => ({
-      x: this.lumi.sprite.x,
-      y: this.lumi.sprite.y,
-    }));
+    this.sharkSpawner = new SharkSpawner(
+      this,
+      WORLD_WIDTH,
+      START_Y - ZONE1_LEVEL_END_OFFSET,
+      () => ({ x: this.lumi.sprite.x, y: this.lumi.sprite.y }),
+      (y) => this.reefClusterSpawner.isWithinAnyClusterBand(y),
+    );
     this.physics.add.overlap(this.lumi.sprite, this.sharkSpawner.group, (_lumiObj, sharkObj) => {
       this.handleHazardHit("tiburon", sharkObj as Phaser.Physics.Arcade.Image);
     });
 
     // Pez grande: NO mata, solo empuja lejos a Lumi — un estorbo, no un
     // peligro letal. Reutiliza el arte de pez decorativo a mayor escala.
-    this.bigFishSpawner = new BigFishSpawner(this, WORLD_WIDTH, START_Y - ZONE1_LEVEL_END_OFFSET);
+    this.bigFishSpawner = new BigFishSpawner(this, WORLD_WIDTH, START_Y - ZONE1_LEVEL_END_OFFSET, (y) =>
+      this.reefClusterSpawner.isWithinAnyClusterBand(y),
+    );
     this.physics.add.overlap(this.lumi.sprite, this.bigFishSpawner.group, (_lumiObj, fishObj) => {
       this.pushLumiAway(fishObj as Phaser.Physics.Arcade.Image);
     });
 
-    // Calamares: tercer enemigo, todavía más arriba. Dan impulsos rápidos.
-    this.squidSpawner = new SquidSpawner(this, WORLD_WIDTH, START_Y - SQUID_START_OFFSET);
+    // Calamares: tercer enemigo. Su debut ya no es un *_START_OFFSET propio
+    // (SQUID_START_OFFSET) — lo decide el nivel scripteado del Tramo 2 (ver
+    // Zone1Level.ts), igual que el resto de peligros.
+    this.squidSpawner = new SquidSpawner(this, WORLD_WIDTH, START_Y - ZONE1_LEVEL_END_OFFSET, (y) =>
+      this.reefClusterSpawner.isWithinAnyClusterBand(y),
+    );
     this.physics.add.overlap(this.lumi.sprite, this.squidSpawner.group, (_lumiObj, squidObj) => {
       this.handleHazardHit("calamar", squidObj as Phaser.Physics.Arcade.Image);
     });
 
-    // Tramo 1 de la Zona 1 (0 a ZONE1_LEVEL_END_OFFSET): nivel diseñado a
-    // mano (ver Zone1Level.ts), no generación al azar — pedido explícito
-    // del usuario ("como si fuera el Mario Maker"). A partir de aquí, los
-    // spawners de arriba retoman su cadencia aleatoria de siempre (todos
-    // arrancan justo en ZONE1_LEVEL_END_OFFSET). Coins/nenúfar/escudo/
-    // boost NO se tocan: siguen con su generación continua de siempre.
+    // Zona 1 completa (0 a ZONE1_LEVEL_END_OFFSET, Tramos 1 y 2): nivel
+    // diseñado a mano (ver Zone1Level.ts), no generación al azar — pedido
+    // explícito del usuario ("como si fuera el Mario Maker"). A partir de
+    // aquí, los spawners de arriba retoman su cadencia aleatoria de
+    // siempre (todos arrancan justo en ZONE1_LEVEL_END_OFFSET). Coins/
+    // nenúfar/escudo/boost NO se tocan: siguen con su generación continua
+    // de siempre (ver también la tarea de monedas ordenadas más abajo).
     for (const entry of ZONE1_LEVEL_ENTRIES) {
       const y = START_Y - entry.offset;
       switch (entry.type) {
@@ -312,6 +319,9 @@ export class PondScene extends Phaser.Scene {
           break;
         case "bigfish":
           this.bigFishSpawner.spawnExact(y, entry.x);
+          break;
+        case "squid":
+          this.squidSpawner.spawnExact(y, entry.x);
           break;
         case "reef":
           this.reefClusterSpawner.spawnExact(y, entry.reefTemplate ?? 0);
@@ -725,7 +735,6 @@ export class PondScene extends Phaser.Scene {
     this.bigFishSpawner.update(cam.scrollY, cam.scrollY + cam.height, time);
     this.squidSpawner.update(cam.scrollY, cam.scrollY + cam.height, time);
     this.currentZoneSpawner.update(cam.scrollY, cam.scrollY + cam.height);
-    this.decorSpawner.update(cam.scrollY, cam.scrollY + cam.height);
 
     // Corriente de agua: empuje lateral aplicado DESPUÉS del movimiento
     // propio de Lumi, así se suma a lo que el jugador ya hace en vez de

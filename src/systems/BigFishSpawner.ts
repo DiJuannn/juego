@@ -18,12 +18,16 @@ export class BigFishSpawner {
     private scene: Phaser.Scene,
     private worldWidth: number,
     startY: number,
+    private readonly isWithinCoralBand?: (y: number) => boolean,
   ) {
     this.group = scene.physics.add.group();
     this.highestY = startY;
   }
 
   private spawnAt(y: number) {
+    // Pedido explícito: nunca dejar un pez grande patrullando justo en la
+    // banda de un cúmulo de arrecife — mismo criterio que medusa/erizo.
+    if (this.isWithinCoralBand?.(y)) return;
     // Progresión de Zona 1 en tramos (ver Zone1Segments).
     if (!isHazardAllowed(START_Y - y)) return;
     this.place(y);

@@ -18,17 +18,32 @@ export class SquidSpawner {
     private scene: Phaser.Scene,
     private worldWidth: number,
     startY: number,
+    private readonly isWithinCoralBand?: (y: number) => boolean,
   ) {
     this.group = scene.physics.add.group();
     this.highestY = startY;
   }
 
   private spawnAt(y: number) {
+    // Pedido explícito: nunca dejar un calamar parado justo en la banda de
+    // un cúmulo de arrecife — mismo criterio que medusa/erizo.
+    if (this.isWithinCoralBand?.(y)) return;
     // Progresión de Zona 1 en tramos (ver Zone1Segments).
     if (!isHazardAllowed(START_Y - y)) return;
+    this.place(y);
+  }
+
+  /** Colocación exacta desde el nivel scripteado del Tramo 2 (ver
+   * Zone1Level.ts) — sin las comprobaciones de banda/descanso, que son
+   * solo para la generación al azar de más arriba. */
+  spawnExact(y: number, x?: number) {
+    this.place(y, x);
+  }
+
+  private place(y: number, x?: number) {
     const scale = SQUID_SCALE * Phaser.Math.FloatBetween(0.9, 1.1);
-    const x = Phaser.Math.Between(this.worldWidth * 0.3, this.worldWidth * 0.7);
-    const squid = new Squid(this.scene, x, y, scale, RANGE_MARGIN_X, this.worldWidth - RANGE_MARGIN_X);
+    const finalX = x ?? Phaser.Math.Between(this.worldWidth * 0.3, this.worldWidth * 0.7);
+    const squid = new Squid(this.scene, finalX, y, scale, RANGE_MARGIN_X, this.worldWidth - RANGE_MARGIN_X);
     this.group.add(squid.sprite);
     this.squids.push(squid);
     if (y < this.highestY) this.highestY = y;

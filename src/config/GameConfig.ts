@@ -33,17 +33,17 @@ export const WORLD_HEIGHT = 2_000_000;
 export const START_Y = 700;
 
 // Pedido explícito del usuario: tamaño final, un 20% más sobre el "mucho
-// más grande" anterior (0.075*3), luego un 10% menos ("empequeñar a lumi
-// un 10%"), y de nuevo hacia arriba tras probarlo en el móvil real ("va
-// muy lento, le aumentaría el tamaño" — una Lumi más grande se siente más
-// rápida a igual velocidad real, ver LUMI_SWIM_SPEED sin tocar). Supera
-// bastante el "10-15% de la pantalla" de STYLE_GUIDE.md — avisado, no es
-// un descuido.
-export const LUMI_SCALE = 0.075 * 3 * 1.35;
+// más grande" anterior (0.075*3), y luego un 10% menos ("empequeñar a
+// lumi un 10%"). Una subida posterior a este mismo valor fue un
+// malentendido del usuario ("me confundí, quería decir que lo hicieras
+// más rápido") — revertida, la lentitud se arregla con LUMI_SWIM_SPEED,
+// no con el tamaño. Supera bastante el "10-15% de la pantalla" de
+// STYLE_GUIDE.md — avisado, no es un descuido.
+export const LUMI_SCALE = 0.075 * 3 * 1.2 * 0.9;
 
-// Pedido explícito: Lumi se sentía lenta. Subido de 220 a 260, y de nuevo
-// tras seguir sintiéndose lenta a 310.
-export const LUMI_SWIM_SPEED = 310; // px/seg
+// Pedido explícito: Lumi se sentía lenta. Subido de 220 a 260, luego a
+// 310, y de nuevo un 30% más (310 -> 403) tras probarlo en el móvil real.
+export const LUMI_SWIM_SPEED = 310 * 1.3; // px/seg
 
 // El arte de swim_right/swim_left está dibujado algo más grande que el de
 // idle/swim_up/diagonal dentro del mismo lienzo. La corrección de 0.64 fue
@@ -114,10 +114,11 @@ export const SHARK_CHASE_TRIGGER_RANGE_Y = 240;
 export const SHARK_CHASE_SPEED = 240;
 export const SHARK_CHASE_DURATION_MS = 2200;
 
-// Calamares: tercer enemigo, más arriba todavía (altura ~500) — impulsos
-// rápidos en vez de patrulla constante, para que cada peligro se esquive
-// de forma distinta.
-export const SQUID_START_OFFSET = 5000; // px por encima de START_Y (altura ~500)
+// Calamares: tercer enemigo — impulsos rápidos en vez de patrulla
+// constante, para que cada peligro se esquive de forma distinta. Su debut
+// ya no es un *_START_OFFSET propio: lo decide el nivel scripteado del
+// Tramo 2 (ver Zone1Level.ts), igual que el resto; estos valores solo
+// rigen su cadencia aleatoria a partir de ahí.
 export const SQUID_MIN_GAP = 1100;
 export const SQUID_MAX_GAP = 1900;
 export const SQUID_SCALE = 0.18;
@@ -204,13 +205,20 @@ export const SHIELD_AURA_ALPHA = 0.55;
 // de 791px medían ~87px, más que COIN_GROUP_SPACING=70 — se solapaban
 // entre sí dentro del mismo grupo). La textura nueva (508px) a 0.08 mide
 // ~41px, con margen de sobra respecto al espaciado del grupo.
+// Pedido explícito del usuario: "las monedas tienen que salir de forma
+// ordenada y que tengan la misma distancia de separación una de otra y en
+// fila o diagonal" — el arco curvo anterior (COIN_GROUP_ARC_SPREAD, cada
+// moneda desplazada según su distancia al centro del grupo) se veía
+// desordenado. Ahora cada grupo es una línea recta de verdad: recta
+// vertical (misma X) o diagonal con el mismo paso de X entre moneda y
+// moneda — en ambos casos la distancia moneda-a-moneda es constante.
 export const COIN_SCALE = 0.08;
 export const COIN_GROUP_MIN_GAP = 500;
 export const COIN_GROUP_MAX_GAP = 850;
 export const COIN_GROUP_SIZE_MIN = 3;
 export const COIN_GROUP_SIZE_MAX = 5;
 export const COIN_GROUP_SPACING = 70; // separación vertical entre monedas de un mismo grupo
-export const COIN_GROUP_ARC_SPREAD = 90; // desplazamiento horizontal máx. dentro del arco del grupo
+export const COIN_GROUP_DIAGONAL_STEP = 45; // paso horizontal constante por moneda en un grupo diagonal
 export const COIN_RISKY_GROUP_CHANCE = 0.25;
 
 // Power-up de impulso vertical: distinto del nenúfar (que está siempre
