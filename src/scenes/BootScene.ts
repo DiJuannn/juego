@@ -82,14 +82,14 @@ export class BootScene extends Phaser.Scene {
     this.load.image("urchin", "/objects/enemies/urchin.png");
     this.load.image("coral", "/objects/enemies/coral.png");
     // Librería de piezas para ReefCluster (composiciones orgánicas de
-    // obstáculos de Zona 1, ver systems/ReefCluster.ts). Segunda tanda:
-    // la primera (coral_mass/rock_formation/kelp_frond/coral_mound, tonos
-    // salmón/coral) fue rechazada por el usuario — pidió rocas oscuras que
-    // combinen con el tono azul/pizarra del fondo ya existente, con solo
-    // acentos MENORES de coral de color, no coral como protagonista.
-    this.load.image("reef_dark_rock_branch", "/objects/reef/dark_rock_branch.png");
-    this.load.image("reef_dark_rock_plain", "/objects/reef/dark_rock_plain.png");
-    this.load.image("reef_dark_rock_tall", "/objects/reef/dark_rock_tall.png");
+    // obstáculos de Zona 1, ver systems/ReefCluster.ts). Tercera tanda,
+    // generada directamente a partir de las 3 imágenes de referencia que
+    // el usuario subió a /reference (rama de roca cubierta de coral de
+    // colores + cúmulo de rocas redondeadas con musgo y acentos de coral)
+    // — las dos tandas anteriores (salmón puro, luego roca oscura casi sin
+    // coral) fueron rechazadas por no parecerse a esas referencias.
+    this.load.image("reef_coral_branch", "/objects/reef/coral_branch.png");
+    this.load.image("reef_boulder_rock", "/objects/reef/boulder_rock.png");
     // Parpadeo: arte de verdad (ojos cerrados) generado con Gemini a partir
     // de cada sprite base, ver systems/BlinkTimer — nunca un Graphics
     // dibujado por código.
