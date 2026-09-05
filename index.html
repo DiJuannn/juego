@@ -31,10 +31,46 @@
         margin: 0 auto;
         touch-action: none;
       }
+
+      /* Pedido explícito: el juego solo se diseña para móvil en vertical
+         — en horizontal se tapa el juego con un aviso en vez de intentar
+         adaptar niveles/D-pad a ese formato. */
+      #rotate-notice {
+        display: none;
+      }
+      /* pointer: coarse = dispositivo táctil (evita disparar el aviso en
+         un navegador de escritorio con la ventana ancha y baja). */
+      @media (orientation: landscape) and (pointer: coarse) {
+        #game {
+          display: none;
+        }
+        #rotate-notice {
+          display: flex;
+        }
+      }
     </style>
   </head>
   <body>
     <div id="game"></div>
+    <div
+      id="rotate-notice"
+      style="
+        position: fixed;
+        inset: 0;
+        align-items: center;
+        justify-content: center;
+        flex-direction: column;
+        gap: 12px;
+        text-align: center;
+        padding: 24px;
+        font-family: system-ui, sans-serif;
+        color: #3a3a5a;
+        background: #dff1f7;
+      "
+    >
+      <div style="font-size: 40px">📱</div>
+      <p style="margin: 0; font-size: 18px">Gira tu móvil a vertical para jugar a Lumi</p>
+    </div>
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>

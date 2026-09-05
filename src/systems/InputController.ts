@@ -5,32 +5,75 @@ export interface DirectionVector {
   y: number;
 }
 
-// El juego está pensado para jugarse en móvil: el control principal es un
-// joystick virtual que aparece donde el jugador apoya el dedo (no un botón
-// fijo en una esquina, que en pantallas de distinto tamaño/mano puede
-// quedar incómodo) y sigue el arrastre desde ese punto. El teclado se deja
-// activo en paralelo solo porque es útil para probar en escritorio durante
-// el desarrollo — en el juego final la mayoría de partidas se juegan con el
-// dedo.
-const JOYSTICK_RADIUS = 60;
-const JOYSTICK_DEADZONE = 6;
-const BASE_ALPHA = 0.16;
-const RING_ALPHA = 0.32;
-const KNOB_ALPHA = 0.4;
+interface DirDef {
+  x: number;
+  y: number;
+  /** Ángulo en radianes, en coordenadas de pantalla (0 = derecha, sentido
+   * horario porque +y es hacia abajo). */
+  angle: number;
+}
+
+// Las 8 flechas del D-pad, en el orden en que se dibujan alrededor del
+// círculo — pedido explícito: "arriba, abajo, izquierda, derecha y las
+// diagonales", no un joystick de arrastre libre.
+const DIRECTIONS: DirDef[] = [
+  { x: 0, y: -1, angle: -Math.PI / 2 }, // arriba
+  { x: 1, y: -1, angle: -Math.PI / 4 }, // arriba-derecha
+  { x: 1, y: 0, angle: 0 }, // derecha
+  { x: 1, y: 1, angle: Math.PI / 4 }, // abajo-derecha
+  { x: 0, y: 1, angle: Math.PI / 2 }, // abajo
+  { x: -1, y: 1, angle: (3 * Math.PI) / 4 }, // abajo-izquierda
+  { x: -1, y: 0, angle: Math.PI }, // izquierda
+  { x: -1, y: -1, angle: (-3 * Math.PI) / 4 }, // arriba-izquierda
+];
+
+// Pedido explícito del usuario: un D-pad FIJO en la misma esquina siempre
+// (como un mando físico), no el joystick flotante anterior que aparecía
+// donde tocaras el dedo. "Bonita, bien hecha, medio transparente" — un
+// círculo base translúcido con 8 flechas triangulares alrededor, la que
+// esté activa se resalta. Pura interfaz de control (Graphics), no arte
+// del juego — no pasa por el flujo de Gemini/STYLE_BIBLE.md.
+const PAD_OUTER_RADIUS = 78;
+const PAD_INNER_RADIUS = 26;
+const PAD_MARGIN_X = 104;
+const PAD_MARGIN_Y = 130;
+// Un dedo que se desliza más allá de esto suelta el control (como soltar
+// un mando físico), en vez de quedarse pegado a una dirección lejana.
+const PAD_CAPTURE_RADIUS = PAD_OUTER_RADIUS * 1.6;
+const PAD_DEADZONE_RADIUS = PAD_INNER_RADIUS * 0.55;
+
+const SHADOW_COLOR = 0x2a2145;
+const RING_COLOR = 0xe8defc;
+const ARROW_COLOR = 0xe8defc;
+const ARROW_ACTIVE_COLOR = 0xffc9e6;
+// Pedido explícito: "medio transparente" pero legible — contra un fondo
+// tan variado como el del juego (agua clara, plantas densas, rocas) hace
+// falta más contraste del que parecía a simple vista en el editor: una
+// sombra oscura muy sutil debajo de todo ayuda a que se lea igual sobre
+// cualquier fondo, sin dejar de ser translúcido.
+const SHADOW_ALPHA = 0.16;
+const BASE_FILL_ALPHA = 0.22;
+const RING_ALPHA = 0.6;
+const HUB_ALPHA = 0.3;
+const ARROW_ALPHA = 0.55;
+const ARROW_ACTIVE_ALPHA = 0.95;
+
+function angleDiff(a: number, b: number): number {
+  let diff = Math.abs(a - b) % (Math.PI * 2);
+  if (diff > Math.PI) diff = Math.PI * 2 - diff;
+  return diff;
+}
 
 /**
  * Entrada combinada: teclado (flechas/WASD, para desarrollo en escritorio)
- * + joystick virtual táctil (control real para móvil). El dibujo del
- * joystick es una interfaz de control (dos círculos translúcidos), no arte
- * del juego — no pasa por el flujo de Gemini de assets/STYLE_BIBLE.md.
+ * + D-pad táctil fijo de 8 direcciones (control real para móvil).
  */
 export class InputController {
   private readonly cursors: Phaser.Types.Input.Keyboard.CursorKeys | null;
   private readonly wasd: Record<"W" | "A" | "S" | "D", Phaser.Input.Keyboard.Key> | null;
   private readonly graphics: Phaser.GameObjects.Graphics;
-  private touchOrigin: { x: number; y: number } | null = null;
-  private touchVector: DirectionVector = { x: 0, y: 0 };
   private activePointerId: number | null = null;
+  private activeDirIndex: number | null = null;
 
   constructor(private readonly scene: Phaser.Scene) {
     const keyboard = scene.input.keyboard;
@@ -54,49 +97,112 @@ export class InputController {
     scene.events.once(Phaser.Scenes.Events.SHUTDOWN, this.destroy, this);
   }
 
+  /** Esquina inferior izquierda, con margen — recalculado cada vez a
+   * partir de la cámara actual para seguir el resize (rotar el móvil,
+   * redimensionar la ventana) sin lógica aparte. */
+  private padCenter(): { x: number; y: number } {
+    const cam = this.scene.cameras.main;
+    return { x: PAD_MARGIN_X, y: cam.height - PAD_MARGIN_Y };
+  }
+
+  /** Distancia del punto al centro del pad — separado de `dirIndexFromPoint`
+   * porque "está dentro del alcance del pad" (para capturar el dedo) y
+   * "a qué dirección apunta" (que puede ser ninguna, en la zona muerta)
+   * son dos preguntas distintas: un toque que empieza justo en el centro
+   * (zona muerta) debe seguir capturado para que arrastrar el dedo hacia
+   * fuera funcione, no solo un toque que ya empieza sobre una flecha. */
+  private distanceToPad(px: number, py: number): number {
+    const { x: cx, y: cy } = this.padCenter();
+    return Phaser.Math.Distance.Between(px, py, cx, cy);
+  }
+
+  private dirIndexFromPoint(px: number, py: number): number | null {
+    const { x: cx, y: cy } = this.padCenter();
+    const dx = px - cx;
+    const dy = py - cy;
+    if (Math.sqrt(dx * dx + dy * dy) < PAD_DEADZONE_RADIUS) return null;
+    const angle = Math.atan2(dy, dx);
+    let closestIndex = 0;
+    let closestDelta = Infinity;
+    for (let i = 0; i < DIRECTIONS.length; i++) {
+      const delta = angleDiff(angle, DIRECTIONS[i].angle);
+      if (delta < closestDelta) {
+        closestDelta = delta;
+        closestIndex = i;
+      }
+    }
+    return closestIndex;
+  }
+
   private handlePointerDown(pointer: Phaser.Input.Pointer) {
     // Un solo dedo controla el movimiento a la vez — si ya hay uno activo,
     // los demás toques (accidentales, o un futuro botón de UI) se ignoran
     // aquí.
     if (this.activePointerId !== null) return;
+    if (this.distanceToPad(pointer.x, pointer.y) > PAD_CAPTURE_RADIUS) return;
     this.activePointerId = pointer.id;
-    this.touchOrigin = { x: pointer.x, y: pointer.y };
-    this.touchVector = { x: 0, y: 0 };
+    this.activeDirIndex = this.dirIndexFromPoint(pointer.x, pointer.y);
   }
 
   private handlePointerMove(pointer: Phaser.Input.Pointer) {
-    if (this.activePointerId !== pointer.id || !this.touchOrigin) return;
-    const dx = pointer.x - this.touchOrigin.x;
-    const dy = pointer.y - this.touchOrigin.y;
-    const dist = Math.sqrt(dx * dx + dy * dy);
-    if (dist < JOYSTICK_DEADZONE) {
-      this.touchVector = { x: 0, y: 0 };
+    if (this.activePointerId !== pointer.id) return;
+    if (this.distanceToPad(pointer.x, pointer.y) > PAD_CAPTURE_RADIUS) {
+      // El dedo se alejó demasiado del pad — soltar, como al levantar un
+      // mando físico.
+      this.activeDirIndex = null;
       return;
     }
-    // Magnitud clampeada al radio del joystick solo para el dibujo del
-    // "nudo" — Lumi.update ya normaliza la dirección que recibe, así que
-    // aquí solo importa el signo/ángulo, no lo fuerte que se haya arrastrado.
-    this.touchVector = { x: dx / dist, y: dy / dist };
+    this.activeDirIndex = this.dirIndexFromPoint(pointer.x, pointer.y);
   }
 
   private handlePointerUp(pointer: Phaser.Input.Pointer) {
     if (this.activePointerId !== pointer.id) return;
     this.activePointerId = null;
-    this.touchOrigin = null;
-    this.touchVector = { x: 0, y: 0 };
+    this.activeDirIndex = null;
   }
 
-  private drawJoystick() {
+  private drawArrow(cx: number, cy: number, angle: number, active: boolean) {
+    const tipR = PAD_OUTER_RADIUS * 0.92;
+    const baseR = PAD_INNER_RADIUS * 1.2;
+    const halfWidth = 13;
+    const tipX = cx + Math.cos(angle) * tipR;
+    const tipY = cy + Math.sin(angle) * tipR;
+    const baseCx = cx + Math.cos(angle) * baseR;
+    const baseCy = cy + Math.sin(angle) * baseR;
+    const perpX = Math.cos(angle + Math.PI / 2) * halfWidth;
+    const perpY = Math.sin(angle + Math.PI / 2) * halfWidth;
+
+    // Contorno oscuro fino antes del relleno — mismo motivo que la sombra
+    // del pad: que la flecha se lea sobre cualquier fondo, no solo agua
+    // clara.
+    this.graphics.lineStyle(2, SHADOW_COLOR, active ? 0.35 : 0.18);
+    this.graphics.strokeTriangle(tipX, tipY, baseCx + perpX, baseCy + perpY, baseCx - perpX, baseCy - perpY);
+    this.graphics.fillStyle(active ? ARROW_ACTIVE_COLOR : ARROW_COLOR, active ? ARROW_ACTIVE_ALPHA : ARROW_ALPHA);
+    this.graphics.fillTriangle(tipX, tipY, baseCx + perpX, baseCy + perpY, baseCx - perpX, baseCy - perpY);
+  }
+
+  private drawPad() {
     this.graphics.clear();
-    if (!this.touchOrigin) return;
-    const knobX = this.touchOrigin.x + this.touchVector.x * JOYSTICK_RADIUS * 0.6;
-    const knobY = this.touchOrigin.y + this.touchVector.y * JOYSTICK_RADIUS * 0.6;
-    this.graphics.fillStyle(0xffffff, BASE_ALPHA);
-    this.graphics.fillCircle(this.touchOrigin.x, this.touchOrigin.y, JOYSTICK_RADIUS);
-    this.graphics.lineStyle(2, 0xffffff, RING_ALPHA);
-    this.graphics.strokeCircle(this.touchOrigin.x, this.touchOrigin.y, JOYSTICK_RADIUS);
-    this.graphics.fillStyle(0xffffff, KNOB_ALPHA);
-    this.graphics.fillCircle(knobX, knobY, JOYSTICK_RADIUS * 0.4);
+    const { x: cx, y: cy } = this.padCenter();
+
+    // Sombra sutil, un poco más grande que el pad — da contraste contra
+    // fondos claros/desordenados sin que el pad deje de ser translúcido.
+    this.graphics.fillStyle(SHADOW_COLOR, SHADOW_ALPHA);
+    this.graphics.fillCircle(cx, cy, PAD_OUTER_RADIUS + 5);
+
+    this.graphics.fillStyle(0xffffff, BASE_FILL_ALPHA);
+    this.graphics.fillCircle(cx, cy, PAD_OUTER_RADIUS);
+    this.graphics.lineStyle(2, RING_COLOR, RING_ALPHA);
+    this.graphics.strokeCircle(cx, cy, PAD_OUTER_RADIUS);
+
+    for (let i = 0; i < DIRECTIONS.length; i++) {
+      this.drawArrow(cx, cy, DIRECTIONS[i].angle, this.activeDirIndex === i);
+    }
+
+    this.graphics.fillStyle(0xffffff, HUB_ALPHA);
+    this.graphics.fillCircle(cx, cy, PAD_INNER_RADIUS);
+    this.graphics.lineStyle(1.5, RING_COLOR, RING_ALPHA);
+    this.graphics.strokeCircle(cx, cy, PAD_INNER_RADIUS);
   }
 
   getVector(): DirectionVector {
@@ -107,12 +213,16 @@ export class InputController {
     if (this.cursors?.up.isDown || this.wasd?.W.isDown) y -= 1;
     if (this.cursors?.down.isDown || this.wasd?.S.isDown) y += 1;
 
-    this.drawJoystick();
+    this.drawPad();
 
     // El teclado manda si se usa (solo pasa en pruebas de escritorio); si
-    // no hay tecla pulsada, se usa el joystick táctil.
+    // no hay tecla pulsada, se usa el D-pad táctil.
     if (x !== 0 || y !== 0) return { x, y };
-    return this.touchVector;
+    if (this.activeDirIndex !== null) {
+      const dir = DIRECTIONS[this.activeDirIndex];
+      return { x: dir.x, y: dir.y };
+    }
+    return { x: 0, y: 0 };
   }
 
   private destroy() {

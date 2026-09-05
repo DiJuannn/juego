@@ -291,6 +291,42 @@ funciona **hoy**, verificado en el código — no lo que el diseño aspira a ten
   coinciden exactamente con lo esperado. Playtest sigue en línea con antes
   (background/posición de piezas, no toca colisión salvo la rotación de
   las rocas, ya validada en rondas anteriores).
+- **D-pad táctil fijo de 8 direcciones**, sustituye al joystick flotante
+  (`InputController.ts`) — pedido explícito: "una flechas de arriba abajo
+  e izquierda y los diagonales, que sea bonita y esté bien hecha medio
+  transparente". Antes el joystick aparecía donde tocaras el dedo
+  (arrastre libre); ahora es un mando fijo en la esquina inferior
+  izquierda (independiente del tamaño de pantalla, recalculado cada frame
+  desde `cam.height`): un círculo base translúcido con 8 flechas
+  triangulares alrededor (arriba/abajo/izquierda/derecha + diagonales),
+  la que esté activa se resalta en rosa. El teclado (flechas/WASD) sigue
+  funcionando en paralelo para pruebas de escritorio, sin cambios.
+  Paleta lavanda/rosa suave a juego con el resto de la UI. Alphas subidos
+  tras comprobar que el diseño inicial ("medio transparente") se perdía
+  casi por completo contra fondos ocupados (plantas de primer plano) —
+  ahora lleva una sombra oscura muy sutil debajo de todo el pad y de cada
+  flecha para que se lea igual sobre agua clara o fondo denso, sin dejar
+  de ser translúcido.
+  **Bug encontrado y arreglado durante la propia verificación**: un toque
+  que empieza justo en el centro del pad (zona muerta, para poder soltar
+  el dedo ahí sin que cuente como dirección) no capturaba el puntero, así
+  que arrastrar el dedo desde ahí hacia una flecha no hacía nada — el
+  juego se quedaba sin responder a ese dedo hasta soltarlo y volver a
+  tocar. Arreglado separando "¿el toque cae dentro del alcance del pad?"
+  (que sí captura el dedo) de "¿a qué dirección apunta?" (que puede ser
+  ninguna, sin soltar la captura). Verificado con Playwright simulando
+  mouse down/move/up sobre el pad (sostener una diagonal y leer
+  `body.velocity` de Lumi directamente) y con capturas ampliadas de la
+  zona del pad. Playtest de teclado sigue igual (código sin tocar).
+- **Aviso de "gira tu móvil"** en horizontal (`index.html`, un
+  `@media (orientation: landscape) and (pointer: coarse)`) — pedido
+  explícito: "los niveles solo diséñalos para formato móvil, olvidemos el
+  horizontal". El D-pad fijo y el ancho de mundo (`WORLD_WIDTH`, pensado
+  para retrato) no tienen sentido en landscape, así que en vez de intentar
+  adaptarlos se tapa el juego con un aviso hasta que el usuario gire el
+  móvil — el filtro `pointer: coarse` evita que salte en una ventana de
+  escritorio ancha y baja (verificado: sigue mostrando el juego a 900×400
+  sin táctil; sí muestra el aviso a 780×360 con táctil).
 
 # PENDIENTE
 
