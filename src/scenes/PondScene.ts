@@ -109,13 +109,26 @@ export class PondScene extends Phaser.Scene {
 
     const cam = this.cameras.main;
 
-    // background_far.png ya viene preparado para repetirse verticalmente
-    // tal cual (sus bordes superior e inferior se diseñaron a juego, ver
-    // lumi-asset-gen): repetirlo espejado (como se hacía antes) mostraba
-    // ruinas/arcos boca abajo cada dos copias, que se notaba mucho y se
-    // veía mal — ahora se tilea directo, sin espejar.
-    const bgKey = pondLayerKey("background_far");
-    this.skyLayer = new ParallaxLayer(this, bgKey, 0.15, 0);
+    // Rediseño del fondo (pedido explícito: "reestructurémoslo todo... te
+    // dejo el control creativo a ti"): tres manchas de acuarela sin foco de
+    // luz ni horizonte (así se garantiza tileado infinito por diseño, no
+    // por parche — el fondo anterior, un haz de luz bajando desde arriba,
+    // no podía tilear sin costura por bien que se le ajustaran los bordes).
+    // Se funden entre sí según la altura (ver ParallaxLayer), en vez de
+    // repetir un único patrón para siempre: cálido cerca de la salida, y
+    // más profundo/frío según se sube — mismos umbrales que ZoneConfig
+    // (Zona 2 "Arrecife" a Altura 750, Zona 3 "Océano abierto" a 2000; ver
+    // altitudeFromWorldY, Altura = offset de mundo / 10).
+    this.skyLayer = new ParallaxLayer(
+      this,
+      [
+        { textureKey: pondLayerKey("background_shallow"), startOffset: 0 },
+        { textureKey: pondLayerKey("background_mid"), startOffset: 7500 },
+        { textureKey: pondLayerKey("background_deep"), startOffset: 20000 },
+      ],
+      0.15,
+      0,
+    );
 
     // Peces de fondo, muy detrás de las rocas/plantas (parallax lento,
     // escala pequeña, teñido suave) para dar sensación de profundidad sin
@@ -729,7 +742,7 @@ export class PondScene extends Phaser.Scene {
     cam.scrollY = Math.min(cam.scrollY, this.cameraCeiling);
     cam.scrollX = this.clampScrollX(cam);
 
-    this.skyLayer.update(cam);
+    this.skyLayer.update(cam, START_Y);
     this.fishField.update(time, delta, cam.scrollY, cam.height);
     this.ambientDecorSpawner.update(cam.scrollY, cam.scrollY + cam.height);
     this.lilyPadSpawner.update(cam.scrollY, cam.scrollY + cam.height, time);

@@ -932,6 +932,43 @@ funciona **hoy**, verificado en el código — no lo que el diseño aspira a ten
   muestra las URLs con `?v=<timestamp>`, dev server sirve todos los
   assets con normalidad con el query string añadido, y el playtest
   automático completa el recorrido sin errores.
+- **Rediseño del fondo de cielo/agua — libertad creativa total** (pedido
+  explícito del usuario: "reestructurémoslo todo... te dejo el control
+  creativo a ti para que con el API de Gemini crees lo que te venga en
+  gana"). Se mantiene la única regla que el propio usuario escribió en un
+  momento sereno (`CLAUDE.md`): Lumi no se rediseña bajo ninguna
+  circunstancia — esta ronda toca solo el entorno.
+  - Diagnóstico de por qué el fondo anterior (`background_far.png`, un haz
+    de luz bajando desde un punto fijo arriba) seguía dando problemas de
+    empalme incluso ya "arreglado": es una composición DIRECCIONAL (más
+    clara arriba, más oscura abajo) — ese tipo de composición no puede
+    tilear verticalmente sin costura por diseño, por bien que se ajusten
+    los píxeles del borde. Cualquier parche era pan para hoy, hambre para
+    mañana.
+  - Solución de raíz: 3 fondos NUEVOS generados con Gemini
+    (`background_shallow`/`_mid`/`_deep`), diseñados desde el prompt para
+    ser manchas de acuarela sin foco de luz ni horizonte (composición
+    "nebulosa/papel marmolado", iluminación pareja de esquina a esquina) —
+    tilean bien por construcción, no por parche. Aun así, cada uno pasa
+    por el mismo post-proceso determinista de la ronda anterior (bordes
+    superior/inferior fundidos a un color objetivo compartido) como red de
+    seguridad matemática, verificado con capturas apiladas de dos copias
+    para las 3 (sin costura visible en ninguna).
+  - `ParallaxLayer.ts` reescrito para soportar varias variantes con
+    crossfade de alpha según la altura (offset de mundo), en vez de un
+    único TileSprite fijo — cada variante se funde in/out en una banda de
+    2000px alrededor de su propio umbral, usando los MISMOS umbrales que
+    `ZoneConfig` (Arrecife a Altura 750 = offset 7500, Océano abierto a
+    2000 = offset 20000), así el fondo ahora progresa en sintonía con el
+    nombre de zona que ya se mostraba en el HUD. `background_far.png`
+    retirado del todo (`git rm`), `BootScene.ts`/`PondScene.ts`
+    actualizados a los 3 nuevos assets.
+  - Verificado: `tsc --noEmit` limpio, build de producción real
+    (`GITHUB_PAGES=true vite build`) incluye los 3 PNGs nuevos, playtest
+    automático completa el recorrido, y capturas en 3 alturas (0, 900,
+    2200) muestran la transición Estanque→Arrecife→Océano abierto fluida
+    y sin ninguna costura, con el nombre de zona del HUD cambiando en
+    sincronía.
 
 # PENDIENTE
 

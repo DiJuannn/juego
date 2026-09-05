@@ -8,7 +8,15 @@ import { FISH_KEYS } from "@/systems/BackgroundFishField";
 // generado todavía — se omite y se reporta, no se inventa un reemplazo.
 // lily_pads.png ya no se usa como capa fija: se sustituyó por el nenúfar
 // interactivo (LilyPad), ver PondScene.
-const POND_LAYERS = ["background_far", "rocks_back"];
+// background_shallow/mid/deep: rediseño del fondo de cielo/agua (pedido
+// explícito del usuario: "reestructurémoslo todo... te dejo el control
+// creativo a ti"). El anterior (background_far, un solo haz de luz bajando
+// desde arriba) resistía el tileado vertical infinito por diseño — un
+// degradado direccional no puede repetirse sin costura, por bien que se le
+// ajusten los bordes (ver PROGRESS.md, ronda del "empalme"). Los tres
+// nuevos son manchas de acuarela sin foco de luz ni horizonte (ver
+// ParallaxLayer, que hace crossfade entre ellos según la altura).
+const POND_LAYERS = ["background_shallow", "background_mid", "background_deep", "rocks_back"];
 const MISSING_POND_LAYERS = ["water_overlay"];
 
 // Algas con balanceo real: varios frames que muestran cada hoja moviéndose
