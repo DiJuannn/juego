@@ -77,18 +77,35 @@ funciona **hoy**, verificado en el código — no lo que el diseño aspira a ten
      oscuras que combinen con el fondo azul/pizarra YA existente
      (`background_far.png`), con coral solo como acento menor — "no solo
      corales".
-  3. **Actual**: `dark_rock_branch` (repisa alargada en diagonal),
-     `dark_rock_plain` (cúmulo de rocas sin coral), `dark_rock_tall`
-     (peñasco vertical) — roca oscura tono pizarra/azul como protagonista
-     en las tres, igual que los arcos de piedra del fondo, con pequeños
-     acentos de coral/anémona de color como mucho. Moneda también
-     rediseñada (perla dorada nacarada) y reducida de escala 0.11 a 0.08.
+  3. `dark_rock_branch`/`dark_rock_plain`/`dark_rock_tall` (roca oscura
+     tono pizarra, coral solo como acento mínimo) — rechazados de nuevo:
+     "no se parece ni siquiera a las imágenes que mandé". Causa raíz real:
+     el usuario pegaba imágenes de referencia en el chat, pero esas
+     imágenes NUNCA llegaban a esta sesión como archivo — solo se veían
+     en la conversación, sin ruta de disco real que pasarle a Gemini como
+     `--ref`. Se generaba de memoria/descripción, no copiando el archivo.
+  **Actual (4ª tanda)**: el usuario subió las 3 imágenes de referencia
+  directamente al repo (`/reference/*.png`) para darles acceso real de
+  archivo. Con eso: `coral_branch` (rama de roca cubierta densamente de
+  coral ramificado de colores — rosa/azul/lila/menta — y musgo, ya
+  diagonal de por sí) y `boulder_rock` (cúmulo de rocas redondeadas con
+  musgo y acentos pequeños de coral rojo/rosa), ambas generadas usando
+  los archivos reales como referencia de Gemini — coinciden con el estilo
+  pedido mucho más de cerca que las tandas anteriores. Moneda también
+  rediseñada (perla dorada nacarada) y reducida de escala 0.11 a 0.08.
   Verificado con Playwright: las 4 plantillas ciclan sin repetirse, se
-  integran visualmente con el fondo existente (en vez de destacar encima
-  de él), la pared lateral se lee claramente "saliendo del borde" en
-  ambos lados, playtest automatizado sigue pasando sin problema.
+  integran visualmente con el fondo existente, la pared lateral se lee
+  claramente "saliendo del borde" dejando espacio de sobra en el lado
+  contrario (pedido explícito del usuario), playtest automatizado sigue
+  pasando sin problema.
   **Pendiente de aprobación visual del usuario antes de generalizarlo al
   resto de la Zona 1** — es el pedido explícito, no está aprobado todavía.
+  **Nota para futuras sesiones**: si el usuario adjunta imágenes de
+  referencia en el chat para generar arte nuevo, comprobar primero si
+  llegan como archivo real (buscar en `/root/.claude/uploads/<sessionId>/`
+  por fecha) antes de generar nada — si no hay archivo, pedirle que las
+  suba al repo (p.ej. a `/reference`) en vez de generar de memoria/
+  descripción, que ya falló dos veces por este motivo.
 - Se abandonó la idea de un fondo de escena pintado como imagen única
   (se había generado un primer ejemplo con Gemini, nunca integrado) — el
   usuario confirmó explícitamente que quiere mantener el fondo actual
