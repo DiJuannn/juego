@@ -38,6 +38,9 @@ const DEPTH_BY_ROLE: Record<ReefDepthRole, number> = {
 const HITBOX_FRACTION: Record<string, [number, number, number, number]> = {
   reef_coral_branch: [0.0, 0.0, 0.95, 0.9],
   reef_boulder_rock: [0.02, 0.05, 0.98, 1.0],
+  reef_branch_straight: [0.0, 0.05, 0.98, 0.95],
+  reef_branch_hook: [0.0, 0.0, 0.95, 0.95],
+  reef_branch_short: [0.0, 0.0, 0.95, 0.95],
 };
 
 export interface ReefPieceSpec {

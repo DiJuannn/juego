@@ -36,6 +36,21 @@ function piece(p: PieceInput): ReefPieceSpec {
 }
 
 /**
+ * Familia de "repisa/rama" (mismo ancla de estilo, generadas a partir de
+ * `reef_coral_branch`) — pedido explícito del usuario: "necesito que
+ * hagas muchos [obstáculos] e irlos poniendo de distintas formas". Cada
+ * plantilla que usa una rama como columna vertebral elige una al azar en
+ * vez de repetir siempre `reef_coral_branch`. Todas comparten la misma
+ * convención: el coral está concentrado en su lado IZQUIERDO de fábrica,
+ * así que al usarlas entrando por la derecha hay que espejarlas (flipX).
+ */
+const BRANCH_VARIANTS = ["reef_coral_branch", "reef_branch_straight", "reef_branch_hook", "reef_branch_short"];
+
+function pickBranch(): string {
+  return Phaser.Utils.Array.GetRandom(BRANCH_VARIANTS);
+}
+
+/**
  * 1) Diagonal desde la izquierda: la masa de obstáculo crece en diagonal
  * de abajo-izquierda a arriba-derecha, dejando todo el lado derecho
  * abierto — pero la ruta guía traza una curva suave (no una línea recta)
@@ -46,7 +61,7 @@ function piece(p: PieceInput): ReefPieceSpec {
 function diagonalLeft(worldWidth: number, centerY: number): ReefClusterSpec {
   const pieces: ReefPieceSpec[] = [
     piece({ key: "reef_boulder_rock", x: worldWidth * 0.12, y: centerY + 160, scale: 0.4, rotation: -0.02, role: "obstacle" }),
-    piece({ key: "reef_coral_branch", x: worldWidth * 0.28, y: centerY - 40, scale: 0.5, rotation: -0.04, role: "obstacle" }),
+    piece({ key: pickBranch(), x: worldWidth * 0.28, y: centerY - 40, scale: 0.5, rotation: -0.04, role: "obstacle" }),
     // Decoración: crece pegada a los obstáculos, sin colisión.
     piece({ key: "decor_starfish", x: worldWidth * 0.19, y: centerY - 30, scale: 0.28, role: "decoration" }),
     piece({ key: "decor_pebble", x: worldWidth * 0.1, y: centerY + 200, scale: 0.32, role: "decoration" }),
@@ -75,7 +90,7 @@ function diagonalLeft(worldWidth: number, centerY: number): ReefClusterSpec {
 function centerTwoPaths(worldWidth: number, centerY: number): ReefClusterSpec {
   const pieces: ReefPieceSpec[] = [
     piece({ key: "reef_boulder_rock", x: worldWidth * 0.47, y: centerY + 50, scale: 0.42, rotation: -0.02, role: "obstacle" }),
-    piece({ key: "reef_coral_branch", x: worldWidth * 0.55, y: centerY - 130, scale: 0.36, rotation: 0.08, role: "obstacle" }),
+    piece({ key: pickBranch(), x: worldWidth * 0.55, y: centerY - 130, scale: 0.36, rotation: 0.08, role: "obstacle" }),
     piece({ key: "decor_starfish", x: worldWidth * 0.37, y: centerY + 95, scale: 0.3, role: "decoration" }),
     piece({ key: "decor_shell", x: worldWidth * 0.64, y: centerY - 100, scale: 0.3, role: "decoration" }),
     piece({ key: "decor_pebble", x: worldWidth * 0.5, y: centerY + 200, scale: 0.3, role: "decoration" }),
@@ -115,8 +130,9 @@ function sCurveEdges(worldWidth: number, centerY: number): ReefClusterSpec {
     piece({ key: "reef_boulder_rock", x: worldWidth * 0.16, y: topY, scale: 0.38, rotation: -0.02, role: "obstacle" }),
     piece({ key: "decor_shell", x: worldWidth * 0.26, y: topY + 90, scale: 0.28, role: "decoration" }),
 
-    // Banda media: entra por la derecha.
-    piece({ key: "reef_coral_branch", x: worldWidth * 0.72, y: midY - 30, scale: 0.4, rotation: 0.1, role: "obstacle" }),
+    // Banda media: entra por la derecha — espejada (ver BRANCH_VARIANTS),
+    // para que la parte con coral quede pegada al borde.
+    piece({ key: pickBranch(), x: worldWidth * 0.72, y: midY - 30, scale: 0.4, rotation: -0.1, flipX: true, role: "obstacle" }),
     piece({ key: "decor_starfish", x: worldWidth * 0.8, y: midY - 100, scale: 0.3, role: "decoration" }),
 
     // Banda inferior: entra por la izquierda otra vez, con distinto
@@ -160,7 +176,19 @@ function lateralWall(worldWidth: number, centerY: number): ReefClusterSpec {
     // poco más allá, x negativa o > worldWidth es inofensivo: la cámara
     // nunca llega ahí) — el resto de la masa "sigue" fuera de pantalla.
     piece({ key: "reef_boulder_rock", x: fromEdge(-0.02), y: centerY + 150, scale: 0.46, rotation: 0, role: "obstacle" }),
-    piece({ key: "reef_coral_branch", x: fromEdge(0.1), y: centerY - 60, scale: 0.5, rotation: 0.02, role: "obstacle" }),
+    // Pedido explícito del usuario: al salir por la derecha hay que
+    // espejar la rama (flipX) para que la parte con coral quede pegada al
+    // borde y la parte lisa apunte hacia el interior, igual que por la
+    // izquierda sin espejar (ver BRANCH_VARIANTS para la convención).
+    piece({
+      key: pickBranch(),
+      x: fromEdge(0.1),
+      y: centerY - 60,
+      scale: 0.5,
+      rotation: 0.02,
+      flipX: side === "right",
+      role: "obstacle",
+    }),
     piece({ key: "decor_starfish", x: fromEdge(0.2), y: centerY + 30, scale: 0.3, role: "decoration" }),
     piece({ key: "decor_shell", x: fromEdge(0.28), y: centerY + 220, scale: 0.28, role: "decoration" }),
     piece({ key: "decor_pebble", x: fromEdge(0.05), y: centerY + 250, scale: 0.3, role: "decoration" }),

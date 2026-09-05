@@ -90,6 +90,13 @@ export class BootScene extends Phaser.Scene {
     // coral) fueron rechazadas por no parecerse a esas referencias.
     this.load.image("reef_coral_branch", "/objects/reef/coral_branch.png");
     this.load.image("reef_boulder_rock", "/objects/reef/boulder_rock.png");
+    // Familia de variantes de "repisa/rama" (mismo ancla de estilo que
+    // reef_coral_branch, generadas a partir de ella) — pedido explícito
+    // del usuario: muchas formas distintas de la misma idea, no repetir
+    // siempre la misma silueta.
+    this.load.image("reef_branch_straight", "/objects/reef/branch_straight.png");
+    this.load.image("reef_branch_hook", "/objects/reef/branch_hook.png");
+    this.load.image("reef_branch_short", "/objects/reef/branch_short.png");
     // Parpadeo: arte de verdad (ojos cerrados) generado con Gemini a partir
     // de cada sprite base, ver systems/BlinkTimer — nunca un Graphics
     // dibujado por código.
