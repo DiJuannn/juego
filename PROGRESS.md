@@ -392,6 +392,68 @@ funciona **hoy**, verificado en el código — no lo que el diseño aspira a ten
     aleatorio) ya no muere cerca del primer cúmulo de arrecife como antes
     (llegaba a morir sobre altura ~150-250); en esta pasada superó altura
     292 sin game over dentro de la ventana de prueba.
+- **Obstáculos laterales pegados al límite real + cruceta táctil
+  tradicional** — pedido explícito tras ver el mapa angosto: "LOS
+  OBSTACULOS DE LOS LATERALES TIENEN QUE IR PEGADOS AL LIMITE. PARA QUE
+  NAZCAN DESDE AHI" + "LA CRUZETA AL MEDIO ABAJO... CAMBIA LA CRUZETA A
+  UNA CRUZETA ESTILO TRADICIONAL SOLO CON ARRIBA ABAJO, DERECHA E
+  IZQUIERDA. SI QUIEREN IR EN DIAGONAL QUE PRESIONEN LOS DOS A LA VEZ".
+  - **`ReefTemplates.ts`**: `reef_boulder_rock` ya estaba pegado al borde
+    (`edgeX`, de una corrección anterior), pero las piezas "branch" de
+    3 de las 4 plantillas (`diagonalLeft`, `centerTwoPaths`,
+    `sCurveEdges`) se colocaban a una fracción "media" de `worldWidth`
+    (0.28/0.55/0.72 — pensadas para el `WORLD_WIDTH` viejo de 1376px).
+    Con el mundo ya angosto (600px, ver ronda anterior) esas fracciones
+    caían cerca del centro de la pantalla, no pegadas a ningún lado —
+    exactamente lo que el usuario señaló. Se añadió un helper compartido
+    `fromEdge(worldWidth, side, relX)` (0 = pegado al borde, hacia dentro
+    conforme crece `relX`) y las 3 plantillas ahora anclan TODAS sus
+    piezas de rol "obstacle" (roca + rama) a un borde real:
+    - `diagonalLeft`: rama movida a `fromEdge(left, 0.15)` (antes
+      `worldWidth*0.28`), pegada a la misma roca del borde izquierdo.
+    - `centerTwoPaths`: rediseñada de "masa central con dos caminos" a
+      "dos masas en bordes opuestos, en bandas de altura distinta" (roca
+      en el borde izquierdo abajo, rama en el borde derecho arriba) — una
+      masa a mitad de un mundo de 600px ya bloqueaba el paso entero, no
+      se leía como "en un lado". La ruta ahora serpentea por el centro,
+      siempre bien lejos de ambas masas.
+    - `sCurveEdges`: la rama de la banda media (antes `worldWidth*0.72`)
+      pasa a `fromEdge(right, 0.12)`, pegada de verdad al borde derecho
+      (las bandas superior/inferior con roca ya estaban bien).
+    - `lateralWall` no cambia de comportamiento (ya usaba este mismo
+      criterio) — solo se centralizó su `fromEdge` local en el helper
+      compartido.
+    Verificado leyendo las posiciones reales de los sprites del grupo de
+    colisión en juego (`reefClusterSpawner.group`): todas las piezas
+    "obstacle" caen exactamente en `-12` (borde izquierdo, `-0.02*600`),
+    `90`/`60` (ramas ancladas a la izquierda) o `516`/`528` (ramas
+    ancladas a la derecha) — coincide con la fórmula al milímetro.
+    Capturas de las 5 composiciones del Tramo 1 confirman que no queda
+    ninguna pieza flotando en mitad del agua.
+  - **`InputController.ts`**: rediseño completo de la cruceta táctil.
+    - Fija en el CENTRO inferior de la pantalla (antes esquina inferior
+      izquierda) — `padCenter()` ahora usa `cam.width / 2`.
+    - De un dial circular de 8 direcciones a una cruceta tradicional: 4
+      botones cuadrados independientes (arriba/abajo/izquierda/derecha)
+      alrededor de un hub decorativo, sin botones diagonales.
+    - Multi-touch real: cada botón es un dedo independiente
+      (`Map<pointerId, dirección>` en vez de un único `activeDirIndex`) —
+      presionar dos botones adyacentes a la vez (ej. arriba + derecha) da
+      la diagonal, sumando igual que ya hacía el teclado
+      (`cursors.up.isDown && cursors.right.isDown`). Se subió
+      `scene.input.addPointer(2)` para tener margen de sobra a 2+ dedos
+      simultáneos.
+    Verificado: capturas confirman la cruceta centrada abajo con solo 4
+    flechas (sin diagonales dibujadas); una prueba con dos "dedos"
+    sintéticos (pointerId distintos) sobre los botones arriba+derecha dio
+    `{x:1,y:-1}` (diagonal), soltar uno dio `{x:1,y:0}` (solo el que
+    queda) y soltar el segundo dio `{x:0,y:0}` — exactamente el
+    comportamiento aditivo pedido. Un evento de mouse real (down/up) de
+    Playwright sobre el botón derecho confirmó además que el cableado
+    DOM→Phaser→InputController sigue funcionando end-to-end (no solo la
+    lógica interna) y que el botón se resalta en rosa al presionarlo.
+  - `npx tsc --noEmit` limpio. Playtest automático (teclado) sigue
+    completando el recorrido sin problemas (superó altura 300).
 
 # PENDIENTE
 
