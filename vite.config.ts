@@ -24,4 +24,16 @@ export default defineConfig({
       "@": path.resolve(rootDir, "src"),
     },
   },
+  define: {
+    // Los assets de /assets se sirven como archivos estáticos con su
+    // mismo nombre de archivo de siempre (ver comentario de publicDir):
+    // cuando se corrige un PNG ya publicado (como el empalme del fondo),
+    // la URL no cambia, así que el navegador (y cualquier CDN delante de
+    // GitHub Pages) puede seguir sirviendo la versión vieja cacheada
+    // indefinidamente — el usuario ve "el mismo bug" aunque el archivo en
+    // el repo ya esté arreglado. `assetPath()` añade este valor como
+    // `?v=...` a cada URL de asset; al cambiar en cada build, fuerza a
+    // descargar la versión nueva sin tener que renombrar ningún archivo.
+    __ASSET_VERSION__: JSON.stringify(String(Date.now())),
+  },
 });

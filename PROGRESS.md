@@ -915,6 +915,23 @@ funciona **hoy**, verificado en el código — no lo que el diseño aspira a ten
     playtest automático completa el recorrido.
   - Original respaldado en `/tmp/gen_test/background_far_ORIGINAL_BACKUP.png`
     (fuera del repo) por si hiciera falta comparar o revertir.
+- **El usuario reportó "otra vez ese bug" tras el fix anterior** — el
+  workflow de GitHub Actions confirmó que el deploy de ese commit se
+  completó bien (`success`), así que el archivo corregido SÍ estaba
+  publicado. La causa real, más grave que el propio empalme: `vite.config.ts`
+  sirve `/assets` como directorio público con nombres de archivo fijos (sin
+  hash de contenido), así que cuando se corrige un PNG ya publicado, la URL
+  no cambia — el navegador del móvil (y cualquier CDN delante de GitHub
+  Pages) puede seguir sirviendo la versión vieja cacheada indefinidamente.
+  Esto probablemente explica más de un "no veo el cambio" a lo largo de la
+  sesión, no solo este caso. Arreglado de raíz: `vite.config.ts` inyecta
+  `__ASSET_VERSION__` (timestamp del build) vía `define`, y `assetPath()`
+  lo añade como `?v=...` a toda URL de asset — cada build/deploy nuevo
+  fuerza a descargar todo de cero, sin tener que renombrar ningún archivo.
+  Verificado: build de producción real (`GITHUB_PAGES=true vite build`)
+  muestra las URLs con `?v=<timestamp>`, dev server sirve todos los
+  assets con normalidad con el query string añadido, y el playtest
+  automático completa el recorrido sin errores.
 
 # PENDIENTE
 

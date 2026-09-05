@@ -6,5 +6,5 @@
 // que hay que anteponer el prefijo a mano con esta función en cualquier
 // sitio que construya una ruta de asset para `this.load.image(...)`.
 export function assetPath(path: string): string {
-  return import.meta.env.BASE_URL + path.replace(/^\//, "");
+  return import.meta.env.BASE_URL + path.replace(/^\//, "") + "?v=" + __ASSET_VERSION__;
 }
