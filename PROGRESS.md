@@ -552,6 +552,52 @@ funciona **hoy**, verificado en el código — no lo que el diseño aspira a ten
     game over (antes de esta ronda solía rondar 280-300 en la misma
     ventana de prueba) — mejora esperada: subida más rápida + arrecife/
     estrella/piedra ya no matan, solo bloquean.
+- **Bugs reales encontrados probando en iPhone (Safari) real** — el
+  usuario mandó una captura de su móvil muy distinta a las mías: la
+  cruceta tapando a un erizo enorme, y por separado reportó que el juego
+  "se ve lento" pese a moverse fluido (no es un problema de fps, es de
+  ritmo). Diagnosticado sin acceso directo al dispositivo (el proxy de
+  este entorno bloquea salir a la URL real), reproduciendo con Playwright
+  emulando un iPhone 13 (390×664) en vez de mi viewport de prueba de
+  escritorio (405×720) — con eso sí se reprodujo el problema de
+  composición.
+  - **`index.html`**: `#game` usaba `height: 100vh`. En Safari de iOS,
+    `100vh` cuenta el área que tapa la barra de direcciones, no lo que
+    realmente se ve — el juego se dibujaba más "alto" de lo visible de
+    verdad. Arreglado añadiendo `height: 100dvh` justo después (mejora
+    progresiva: los navegadores que no conocen `dvh` ignoran esa línea y
+    se quedan con el `100vh` de siempre, así que no rompe nada en
+    escritorio ni en Android).
+  - **Bug real de solape Lumi/cruceta, no un caso raro de una muerte
+    puntual**: Lumi se ancla en pantalla a `cam.height * 0.6` (60% hacia
+    abajo) — con la cruceta fija cerca del borde inferior (pedido de la
+    ronda anterior: "la cruceta la subiría un poco más"), en CUALQUIER
+    pantalla de móvil real (650-850px de alto típico) la matemática da
+    que Lumi y el botón "arriba" de la cruceta se solapan siempre, no
+    solo cuando hay un enemigo grande cerca — confirmado con las medidas
+    exactas del iPhone 13 emulado. Nuevo `LUMI_SCREEN_ANCHOR_Y=0.48`
+    (`GameConfig.ts`, sustituye el `0.6` suelto en las dos líneas de
+    `PondScene.ts` que posicionaban la cámara) — Lumi queda más arriba en
+    pantalla, con hueco real antes de la cruceta. Verificado con captura
+    en el mismo iPhone 13 emulado: ya no hay solape.
+  - **Ritmo de la cámara nunca llegaba a acelerar** — pedido explícito:
+    "todo se mueve fluido pero despacio". `CAMERA_RISE_RAMP_ALTITUDE`
+    estaba en 10000 (calculado para una partida completa de las 8 zonas:
+    10000 es literalmente el `altitudeStart` de la Zona 8 en
+    `ZoneConfig.ts`), pero solo existe contenido jugable hasta la Zona 1
+    (altura 650, ver `ZONE1_LEVEL_END_OFFSET`) — la cámara pasaba TODO el
+    juego actual dentro del primer 6.5% de esa rampa, subiendo de 42 a
+    apenas ~44px/s. Bajado a 650 para que la presión suba de verdad
+    dentro del contenido que existe hoy (verificado: a altura ~640 la
+    velocidad ya calcula ~75.5, casi el tope de 76). Nota dejada en el
+    propio código: si se construyen las Zonas 2-8, este valor hay que
+    revisarlo otra vez para una rampa más larga.
+  - Aclarado aparte (sin cambio de código): el juego NO está hecho en
+    Python — es Phaser (JavaScript/TypeScript) + Vite. No hace falta
+    pasarlo a Unity; la sensación de lentitud era de ritmo (arreglado
+    arriba), no del motor.
+  - `npx tsc --noEmit` limpio. Playtest automático sigue completando el
+    recorrido sin errores.
 
 # PENDIENTE
 

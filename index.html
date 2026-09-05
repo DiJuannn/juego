@@ -24,6 +24,16 @@
       #game {
         width: 100vw;
         height: 100vh;
+        /* Safari en iOS calcula 100vh contando el área que tapa la barra
+           de direcciones (no lo que realmente se ve), así que el juego
+           quedaba más alto de lo visible de verdad — la cruceta (fija
+           cerca del borde inferior "lógico") terminaba recortada fuera de
+           pantalla, y todo se veía más recortado/zoomeado que en un
+           navegador de escritorio. 100dvh sí refleja el viewport visible
+           real; se declara DESPUÉS de 100vh como mejora progresiva (los
+           navegadores que no conocen dvh simplemente ignoran esta línea y
+           se quedan con el 100vh de arriba). */
+        height: 100dvh;
         touch-action: none;
       }
       canvas {

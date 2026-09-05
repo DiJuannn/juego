@@ -11,6 +11,7 @@ import {
   LUMI_HIT_KNOCKBACK_STRENGTH,
   LUMI_INVULNERABILITY_MS,
   LUMI_LIVES_START,
+  LUMI_SCREEN_ANCHOR_Y,
   SHIELD_AURA_ALPHA,
   SHIELD_AURA_SCALE,
   SHIELD_START_OFFSET,
@@ -364,7 +365,7 @@ export class PondScene extends Phaser.Scene {
     // gestionamos a mano en update() para que solo pueda subir, nunca
     // retroceder — ver el comentario ahí).
     cam.scrollX = this.clampScrollX(cam);
-    cam.scrollY = START_Y - cam.height * 0.6;
+    cam.scrollY = START_Y - cam.height * LUMI_SCREEN_ANCHOR_Y;
     this.cameraCeiling = cam.scrollY;
 
     // Tinte de profundidad a pantalla completa: por debajo de la UI (100+)
@@ -717,7 +718,7 @@ export class PondScene extends Phaser.Scene {
     const rampT = Phaser.Math.Clamp(this.bestHeight / 10 / CAMERA_RISE_RAMP_ALTITUDE, 0, 1);
     const riseSpeed = Phaser.Math.Linear(CAMERA_RISE_SPEED_START, CAMERA_RISE_SPEED_MAX, rampT);
     this.cameraCeiling -= riseSpeed * (delta / 1000);
-    const desiredScrollY = this.lumi.sprite.y - cam.height * 0.6;
+    const desiredScrollY = this.lumi.sprite.y - cam.height * LUMI_SCREEN_ANCHOR_Y;
     this.cameraCeiling = Math.min(this.cameraCeiling, desiredScrollY);
     cam.scrollY = Math.min(cam.scrollY, this.cameraCeiling);
     cam.scrollX = this.clampScrollX(cam);

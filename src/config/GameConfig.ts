@@ -57,6 +57,17 @@ export const SWIM_SIDE_SCALE_CORRECTION = 0.85;
 // real.
 export const LUMI_DRIFT_SPEED = 55; // px/seg, hacia abajo
 
+// Fracción de la altura de cámara a la que se ancla Lumi en pantalla
+// (0 = arriba del todo, 1 = abajo del todo) — antes 0.6, fijo sin
+// importar el tamaño de pantalla real. Bug real encontrado probando en
+// un iPhone real: con la cruceta táctil fija cerca del borde inferior
+// (ver InputController.ts), Lumi (a 0.6 de una pantalla de móvil típica,
+// 650-850px de alto) quedaba literalmente DEBAJO del botón "arriba" de
+// la cruceta — el solapamiento no era un caso raro, pasaba siempre, en
+// cualquier pantalla de móvil real. Bajado a 0.48 para dejar hueco real
+// entre Lumi y la cruceta.
+export const LUMI_SCREEN_ANCHOR_Y = 0.48;
+
 // Nenúfares: separación vertical entre uno y el siguiente al generarlos
 // según Lumi sube. Pedido explícito: que no salgan tan seguido.
 export const LILY_PAD_MIN_GAP = 320;
@@ -89,7 +100,19 @@ export const JELLYFISH_SCALE = 0.16;
 // coincide con el final de la Zona 1 (ver ZoneConfig.ts).
 export const CAMERA_RISE_SPEED_START = 42;
 export const CAMERA_RISE_SPEED_MAX = 76;
-export const CAMERA_RISE_RAMP_ALTITUDE = 10000;
+// Antes en 10000 — calculado para una partida completa de las 8 zonas
+// (10000 es literalmente el altitudeStart de la Zona 8 "Superficie" en
+// ZoneConfig.ts). Pero solo existe contenido jugable hasta la Zona 1
+// (Tramo 1+2 llega a altura 650, ver ZONE1_LEVEL_END_OFFSET) — las Zonas
+// 2-8 todavía no tienen arte ni diseño propio. Con el valor viejo, la
+// cámara pasaba TODO el juego actualmente jugable dentro del primer 6.5%
+// de esa rampa, apenas subiendo de 42 a ~44px/s — nunca llegaba a
+// sentirse más urgente ("se ve lento" pese a que Lumi ya nada rápido).
+// Bajado a 650 para que la presión suba de verdad a lo largo de todo el
+// contenido que existe hoy. Si/cuando se construyan las Zonas 2-8, este
+// valor debería revisarse otra vez para que la rampa cubra todo el juego
+// más largo, no solo la Zona 1.
+export const CAMERA_RISE_RAMP_ALTITUDE = 650;
 
 // Tiburones: segundo enemigo, "poco a poco" tras la medusa — patrullan de
 // lado a lado en vez de solo derivar como la medusa. Patrullan un radio
