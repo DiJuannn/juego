@@ -5,52 +5,90 @@ export interface DirectionVector {
   y: number;
 }
 
-// Historial de esta ronda: joystick flotante (v1, sin pulir) → cruceta
-// fija de 4 botones en el centro inferior (pedido explícito: "una cruceta
-// FIJA... no el joystick flotante") → probada en un iPhone real, la
-// cruceta fija quedaba solapada con Lumi/los enemigos en cualquier
-// pantalla de móvil real (ver LUMI_SCREEN_ANCHOR_Y en GameConfig) y,
-// aparte de eso, tampoco convencía como sensación de control — pedido
-// explícito de nuevo: "ni el joystick ni la cruceta... cómo harías tú".
-// Vuelta a un joystick flotante, esta vez pulido: aparece centrado justo
-// donde cae el dedo (nunca en un punto fijo de la pantalla, así nunca
-// puede volver a solaparse con Lumi de forma sistemática) y desaparece al
-// soltar. Un solo dedo basta para cualquier dirección — a diferencia de
-// la cruceta de 4 botones, no hace falta "presionar dos a la vez" para
-// una diagonal, el ángulo del arrastre ya la da directamente.
-const JOY_RADIUS = 62;
-const JOY_KNOB_RADIUS = 30;
-// Un arrastre más corto que esto se ignora — evita que un toque casi
-// quieto (temblor de dedo) dispare una dirección por accidente.
-const JOY_DEADZONE = 10;
+// Tercer intento de control táctil esta sesión: dial de 8 flechas → cruceta
+// fija de 4 botones → joystick flotante (los dos últimos, aunque distintos
+// problemas cada uno, seguían sin convencer del todo) → esto: deslizar
+// para FIJAR una dirección, que se mantiene sola sin necesidad de seguir
+// tocando, hasta el próximo deslizamiento que la cambie. Pedido explícito:
+// "si deslizo una vez hacia arriba va hacia arriba siempre hasta que
+// cambie de movimiento". No hay ningún widget permanente en pantalla — se
+// acabó el problema de raíz de las dos rondas anteriores (algo fijo que
+// competía por hueco con Lumi/los enemigos), Lumi solo cambia de
+// dirección cuando el jugador decide deslizar de nuevo.
+function dir(x: number, y: number, angle: number) {
+  return { x, y, angle };
+}
+// Los 8 ángulos posibles, mismo criterio que el dial original: el
+// deslizamiento se "engancha" a la más cercana de estas 8 direcciones, no
+// a un ángulo libre — así siempre coincide con una de las 8 poses reales
+// de Lumi (4 ejes + 4 diagonales), nunca un ángulo raro a medias.
+const DIRECTIONS = [
+  dir(0, -1, -Math.PI / 2), // arriba
+  dir(1, -1, -Math.PI / 4), // arriba-derecha
+  dir(1, 0, 0), // derecha
+  dir(1, 1, Math.PI / 4), // abajo-derecha
+  dir(0, 1, Math.PI / 2), // abajo
+  dir(-1, 1, (3 * Math.PI) / 4), // abajo-izquierda
+  dir(-1, 0, Math.PI), // izquierda
+  dir(-1, -1, (-3 * Math.PI) / 4), // arriba-izquierda
+];
 
-const SHADOW_COLOR = 0x2a2145;
-const RING_COLOR = 0xe8defc;
-const KNOB_COLOR = 0xffc9e6;
-// Pedido explícito de rondas anteriores: "medio transparente" pero
-// legible contra un fondo tan variado como el del juego (agua clara,
-// plantas densas, rocas) — misma paleta que ya se usó para la cruceta.
-const SHADOW_ALPHA = 0.16;
-const BASE_FILL_ALPHA = 0.22;
-const RING_ALPHA = 0.6;
-const KNOB_ALPHA = 0.85;
+// Un movimiento del dedo más corto que esto es un toque, no un
+// deslizamiento — no cambia la dirección fijada (evita que un roce
+// accidental altere el rumbo).
+const MIN_SWIPE_DISTANCE = 28;
+// Confirmación visual breve (una flecha que aparece y se desvanece) donde
+// se detectó el deslizamiento — pura realimentación, no un control fijo:
+// desaparece sola, nunca compite por espacio en pantalla.
+const FLASH_DURATION_MS = 380;
+const FLASH_COLOR = 0xffc9e6;
+const FLASH_RING_COLOR = 0xe8defc;
 
-interface Point {
+function angleDiff(a: number, b: number): number {
+  let diff = Math.abs(a - b) % (Math.PI * 2);
+  if (diff > Math.PI) diff = Math.PI * 2 - diff;
+  return diff;
+}
+
+function snapToDirection(dx: number, dy: number): DirectionVector {
+  const angle = Math.atan2(dy, dx);
+  let closest = DIRECTIONS[0];
+  let closestDelta = Infinity;
+  for (const dir of DIRECTIONS) {
+    const delta = angleDiff(angle, dir.angle);
+    if (delta < closestDelta) {
+      closestDelta = delta;
+      closest = dir;
+    }
+  }
+  return { x: closest.x, y: closest.y };
+}
+
+interface Flash {
   x: number;
   y: number;
+  angle: number;
+  startMs: number;
 }
 
 /**
- * Entrada combinada: teclado (flechas/WASD, para desarrollo en escritorio)
- * + joystick táctil flotante (control real para móvil).
+ * Entrada combinada: teclado (flechas/WASD, para desarrollo en escritorio,
+ * comportamiento clásico de "mantener pulsado") + deslizamiento táctil que
+ * FIJA una dirección continua (control real para móvil).
  */
 export class InputController {
   private readonly cursors: Phaser.Types.Input.Keyboard.CursorKeys | null;
   private readonly wasd: Record<"W" | "A" | "S" | "D", Phaser.Input.Keyboard.Key> | null;
   private readonly graphics: Phaser.GameObjects.Graphics;
-  private activePointerId: number | null = null;
-  private origin: Point | null = null;
-  private current: Point | null = null;
+  private lockedDirection: DirectionVector = { x: 0, y: 0 };
+  private touchId: number | null = null;
+  private touchStart: { x: number; y: number } | null = null;
+  /** Una vez que ESTE toque ya fijó una dirección, se ignora el resto de
+   * su arrastre — hace falta soltar y volver a tocar para el siguiente
+   * deslizamiento, así un arrastre curvo no cambia de rumbo varias veces
+   * seguidas dentro del mismo gesto. */
+  private resolvedThisTouch = false;
+  private flash: Flash | null = null;
 
   constructor(private readonly scene: Phaser.Scene) {
     const keyboard = scene.input.keyboard;
@@ -70,64 +108,55 @@ export class InputController {
   }
 
   private handlePointerDown(pointer: Phaser.Input.Pointer) {
-    // Un solo dedo controla el movimiento a la vez — un segundo toque
-    // accidental no interfiere con el joystick ya activo.
-    if (this.activePointerId !== null) return;
-    this.activePointerId = pointer.id;
-    this.origin = { x: pointer.x, y: pointer.y };
-    this.current = { x: pointer.x, y: pointer.y };
+    if (this.touchId !== null) return;
+    this.touchId = pointer.id;
+    this.touchStart = { x: pointer.x, y: pointer.y };
+    this.resolvedThisTouch = false;
   }
 
   private handlePointerMove(pointer: Phaser.Input.Pointer) {
-    if (this.activePointerId !== pointer.id) return;
-    this.current = { x: pointer.x, y: pointer.y };
+    if (this.touchId !== pointer.id || this.resolvedThisTouch || !this.touchStart) return;
+    const dx = pointer.x - this.touchStart.x;
+    const dy = pointer.y - this.touchStart.y;
+    if (Math.sqrt(dx * dx + dy * dy) < MIN_SWIPE_DISTANCE) return;
+
+    this.lockedDirection = snapToDirection(dx, dy);
+    this.resolvedThisTouch = true;
+    this.flash = { x: pointer.x, y: pointer.y, angle: Math.atan2(dy, dx), startMs: this.scene.time.now };
   }
 
   private handlePointerUp(pointer: Phaser.Input.Pointer) {
-    if (this.activePointerId !== pointer.id) return;
-    this.activePointerId = null;
-    this.origin = null;
-    this.current = null;
+    if (this.touchId !== pointer.id) return;
+    this.touchId = null;
+    this.touchStart = null;
+    this.resolvedThisTouch = false;
   }
 
-  /** Desplazamiento del dedo respecto al origen, recortado a JOY_RADIUS —
-   * el "knob" nunca se dibuja (ni se lee como dirección) más lejos que
-   * eso, como cualquier joystick virtual de verdad. */
-  private knobOffset(): { x: number; y: number; dist: number } {
-    if (!this.origin || !this.current) return { x: 0, y: 0, dist: 0 };
-    const dx = this.current.x - this.origin.x;
-    const dy = this.current.y - this.origin.y;
-    const dist = Math.sqrt(dx * dx + dy * dy);
-    if (dist <= JOY_RADIUS || dist === 0) return { x: dx, y: dy, dist };
-    const scale = JOY_RADIUS / dist;
-    return { x: dx * scale, y: dy * scale, dist: JOY_RADIUS };
-  }
-
-  private drawJoystick() {
+  private drawFlash() {
     this.graphics.clear();
-    if (!this.origin) return;
-    const { x: dx, y: dy } = this.knobOffset();
-    const { x: ox, y: oy } = this.origin;
+    if (!this.flash) return;
+    const age = this.scene.time.now - this.flash.startMs;
+    if (age >= FLASH_DURATION_MS) {
+      this.flash = null;
+      return;
+    }
+    const t = age / FLASH_DURATION_MS;
+    const alpha = 1 - t;
+    const { x, y, angle } = this.flash;
+    const tipR = 34 + t * 14;
+    const baseR = 6;
+    const halfWidth = 16 * (1 - t * 0.3);
+    const tipX = x + Math.cos(angle) * tipR;
+    const tipY = y + Math.sin(angle) * tipR;
+    const baseCx = x + Math.cos(angle) * baseR;
+    const baseCy = y + Math.sin(angle) * baseR;
+    const perpX = Math.cos(angle + Math.PI / 2) * halfWidth;
+    const perpY = Math.sin(angle + Math.PI / 2) * halfWidth;
 
-    // Base: sombra sutil + círculo translúcido + aro, igual criterio que
-    // la cruceta de rondas anteriores (contraste sin dejar de ser
-    // translúcido).
-    this.graphics.fillStyle(SHADOW_COLOR, SHADOW_ALPHA);
-    this.graphics.fillCircle(ox, oy, JOY_RADIUS + 6);
-    this.graphics.fillStyle(0xffffff, BASE_FILL_ALPHA);
-    this.graphics.fillCircle(ox, oy, JOY_RADIUS);
-    this.graphics.lineStyle(2, RING_COLOR, RING_ALPHA);
-    this.graphics.strokeCircle(ox, oy, JOY_RADIUS);
-
-    // Knob: sigue al dedo, recortado al radio de la base.
-    const kx = ox + dx;
-    const ky = oy + dy;
-    this.graphics.fillStyle(SHADOW_COLOR, 0.2);
-    this.graphics.fillCircle(kx, ky, JOY_KNOB_RADIUS + 3);
-    this.graphics.fillStyle(KNOB_COLOR, KNOB_ALPHA);
-    this.graphics.fillCircle(kx, ky, JOY_KNOB_RADIUS);
-    this.graphics.lineStyle(1.5, RING_COLOR, RING_ALPHA);
-    this.graphics.strokeCircle(kx, ky, JOY_KNOB_RADIUS);
+    this.graphics.lineStyle(2, FLASH_RING_COLOR, alpha * 0.5);
+    this.graphics.strokeTriangle(tipX, tipY, baseCx + perpX, baseCy + perpY, baseCx - perpX, baseCy - perpY);
+    this.graphics.fillStyle(FLASH_COLOR, alpha * 0.75);
+    this.graphics.fillTriangle(tipX, tipY, baseCx + perpX, baseCy + perpY, baseCx - perpX, baseCy - perpY);
   }
 
   getVector(): DirectionVector {
@@ -138,17 +167,13 @@ export class InputController {
     if (this.cursors?.up.isDown || this.wasd?.W.isDown) y -= 1;
     if (this.cursors?.down.isDown || this.wasd?.S.isDown) y += 1;
 
-    this.drawJoystick();
+    this.drawFlash();
 
-    // El teclado manda si se usa (solo pasa en pruebas de escritorio); si
-    // no hay tecla pulsada, se usa el joystick táctil. Lumi normaliza el
-    // vector igualmente (ver Lumi.update), así que no hace falta que esté
-    // normalizado aquí — solo que el signo/ángulo sea el correcto.
+    // El teclado manda si se usa (solo pasa en pruebas de escritorio,
+    // comportamiento clásico de "mantener pulsado"); si no hay tecla
+    // pulsada, se usa la dirección fijada por el último deslizamiento.
     if (x !== 0 || y !== 0) return { x, y };
-
-    const { x: dx, y: dy, dist } = this.knobOffset();
-    if (dist < JOY_DEADZONE) return { x: 0, y: 0 };
-    return { x: dx, y: dy };
+    return this.lockedDirection;
   }
 
   private destroy() {

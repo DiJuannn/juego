@@ -640,6 +640,28 @@ funciona **hoy**, verificado en el código — no lo que el diseño aspira a ten
   soltar devuelve el vector a `{0,0}` y borra el dibujo. Playtest
   automático (teclado, sin tocar) sigue completando el recorrido sin
   problemas. `npx tsc --noEmit` limpio.
+- **Cuarto rediseño de control táctil: deslizar para FIJAR dirección**
+  — pedido explícito: "si deslizo una vez hacia arriba va hacia arriba
+  siempre hasta que cambie de movimiento". `InputController.ts` reescrito
+  de nuevo: ya no hace falta mantener el dedo (ni un joystick, ni una
+  cruceta) — un deslizamiento de al menos `MIN_SWIPE_DISTANCE=28px`
+  fija una de las 8 direcciones (enganchada al ángulo más cercano, mismo
+  criterio de 8 direcciones que el dial original) y esa dirección se
+  mantiene sola en `getVector()` hasta el próximo deslizamiento que la
+  cambie — un toque corto (por debajo del umbral) no cambia nada. No
+  queda ningún widget permanente en pantalla: solo una flechita de
+  confirmación que aparece donde se detectó el deslizamiento y se
+  desvanece sola en 380ms (`drawFlash`), así que el problema de raíz de
+  las dos rondas anteriores (algo fijo compitiendo por hueco con Lumi) no
+  puede volver a pasar — no hay nada fijo que pueda solaparse.
+  Verificado con una secuencia real de arrastres simulados: deslizar
+  arriba fija `{0,-1}` y persiste tras soltar y esperar; deslizar
+  arriba-derecha lo cambia a `{1,-1}`; un "toque" de 5px (por debajo del
+  umbral) NO cambia nada; deslizar izquierda lo cambia a `{-1,0}` — los
+  4 casos exactos que pedía el usuario. Playtest automático (teclado)
+  sigue funcionando sin cambios (el teclado conserva el comportamiento
+  clásico de "mantener pulsado", no el de fijar). `npx tsc --noEmit`
+  limpio.
 
 # PENDIENTE
 
