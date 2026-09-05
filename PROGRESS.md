@@ -619,6 +619,27 @@ funciona **hoy**, verificado en el código — no lo que el diseño aspira a ten
     el dedo al tocar, no fijo en un punto), sin implementar todavía a la
     espera de que la apruebe.
   - `npx tsc --noEmit` limpio.
+- **Implementado el joystick flotante recomendado** (usuario: "A ver" —
+  visto como luz verde a la recomendación). `InputController.ts`
+  reescrito de cero: en vez de una cruceta de 4 botones fija en el centro
+  inferior, un joystick clásico (base + knob) aparece centrado justo
+  donde cae el dedo al tocar, y desaparece del todo al soltar — a
+  diferencia de la cruceta, no necesita multi-touch para diagonales (el
+  ángulo del arrastre ya lo da un solo dedo), así que se simplifica
+  también esa parte. Al no vivir en un punto fijo de la pantalla, no
+  puede volver a solaparse de forma sistemática con Lumi como pasaba con
+  la cruceta (ver ronda anterior, `LUMI_SCREEN_ANCHOR_Y`). `Lumi.update()`
+  no necesitó cambios: ya normalizaba el vector de dirección, así que un
+  vector no normalizado (proporcional al arrastre, recortado a
+  `JOY_RADIUS=62`) funciona igual que el `{-1,0,1}` de antes.
+  Verificado: sin tocar la pantalla no se dibuja nada (pantalla limpia);
+  un arrastre de prueba (mouse down + move) hacia arriba-derecha dio un
+  vector con signo correcto y Lumi giró/avanzó en esa dirección en
+  pantalla; arrastrar mucho más lejos que `JOY_RADIUS` deja el knob
+  recortado exactamente en `dist=62` (no se sale de la base visualmente);
+  soltar devuelve el vector a `{0,0}` y borra el dibujo. Playtest
+  automático (teclado, sin tocar) sigue completando el recorrido sin
+  problemas. `npx tsc --noEmit` limpio.
 
 # PENDIENTE
 
