@@ -662,6 +662,39 @@ funciona **hoy**, verificado en el código — no lo que el diseño aspira a ten
   sigue funcionando sin cambios (el teclado conserva el comportamiento
   clásico de "mantener pulsado", no el de fijar). `npx tsc --noEmit`
   limpio.
+- **Control táctil aprobado ("VALE AHORA SI ESA ERA LA MOVILIDAD QUE
+  QUERÍA"). Reestructuración del nivel para darle espacio**: "hay que
+  darle espacio a las cosas... que todo esté mucho más separado entre sí.
+  Está todo muy pegado". Causa identificada: los huecos de
+  `Zone1Level.ts` (y los `*_MIN_GAP`/`*_MAX_GAP` que rigen la cadencia
+  aleatoria después del tramo scripteado) se diseñaron cuando
+  `LUMI_SWIM_SPEED` era 220-310px/seg; al subirla a 403 en una ronda
+  posterior sin re-tocar las distancias, el mismo hueco en píxeles se
+  cruza mucho más rápido — de ahí la sensación de "pegado" aunque los
+  números no habían cambiado.
+  - Factor único ×1.6 aplicado a: todos los offsets de
+    `ZONE1_LEVEL_ENTRIES`, `ZONE1_LEVEL_END_OFFSET` (6500→10400),
+    `CURRENT_ZONE_START_OFFSET` (mismo valor, se mueve junto con el final
+    de la Zona 1), `CAMERA_RISE_RAMP_ALTITUDE` (650→1040, para que la
+    rampa siga llegando a tope justo al final de la Zona 1 ya reescalada),
+    `SHARK_CHASE_MIN_OFFSET`, y los `MIN_GAP`/`MAX_GAP` de medusa/erizo/
+    tiburón/calamar/pez grande/ReefCluster (cadencia aleatoria más allá
+    del tramo scripteado). Las X laterales NO se tocaron (no dependen de
+    la velocidad de Lumi, ya estaban dentro de los límites reales del
+    mundo). Escudo/boost/monedas/nenúfares tampoco se tocaron — no son la
+    fuente de la queja ("las cosas" se refería a obstáculos/enemigos).
+  - Como los medios-anchos de banda de cada `ReefCluster` (±230/250/300px)
+    son valores FIJOS que no escalan, el margen libre entre cúmulos y sus
+    peligros compañeros creció en términos absolutos (antes 50-100px de
+    margen, ahora 260-390px) — más espacio del que pedía como mínimo, no
+    solo proporcional.
+  - Verificado leyendo las posiciones reales de los sprites en juego
+    (todas caen en las nuevas alturas esperadas, ninguna fuera de los
+    límites del mundo) y con capturas del hueco entre el primer cúmulo de
+    arrecife y la primera medusa: ahora hay un tramo claro de agua abierta
+    entre ambos, no aparecen pegados. Playtest automático completó el
+    recorrido (altura 705 sin game over en la ventana de prueba, frente a
+    reef/densidad previa). `npx tsc --noEmit` limpio.
 
 # PENDIENTE
 

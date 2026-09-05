@@ -83,8 +83,19 @@ export const GAME_OVER_MARGIN = 200;
 // Medusas: primer enemigo, introducido "poco a poco" — mucho más
 // espaciadas que los nenúfares para que sea una amenaza ocasional, no una
 // pared de peligros.
-export const JELLYFISH_MIN_GAP = 700;
-export const JELLYFISH_MAX_GAP = 1300;
+// Pedido explícito: "reestructuremos el nivel, hay que darle espacio a
+// las cosas... está todo muy pegado". Los huecos de Zone1Level.ts (y
+// estos MIN/MAX_GAP, que rigen la cadencia aleatoria después del tramo
+// scripteado) se pensaron cuando LUMI_SWIM_SPEED era más baja (220-310);
+// tras subirla a 403 sin re-tocar las distancias, el mismo hueco en
+// píxeles se cruza mucho más rápido — de ahí la sensación de "pegado"
+// aunque los números no habían cambiado. Todos los *_MIN_GAP/*_MAX_GAP de
+// peligros de esta sección, más los offsets de Zone1Level.ts, suben
+// ×1.6 (factor único, ver también CAMERA_RISE_RAMP_ALTITUDE/
+// CURRENT_ZONE_START_OFFSET/SHARK_CHASE_MIN_OFFSET más abajo, reescalados
+// igual para no romper su relación con el final de la Zona 1).
+export const JELLYFISH_MIN_GAP = 700 * 1.6;
+export const JELLYFISH_MAX_GAP = 1300 * 1.6;
 export const JELLYFISH_SCALE = 0.16;
 
 // La cámara ya no espera solo a que Lumi suba: sube ella sola sin parar,
@@ -111,8 +122,11 @@ export const CAMERA_RISE_SPEED_MAX = 76;
 // Bajado a 650 para que la presión suba de verdad a lo largo de todo el
 // contenido que existe hoy. Si/cuando se construyan las Zonas 2-8, este
 // valor debería revisarse otra vez para que la rampa cubra todo el juego
-// más largo, no solo la Zona 1.
-export const CAMERA_RISE_RAMP_ALTITUDE = 650;
+// más largo, no solo la Zona 1. Reescalado ×1.6 junto con el resto de
+// distancias de esta ronda ("darle espacio a las cosas") — el final de
+// la Zona 1 se movió de altura 650 a 1040 (ver ZONE1_LEVEL_END_OFFSET),
+// así que la rampa tiene que llegar igual de lejos que antes.
+export const CAMERA_RISE_RAMP_ALTITUDE = 650 * 1.6;
 
 // Tiburones: segundo enemigo, "poco a poco" tras la medusa — patrullan de
 // lado a lado en vez de solo derivar como la medusa. Patrullan un radio
@@ -121,8 +135,8 @@ export const CAMERA_RISE_RAMP_ALTITUDE = 650;
 // primera aparición ya no es un *_START_OFFSET fijo: la decide el nivel
 // scripteado del Tramo 1 (ver Zone1Level.ts) — estos valores solo rigen
 // su cadencia aleatoria a partir de ahí.
-export const SHARK_MIN_GAP = 1200;
-export const SHARK_MAX_GAP = 2000;
+export const SHARK_MIN_GAP = 1200 * 1.6;
+export const SHARK_MAX_GAP = 2000 * 1.6;
 export const SHARK_SCALE = 0.22;
 export const SHARK_PATROL_SPEED = 130;
 export const SHARK_PATROL_RANGE = 260; // px a cada lado del punto de aparición
@@ -131,7 +145,7 @@ export const SHARK_PATROL_RANGE = 260; // px a cada lado del punto de aparición
 // pueden, una única vez cada uno (nunca de forma permanente), lanzarse en
 // una persecución corta hacia Lumi si pasa cerca — un evento puntual que
 // culmina la progresión del enemigo, no un comportamiento nuevo constante.
-export const SHARK_CHASE_MIN_OFFSET = 5000; // altura ~500: solo tiburones a partir de aquí pueden perseguir
+export const SHARK_CHASE_MIN_OFFSET = 5000 * 1.6; // reescalado con el resto de la Zona 1 (ver arriba)
 export const SHARK_CHASE_TRIGGER_RANGE_X = 260;
 export const SHARK_CHASE_TRIGGER_RANGE_Y = 240;
 export const SHARK_CHASE_SPEED = 240;
@@ -142,16 +156,16 @@ export const SHARK_CHASE_DURATION_MS = 2200;
 // ya no es un *_START_OFFSET propio: lo decide el nivel scripteado del
 // Tramo 2 (ver Zone1Level.ts), igual que el resto; estos valores solo
 // rigen su cadencia aleatoria a partir de ahí.
-export const SQUID_MIN_GAP = 1100;
-export const SQUID_MAX_GAP = 1900;
+export const SQUID_MIN_GAP = 1100 * 1.6;
+export const SQUID_MAX_GAP = 1900 * 1.6;
 export const SQUID_SCALE = 0.18;
 
 // Erizos: cuarto enemigo — casi no se mueven, son un obstáculo "plantado"
 // a esquivar, no una criatura que persigue. Su primera aparición la decide
 // el nivel scripteado del Tramo 1 (ver Zone1Level.ts), igual que el
 // tiburón; estos valores solo rigen su cadencia aleatoria a partir de ahí.
-export const URCHIN_MIN_GAP = 900;
-export const URCHIN_MAX_GAP = 1500;
+export const URCHIN_MIN_GAP = 900 * 1.6;
+export const URCHIN_MAX_GAP = 1500 * 1.6;
 export const URCHIN_SCALE = 0.17;
 
 // Pez grande: reutiliza el arte de pez ya existente (fish_05) a mayor
@@ -159,8 +173,8 @@ export const URCHIN_SCALE = 0.17;
 // Lumi lejos (un obstáculo que estorba, no que mata). Su primera aparición
 // la decide el nivel scripteado del Tramo 1 (ver Zone1Level.ts); estos
 // valores solo rigen su cadencia aleatoria a partir de ahí.
-export const BIG_FISH_MIN_GAP = 1300;
-export const BIG_FISH_MAX_GAP = 2100;
+export const BIG_FISH_MIN_GAP = 1300 * 1.6;
+export const BIG_FISH_MAX_GAP = 2100 * 1.6;
 export const BIG_FISH_SCALE = 0.5;
 export const BIG_FISH_PATROL_SPEED = 60;
 export const BIG_FISH_PUSH_STRENGTH = 300;
@@ -189,14 +203,14 @@ export const CORAL_CHUNK_SCALE = 0.32;
 // revertir. Sus primeras apariciones (Tramo 1) las decide el nivel
 // scripteado (ver Zone1Level.ts); estos valores solo rigen su cadencia
 // aleatoria a partir de ahí.
-export const REEF_CLUSTER_MIN_GAP = 2000;
-export const REEF_CLUSTER_MAX_GAP = 3200;
+export const REEF_CLUSTER_MIN_GAP = 2000 * 1.6;
+export const REEF_CLUSTER_MAX_GAP = 3200 * 1.6;
 export const REEF_COIN_SPACING = 90; // separación entre monedas a lo largo de la ruta guía
 
 // Corriente de agua: no es una criatura, es una franja de mundo que empuja
 // lateralmente mientras Lumi está dentro — el último obstáculo de la Zona
 // 1 (altura ~650), justo antes de la Zona 2.
-export const CURRENT_ZONE_START_OFFSET = 6500; // altura ~650
+export const CURRENT_ZONE_START_OFFSET = 6500 * 1.6; // reescalado con el resto de la Zona 1 (ver arriba)
 export const CURRENT_ZONE_MIN_GAP = 1600;
 export const CURRENT_ZONE_MAX_GAP = 2600;
 export const CURRENT_ZONE_HEIGHT = 260;
