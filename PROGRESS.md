@@ -598,6 +598,27 @@ funciona **hoy**, verificado en el código — no lo que el diseño aspira a ten
     arriba), no del motor.
   - `npx tsc --noEmit` limpio. Playtest automático sigue completando el
     recorrido sin errores.
+- **Canvas no llenaba la pantalla real en iPhone** — el usuario mandó una
+  captura de Safari mostrando el juego correcto arriba pero con una
+  franja azul en blanco debajo, entre el juego y la barra de Safari (el
+  fix de `100dvh` de la ronda anterior no fue suficiente por sí solo).
+  Causa: `Phaser.Scale.RESIZE` solo escucha el evento `resize` de
+  `window`, pero Safari en iOS no siempre lo dispara cuando su propia
+  barra de herramientas cambia de alto (el viewport visual cambia sin
+  avisar por ahí) — el canvas se quedaba con una medida vieja. Arreglado
+  en `main.ts`: si existe `window.visualViewport` (sí, en Safari
+  moderno), se escucha su evento `resize` y se llama a
+  `game.scale.refresh()` — es el mecanismo que SÍ se entera de los
+  cambios de la barra de herramientas. No se pudo reproducir el bug exacto
+  en este entorno (Playwright/Chromium no simula el comportamiento
+  dinámico de la barra de Safari), así que queda pendiente de que el
+  usuario confirme en su iPhone real.
+  - El usuario también reportó que ni la cruceta actual ni el joystick
+    flotante anterior le convencen del todo y pidió una recomendación de
+    diseño — respondida como opinión (joystick flotante que aparece bajo
+    el dedo al tocar, no fijo en un punto), sin implementar todavía a la
+    espera de que la apruebe.
+  - `npx tsc --noEmit` limpio.
 
 # PENDIENTE
 

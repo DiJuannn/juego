@@ -7,7 +7,7 @@ import { PondScene } from "@/scenes/PondScene";
 // entero, sea cual sea su proporción — con FIT, una pantalla de móvil en
 // vertical dejaba franjas vacías arriba y abajo porque forzaba mantener
 // la proporción 960:640 pensada para escritorio.
-new Phaser.Game({
+const game = new Phaser.Game({
   type: Phaser.AUTO,
   parent: "game",
   width: GAME_WIDTH,
@@ -25,3 +25,15 @@ new Phaser.Game({
   },
   scene: [BootScene, PondScene],
 });
+
+// Bug real visto en un iPhone de verdad: Phaser.Scale.RESIZE solo escucha
+// el evento "resize" de window, pero Safari en iOS no siempre lo dispara
+// cuando su propia barra de herramientas aparece/desaparece o cambia de
+// alto (el viewport visual cambia sin que window.innerHeight avise) — el
+// canvas se quedaba con una medida vieja, dejando una franja en blanco
+// entre el juego y el borde real de la pantalla. window.visualViewport sí
+// se entera de estos cambios; forzar un refresh ahí es la solución
+// estándar para este caso concreto de Phaser + Safari móvil.
+if (window.visualViewport) {
+  window.visualViewport.addEventListener("resize", () => game.scale.refresh());
+}
