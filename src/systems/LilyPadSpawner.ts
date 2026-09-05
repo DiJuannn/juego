@@ -37,6 +37,13 @@ export class LilyPadSpawner {
     this.spawnAt(startX, startY);
   }
 
+  /** Colocación exacta desde el nivel scripteado (ver Zone1Level.ts) —
+   * por ejemplo, el nenúfar que marca el hueco pequeño de un combo de
+   * erizos en línea. Mismo criterio de nombre que el resto de spawners. */
+  spawnExact(y: number, x: number) {
+    this.spawnAt(x, y);
+  }
+
   private spawnAt(x: number, y: number) {
     const pad = new LilyPad(this.scene, x, y);
     this.group.add(pad.sprite);

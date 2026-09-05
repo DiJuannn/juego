@@ -47,7 +47,7 @@
 // cúmulo.
 export const ZONE1_LEVEL_END_OFFSET = 6500 * 1.6 * 2;
 
-export type Zone1LevelEntryType = "jellyfish" | "urchin" | "shark" | "squid" | "bigfish" | "reef";
+export type Zone1LevelEntryType = "jellyfish" | "urchin" | "shark" | "squid" | "bigfish" | "reef" | "lilypad";
 
 export interface Zone1LevelEntry {
   type: Zone1LevelEntryType;
@@ -69,7 +69,14 @@ export const ZONE1_LEVEL_ENTRIES: Zone1LevelEntry[] = [
   { type: "jellyfish", offset: 2080, x: 250 }, // justo tras salir del cúmulo 1
 
   { type: "reef", offset: 3200, reefTemplate: 3 }, // lateralWall — banda ~[2900,3500]
-  { type: "urchin", offset: 4320, x: 300 },
+  // Pedido explícito: "una zona donde haya dos erizos o tres en línea y
+  // solo haya como un hueco pequeño y ese hueco abajo un nenúfar" — 3
+  // erizos en línea, hueco pequeño entre el 1º y 2º, nenúfar justo antes
+  // (más abajo) marcando ese hueco.
+  { type: "urchin", offset: 4320, x: 120 },
+  { type: "urchin", offset: 4320, x: 290 },
+  { type: "urchin", offset: 4320, x: 460 },
+  { type: "lilypad", offset: 4230, x: 205 },
 
   { type: "reef", offset: 5440, reefTemplate: 1 }, // centerTwoPaths — banda ~[5210,5670]
   { type: "jellyfish", offset: 6560, x: 250 },
@@ -90,7 +97,11 @@ export const ZONE1_LEVEL_ENTRIES: Zone1LevelEntry[] = [
   { type: "squid", offset: 15040, x: 300 }, // debut del calamar
 
   { type: "reef", offset: 16320, reefTemplate: 2 }, // sCurveEdges — banda ~[16020,16620]
-  { type: "urchin", offset: 17440, x: 200 },
+  // Misma idea que el combo de 3 erizos de más abajo, pero con 2 —
+  // "dos erizos o tres en línea".
+  { type: "urchin", offset: 17440, x: 220 },
+  { type: "urchin", offset: 17440, x: 470 },
+  { type: "lilypad", offset: 17350, x: 345 },
   { type: "squid", offset: 18080, x: 420 },
 
   { type: "reef", offset: 19200, reefTemplate: 3 }, // lateralWall — banda ~[18900,19500]

@@ -7,8 +7,6 @@ import {
   LUMI_DRIFT_SPEED,
   LUMI_SCALE,
   LUMI_SWIM_SPEED,
-  SUPER_BOOST_DURATION_MS,
-  SUPER_BOOST_SPEED_MULT,
   SWIM_SIDE_SCALE_CORRECTION,
 } from "@/config/GameConfig";
 import { frameKey } from "@/config/LumiAnimConfig";
@@ -69,14 +67,6 @@ export class Lumi {
   triggerBoost() {
     this.boostRemainingMs = BOOST_DURATION_MS;
     this.boostSpeedMult = LILY_PAD_BOOST_MULT;
-  }
-
-  /** Power-up de impulso vertical (ver BoostPickup): mismo mecanismo que el
-   * nenúfar pero notablemente más fuerte y largo — una recompensa puntual
-   * que se recoge, no una ayuda de terreno siempre disponible. */
-  triggerSuperBoost() {
-    this.boostRemainingMs = SUPER_BOOST_DURATION_MS;
-    this.boostSpeedMult = SUPER_BOOST_SPEED_MULT;
   }
 
   /** Antes de la secuencia de muerte: asegura que el sprite físico esté

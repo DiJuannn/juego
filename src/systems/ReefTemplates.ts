@@ -89,12 +89,16 @@ type Side = "left" | "right";
 // contra el lateral — mismo criterio que ya tenía `lateralWall` (ver
 // ReefCluster.ts para el ajuste de hitbox que acompaña a esta rotación).
 // El inset (antes ∓0.02, centrado casi exactamente en el borde) dejaba
-// la mitad de la roca fuera del mundo/cámara — pedido explícito
-// posterior: "los obstáculos de los laterales empiezan muy recortados,
-// que no se recorten tanto". Subido a ∓0.07 para que se vea bastante más
-// roca de verdad dentro del área jugable, sin dejar de leerse pegada al
-// borde.
-const EDGE_INSET = 0.07;
+// la mitad de la roca fuera del mundo/cámara — pedido explícito: "los
+// obstáculos de los laterales empiezan muy recortados, que no se
+// recorten tanto" (subido primero a 0.07). Probado en un móvil real
+// seguía sin verse casi nada ("no se ven nada de nada o solo lateral
+// puntita se alcanza a ver en el cel... ponlos más para dentro") — subido
+// bastante más, a 0.18, y el resto de piezas "obstacle" de cada plantilla
+// (ramas/estrella/piedra, no las de fondo/decoración lejana) suben sus
+// propios `fromEdge` un +0.08 parejo, para que toda la masa del cúmulo se
+// meta más adentro, no solo la roca.
+const EDGE_INSET = 0.18;
 function edgeX(worldWidth: number, side: Side): number {
   return side === "left" ? EDGE_INSET * worldWidth : (1 - EDGE_INSET) * worldWidth;
 }
@@ -133,7 +137,7 @@ function towardsRightEdge(x: number, worldWidth: number): boolean {
  */
 function diagonalLeft(worldWidth: number, centerY: number): ReefClusterSpec {
   const branchKey1 = pickBranch();
-  const branchX = fromEdge(worldWidth, "left", 0.15);
+  const branchX = fromEdge(worldWidth, "left", 0.23);
   const pieces: ReefPieceSpec[] = [
     piece({
       key: "reef_boulder_rock",
@@ -156,8 +160,8 @@ function diagonalLeft(worldWidth: number, centerY: number): ReefClusterSpec {
     // decoración de fondo y pasan a ser obstáculos reales (bloquean, no
     // hacen daño, igual que el resto del cúmulo), colocadas a mano pegadas
     // a la masa del borde, nunca sobre la ruta guía.
-    piece({ key: "decor_starfish", x: fromEdge(worldWidth, "left", 0.09), y: centerY - 30, scale: 0.28, role: "obstacle" }),
-    piece({ key: "decor_pebble", x: fromEdge(worldWidth, "left", 0.04), y: centerY + 200, scale: 0.32, role: "obstacle" }),
+    piece({ key: "decor_starfish", x: fromEdge(worldWidth, "left", 0.17), y: centerY - 30, scale: 0.28, role: "obstacle" }),
+    piece({ key: "decor_pebble", x: fromEdge(worldWidth, "left", 0.12), y: centerY + 200, scale: 0.32, role: "obstacle" }),
     // Fondo: un eco pequeño y difuminado del arrecife más allá del hueco,
     // para dar profundidad sin ocupar la ruta.
     piece({ key: "reef_boulder_rock", x: fromEdge(worldWidth, "right", 0.08), y: centerY - 30, scale: 0.09, role: "background", alpha: 0.4 }),
@@ -184,7 +188,7 @@ function diagonalLeft(worldWidth: number, centerY: number): ReefClusterSpec {
  */
 function centerTwoPaths(worldWidth: number, centerY: number): ReefClusterSpec {
   const branchKey1 = pickBranch();
-  const branchX = fromEdge(worldWidth, "right", 0.14);
+  const branchX = fromEdge(worldWidth, "right", 0.22);
   const pieces: ReefPieceSpec[] = [
     piece({
       key: "reef_boulder_rock",
@@ -203,7 +207,7 @@ function centerTwoPaths(worldWidth: number, centerY: number): ReefClusterSpec {
       flipX: branchFlipX(branchKey1, towardsRightEdge(branchX, worldWidth)),
       role: "obstacle",
     }),
-    piece({ key: "decor_starfish", x: fromEdge(worldWidth, "left", 0.14), y: centerY + 95, scale: 0.3, role: "obstacle" }),
+    piece({ key: "decor_starfish", x: fromEdge(worldWidth, "left", 0.22), y: centerY + 95, scale: 0.3, role: "obstacle" }),
     // Piedra suelta a mitad de camino, como pequeño obstáculo puntual en
     // el tramo abierto (no pegado a ningún borde) — a diferencia de las
     // demás piezas de esta lista, deliberadamente NO está pegada a un
@@ -251,14 +255,14 @@ function sCurveEdges(worldWidth: number, centerY: number): ReefClusterSpec {
     // para que la parte con coral quede pegada al borde.
     piece({
       key: sCurveBranchKey,
-      x: fromEdge(worldWidth, "right", 0.12),
+      x: fromEdge(worldWidth, "right", 0.2),
       y: midY - 30,
       scale: branchScale(sCurveBranchKey, 0.4),
       rotation: -0.1,
       flipX: branchFlipX(sCurveBranchKey, true),
       role: "obstacle",
     }),
-    piece({ key: "decor_starfish", x: fromEdge(worldWidth, "right", 0.06), y: midY - 100, scale: 0.3, role: "obstacle" }),
+    piece({ key: "decor_starfish", x: fromEdge(worldWidth, "right", 0.14), y: midY - 100, scale: 0.3, role: "obstacle" }),
 
     // Banda inferior: entra por la izquierda otra vez — el "distinto
     // alcance" respecto a la superior ahora lo da la decoración (la roca
@@ -271,7 +275,7 @@ function sCurveEdges(worldWidth: number, centerY: number): ReefClusterSpec {
       rotation: edgeRotation("left"),
       role: "obstacle",
     }),
-    piece({ key: "decor_pebble", x: fromEdge(worldWidth, "left", 0.18), y: bottomY - 90, scale: 0.3, role: "obstacle" }),
+    piece({ key: "decor_pebble", x: fromEdge(worldWidth, "left", 0.26), y: bottomY - 90, scale: 0.3, role: "obstacle" }),
   ];
 
   // La ruta serpentea: derecha (abajo) -> izquierda (medio) -> derecha
@@ -323,15 +327,15 @@ function lateralWall(worldWidth: number, centerY: number): ReefClusterSpec {
     // izquierda sin espejar (ver BRANCH_VARIANTS para la convención).
     piece({
       key: wallBranchKey,
-      x: fromEdge(worldWidth, side, 0.1),
+      x: fromEdge(worldWidth, side, 0.18),
       y: centerY - 60,
       scale: branchScale(wallBranchKey, 0.5),
       rotation: 0.02,
       flipX: branchFlipX(wallBranchKey, side === "right"),
       role: "obstacle",
     }),
-    piece({ key: "decor_starfish", x: fromEdge(worldWidth, side, 0.2), y: centerY + 30, scale: 0.3, role: "obstacle" }),
-    piece({ key: "decor_pebble", x: fromEdge(worldWidth, side, 0.05), y: centerY + 250, scale: 0.3, role: "obstacle" }),
+    piece({ key: "decor_starfish", x: fromEdge(worldWidth, side, 0.28), y: centerY + 30, scale: 0.3, role: "obstacle" }),
+    piece({ key: "decor_pebble", x: fromEdge(worldWidth, side, 0.13), y: centerY + 250, scale: 0.3, role: "obstacle" }),
     // Fondo: un eco pequeño y difuminado del lado abierto, para que no se
     // sienta completamente vacío sin invadir la ruta.
     piece({ key: "reef_boulder_rock", x: fromEdge(worldWidth, side, 0.85), y: centerY + 10, scale: 0.09, role: "background", alpha: 0.35 }),

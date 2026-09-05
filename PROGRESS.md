@@ -770,6 +770,60 @@ funciona **hoy**, verificado en el código — no lo que el diseño aspira a ten
     de una roca real en juego.
   - `npx tsc --noEmit` limpio. Playtest automático sigue completando el
     recorrido sin errores.
+- **Cinco pedidos más en un solo mensaje**: "Haz los animales un 20% más
+  pequeños todos menos el erizo y la medusa. luego los objetos del
+  lateral vuelvo y te digo ponlos más para dentro, no se ven nada de nada
+  o solo lateral puntita se alcanza a ver en el cel. Y crea más. Luego
+  obstáculos con erizos me gusta más, una zona donde haya dos erizos o
+  tres en línea y solo haya como un hueco pequeño y ese hueco abajo un
+  nenúfar. QUITA LAS BURBUJAS QUE SON PEQUEÑITAS que aún está ese power
+  up, no lo quiero y la velocidad de la cámara un poco más rápida".
+  - **Animales -20% (menos erizo y medusa)**: `SHARK_SCALE`,
+    `SQUID_SCALE`, `BIG_FISH_SCALE` ×0.8 — `URCHIN_SCALE`/
+    `JELLYFISH_SCALE` sin tocar, excluidos explícitamente. Verificado
+    leyendo el `.scale` real de un sprite de cada uno en juego (con el
+    jitter propio de cada spawner, todos caen dentro del rango esperado
+    para el valor nuevo/viejo según corresponda).
+  - **Objetos laterales bastante más adentro**: el `EDGE_INSET=0.07` de
+    la ronda anterior seguía sin verse en un móvil real ("no se ven nada
+    de nada o solo lateral puntita"). Subido a `0.18`, y además el resto
+    de piezas "obstacle" de cada plantilla (ramas/estrella/piedra, no las
+    de fondo/decoración lejana) suben su propio `fromEdge` un +0.08
+    parejo — para que se meta más adentro toda la masa del cúmulo, no
+    solo la roca. Comprobado que la ruta guía de cada plantilla sigue con
+    margen de sobra respecto a las nuevas posiciones (a mano, revisando
+    cada plantilla).
+  - **"Y crea más"**: interpretado como más presencia de cúmulos de
+    arrecife que el resto de peligros (no se deshizo el ×3.2 de espaciado
+    general de la ronda anterior, que sí sigue aplicando a medusa/erizo/
+    tiburón/calamar/pez grande) — `REEF_CLUSTER_MIN_GAP`/`MAX_GAP` bajan
+    un 40% extra sobre ese valor. Si la intención era otra (más piezas
+    por cúmulo en vez de más cúmulos), decírmelo para ajustar.
+  - **Nuevo combo "erizos en línea + hueco + nenúfar"**: nuevo tipo
+    `"lilypad"` en `Zone1LevelEntry`, nuevo `LilyPadSpawner.spawnExact(y,
+    x)` (mismo criterio de nombre que el resto de spawners). Dos
+    instancias en `Zone1Level.ts`: 3 erizos en línea (x=120/290/460) con
+    un nenúfar marcando el hueco entre el 1º y 2º (x=205, justo antes en
+    altura), y más adelante una versión de 2 erizos (x=220/470) con
+    nenúfar en medio (x=345). Verificado leyendo las posiciones reales en
+    juego (coinciden exactas con el diseño) y comprobando que el cuerpo
+    físico de Lumi, colocada en el hueco marcado, NO se solapa con
+    ninguno de los erizos de esa fila.
+  - **Power-up de boost (burbujas pequeñas) eliminado del todo**:
+    `BoostPickupSpawner.ts`/`BoostPickup.ts` borrados, toda su
+    instanciación/overlap/update en `PondScene.ts` retirada,
+    `Lumi.triggerSuperBoost` borrado, `boost_bubble` ya no se carga en
+    `BootScene.ts`, y las constantes `BOOST_PICKUP_*`/`SUPER_BOOST_*` de
+    `GameConfig.ts` se retiran (dejando solo un aviso de por qué). El
+    nenúfar normal y su propio impulso (`triggerBoost`/
+    `LILY_PAD_BOOST_MULT`) NO se tocan, son cosas distintas. Verificado:
+    `"boostPickupSpawner" in scene` da `false` en juego, y ninguna
+    referencia queda en el código (`grep` limpio salvo el comentario
+    explicativo).
+  - **Cámara un poco más rápida**: `CAMERA_RISE_SPEED_START`/`MAX` ×1.15
+    (un empujón modesto, no otro salto grande).
+  - `npx tsc --noEmit` limpio. Playtest automático sigue completando el
+    recorrido sin errores.
 
 # PENDIENTE
 

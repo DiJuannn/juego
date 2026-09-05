@@ -2,7 +2,6 @@ import Phaser from "phaser";
 import {
   BIG_FISH_PUSH_COOLDOWN_MS,
   BIG_FISH_PUSH_STRENGTH,
-  BOOST_PICKUP_START_OFFSET,
   CAMERA_RISE_RAMP_ALTITUDE,
   CAMERA_RISE_SPEED_MAX,
   CAMERA_RISE_SPEED_START,
@@ -24,7 +23,6 @@ import { BigFish } from "@/entities/BigFish";
 import { Lumi } from "@/entities/Lumi";
 import { BackgroundFishField } from "@/systems/BackgroundFishField";
 import { BigFishSpawner } from "@/systems/BigFishSpawner";
-import { BoostPickupSpawner } from "@/systems/BoostPickupSpawner";
 import { BubbleField } from "@/systems/BubbleField";
 import { CoinSpawner } from "@/systems/CoinSpawner";
 import { CrossfadePlant } from "@/systems/CrossfadePlant";
@@ -64,7 +62,6 @@ export class PondScene extends Phaser.Scene {
   private currentZoneSpawner!: CurrentZoneSpawner;
   private shieldPickupSpawner!: ShieldPickupSpawner;
   private coinSpawner!: CoinSpawner;
-  private boostPickupSpawner!: BoostPickupSpawner;
   private zoneManager!: ZoneManager;
   private zoneText!: Phaser.GameObjects.Text;
   private livesSystem!: LivesSystem;
@@ -228,17 +225,6 @@ export class PondScene extends Phaser.Scene {
       this.coinSpawner.consume(coinObj as Phaser.Physics.Arcade.Image);
     });
 
-    // Power-up de impulso vertical: distinto del nenúfar (siempre
-    // disponible como parte del terreno) — este es un empujón mucho más
-    // fuerte y largo, escaso, que hay que recoger.
-    this.boostPickupSpawner = new BoostPickupSpawner(this, WORLD_WIDTH, START_Y - BOOST_PICKUP_START_OFFSET);
-    this.physics.add.overlap(this.lumi.sprite, this.boostPickupSpawner.group, (_lumiObj, boostObj) => {
-      this.lumi.triggerSuperBoost();
-      this.boostBurst.explode(14, this.lumi.sprite.x, this.lumi.sprite.y);
-      this.boostBurstSmall.explode(20, this.lumi.sprite.x, this.lumi.sprite.y);
-      this.boostPickupSpawner.consume(boostObj as Phaser.Physics.Arcade.Image);
-    });
-
     // Obstáculos orgánicos de arrecife: prototipo que sustituye al coral
     // estrecho de pared recta (ver entities/ReefCluster.ts y
     // systems/ReefTemplates.ts — CoralWall/CoralSpawner se quedan
@@ -334,6 +320,9 @@ export class PondScene extends Phaser.Scene {
           break;
         case "reef":
           this.reefClusterSpawner.spawnExact(y, entry.reefTemplate ?? 0);
+          break;
+        case "lilypad":
+          this.lilyPadSpawner.spawnExact(y, entry.x ?? WORLD_WIDTH / 2);
           break;
       }
     }
@@ -737,7 +726,6 @@ export class PondScene extends Phaser.Scene {
     this.shieldPickupSpawner.update(cam.scrollY, cam.scrollY + cam.height, time);
     this.reefClusterSpawner.update(cam.scrollY, cam.scrollY + cam.height, time);
     this.coinSpawner.update(cam.scrollY, cam.scrollY + cam.height, time);
-    this.boostPickupSpawner.update(cam.scrollY, cam.scrollY + cam.height, time);
     this.jellyfishSpawner.update(cam.scrollY, cam.scrollY + cam.height, time);
     this.urchinSpawner.update(cam.scrollY, cam.scrollY + cam.height, time);
     this.sharkSpawner.update(cam.scrollY, cam.scrollY + cam.height, time);

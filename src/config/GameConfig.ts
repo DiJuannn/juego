@@ -79,12 +79,13 @@ export const LILY_PAD_MAX_GAP = 520 * 2;
 // Pedido explícito: 70% más pequeños que el tamaño nativo del recorte.
 export const LILY_PAD_SCALE = 0.3;
 
-// Velocidad/duración base del impulso: compartidas por el nenúfar
-// (Lumi.triggerBoost, con LILY_PAD_BOOST_MULT abajo) y el power-up de
-// boost (Lumi.triggerSuperBoost, con SUPER_BOOST_SPEED_MULT/
-// SUPER_BOOST_DURATION_MS) — moved aquí desde Lumi.ts (antes locales sin
-// exportar) porque LILY_PAD_BOOST_DISTANCE, más abajo, necesita
-// calcular con ellas cuánto avanza el impulso del nenúfar en píxeles.
+// Velocidad/duración base del impulso del nenúfar (Lumi.triggerBoost, con
+// LILY_PAD_BOOST_MULT abajo) — moved aquí desde Lumi.ts (antes locales
+// sin exportar) porque LILY_PAD_BOOST_DISTANCE, más abajo, necesita
+// calcular con ellas cuánto avanza el impulso en píxeles. (El power-up de
+// boost aparte, que también las usaba con su propio multiplicador, se
+// retiró del todo — ver el aviso más abajo, cerca de donde vivían sus
+// constantes.)
 export const BOOST_BASE_SPEED = LUMI_SWIM_SPEED * 2.9;
 export const BOOST_DURATION_MS = 550;
 // Últimos BOOST_EASE_MS del impulso: la velocidad baja de forma gradual
@@ -93,9 +94,7 @@ export const BOOST_EASE_MS = 150;
 
 // Pedido explícito: "el propulsor del nenúfar bájale un 20%", y una
 // ronda después "le bajaría un 20% más su propulsor" — 0.8 y luego
-// 0.8*0.8. Solo el impulso del nenúfar (Lumi.triggerBoost), no el del
-// power-up de boost (Lumi.triggerSuperBoost, ver SUPER_BOOST_SPEED_MULT),
-// que usa la misma BOOST_BASE_SPEED pero no se toca aquí.
+// 0.8*0.8.
 export const LILY_PAD_BOOST_MULT = 0.8 * 0.8;
 
 // Pedido explícito: "encima de cada nenúfar pondría monedas hasta donde
@@ -148,8 +147,11 @@ export const JELLYFISH_SCALE = 0.16;
 // anterior (42 -> 76). CAMERA_RISE_RAMP_ALTITUDE es la altura (misma escala
 // que ZoneConfig, START/10 por segundo) a la que se alcanza ese tope —
 // coincide con el final de la Zona 1 (ver ZoneConfig.ts).
-export const CAMERA_RISE_SPEED_START = 42;
-export const CAMERA_RISE_SPEED_MAX = 76;
+// Pedido explícito: "la velocidad de la cámara un poco más rápida" — un
+// empujón modesto (+15%), no otro salto grande como el de rondas
+// anteriores.
+export const CAMERA_RISE_SPEED_START = 42 * 1.15;
+export const CAMERA_RISE_SPEED_MAX = 76 * 1.15;
 // Antes en 10000 — calculado para una partida completa de las 8 zonas
 // (10000 es literalmente el altitudeStart de la Zona 8 "Superficie" en
 // ZoneConfig.ts). Pero solo existe contenido jugable hasta la Zona 1
@@ -176,7 +178,10 @@ export const CAMERA_RISE_RAMP_ALTITUDE = 650 * 1.6 * 2;
 // su cadencia aleatoria a partir de ahí.
 export const SHARK_MIN_GAP = 1200 * 1.6 * 2;
 export const SHARK_MAX_GAP = 2000 * 1.6 * 2;
-export const SHARK_SCALE = 0.22;
+// Pedido explícito: "los animales un 20% más pequeños todos menos el
+// erizo y la medusa" — tiburón, calamar y pez grande sí, erizo/medusa no
+// se tocan (ver URCHIN_SCALE/JELLYFISH_SCALE).
+export const SHARK_SCALE = 0.22 * 0.8;
 export const SHARK_PATROL_SPEED = 130;
 export const SHARK_PATROL_RANGE = 260; // px a cada lado del punto de aparición
 
@@ -197,7 +202,7 @@ export const SHARK_CHASE_DURATION_MS = 2200;
 // rigen su cadencia aleatoria a partir de ahí.
 export const SQUID_MIN_GAP = 1100 * 1.6 * 2;
 export const SQUID_MAX_GAP = 1900 * 1.6 * 2;
-export const SQUID_SCALE = 0.18;
+export const SQUID_SCALE = 0.18 * 0.8; // -20%, ver SHARK_SCALE
 
 // Erizos: cuarto enemigo — casi no se mueven, son un obstáculo "plantado"
 // a esquivar, no una criatura que persigue. Su primera aparición la decide
@@ -214,7 +219,7 @@ export const URCHIN_SCALE = 0.17;
 // valores solo rigen su cadencia aleatoria a partir de ahí.
 export const BIG_FISH_MIN_GAP = 1300 * 1.6 * 2;
 export const BIG_FISH_MAX_GAP = 2100 * 1.6 * 2;
-export const BIG_FISH_SCALE = 0.5;
+export const BIG_FISH_SCALE = 0.5 * 0.8; // -20%, ver SHARK_SCALE
 export const BIG_FISH_PATROL_SPEED = 60;
 export const BIG_FISH_PUSH_STRENGTH = 300;
 export const BIG_FISH_PUSH_COOLDOWN_MS = 500;
@@ -242,8 +247,13 @@ export const CORAL_CHUNK_SCALE = 0.32;
 // revertir. Sus primeras apariciones (Tramo 1) las decide el nivel
 // scripteado (ver Zone1Level.ts); estos valores solo rigen su cadencia
 // aleatoria a partir de ahí.
-export const REEF_CLUSTER_MIN_GAP = 2000 * 1.6 * 2;
-export const REEF_CLUSTER_MAX_GAP = 3200 * 1.6 * 2;
+// Pedido explícito: "los objetos del lateral... crea más" — más
+// presencia de cúmulos de arrecife que el resto de peligros, así que su
+// hueco baja un 40% respecto al valor ×3.2 de la ronda anterior (en vez
+// de deshacer del todo esa separación, que sí aplicaba al resto de
+// peligros).
+export const REEF_CLUSTER_MIN_GAP = 2000 * 1.6 * 2 * 0.6;
+export const REEF_CLUSTER_MAX_GAP = 3200 * 1.6 * 2 * 0.6;
 export const REEF_COIN_SPACING = 90; // separación entre monedas a lo largo de la ruta guía
 
 // Corriente de agua: no es una criatura, es una franja de mundo que empuja
@@ -297,15 +307,8 @@ export const COIN_GROUP_SPACING = 70; // separación vertical entre monedas de u
 export const COIN_GROUP_DIAGONAL_STEP = 45; // paso horizontal constante por moneda en un grupo diagonal
 export const COIN_RISKY_GROUP_CHANCE = 0.25;
 
-// Power-up de impulso vertical: distinto del nenúfar (que está siempre
-// disponible como parte del terreno) — este es un power-up que se recoge
-// como el escudo/las monedas, más escaso, y da un empujón notablemente más
-// fuerte y largo (recompensa puntual, no una ayuda constante). Arte propio
-// (remolino de burbujas ascendiendo) para que se distinga a simple vista
-// del nenúfar (hoja verde) y del escudo (esfera translúcida).
-export const BOOST_PICKUP_SCALE = 0.16;
-export const BOOST_PICKUP_START_OFFSET = 1100; // altura ~110
-export const BOOST_PICKUP_MIN_GAP = 2400;
-export const BOOST_PICKUP_MAX_GAP = 3600;
-export const SUPER_BOOST_DURATION_MS = 950;
-export const SUPER_BOOST_SPEED_MULT = 1.5; // sobre BOOST_SPEED del nenúfar
+// El power-up de impulso vertical (burbuja pequeña independiente del
+// nenúfar) se retiró del todo — pedido explícito: "QUITA LAS BURBUJAS QUE
+// SON PEQUEÑITAS que aún está ese power up, no lo quiero". Ver
+// BoostPickupSpawner.ts/BoostPickup.ts, borrados; Lumi.triggerSuperBoost,
+// borrado.
