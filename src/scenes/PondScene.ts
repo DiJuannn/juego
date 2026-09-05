@@ -44,7 +44,7 @@ import { UrchinSpawner } from "@/systems/UrchinSpawner";
 import { ZoneManager } from "@/systems/ZoneManager";
 import { pondLayerKey, pondPlantFrameKey } from "./BootScene";
 
-type DeathReason = "atras" | "medusa" | "tiburon" | "calamar" | "erizo" | "coral";
+type DeathReason = "atras" | "medusa" | "tiburon" | "calamar" | "erizo";
 
 /**
  * Escalada infinita: la cámara solo sube (nunca retrocede) siguiendo a
@@ -241,10 +241,11 @@ export class PondScene extends Phaser.Scene {
     // intactos sin usarse, por si hay que revertir). Se crea ANTES que
     // medusa/erizo para poder pasarles su comprobación de banda y que
     // nunca coloquen un animal estático encima de una ruta guía.
+    // Pedido explícito del usuario: el arrecife ya NO hace daño — sigue
+    // siendo un obstáculo físico sólido (hay que rodearlo/pasar por el
+    // hueco), pero tocarlo solo bloquea el paso, no resta vidas.
     this.reefClusterSpawner = new ReefClusterSpawner(this, WORLD_WIDTH, START_Y - ZONE1_LEVEL_END_OFFSET);
-    this.physics.add.overlap(this.lumi.sprite, this.reefClusterSpawner.group, () => {
-      this.handleHazardHit("coral");
-    });
+    this.physics.add.collider(this.lumi.sprite, this.reefClusterSpawner.group);
     this.physics.add.overlap(this.lumi.sprite, this.reefClusterSpawner.coinGroup, (_lumiObj, coinObj) => {
       this.coinCount += 1;
       this.coinText.setText(`Monedas: ${this.coinCount}`);
@@ -433,15 +434,14 @@ export class PondScene extends Phaser.Scene {
     tiburon: "Te ha mordido un tiburón...",
     calamar: "Un calamar te ha atrapado...",
     erizo: "Te has pinchado con un erizo...",
-    coral: "Has chocado contra el coral...",
   };
 
-  /** Punto de entrada de los 5 peligros (medusa/tiburón/calamar/erizo/
-   * coral): si
+  /** Punto de entrada de los 4 peligros (medusa/tiburón/calamar/erizo): si
    * hay escudo activo, lo consume y no pasa nada más; si Lumi está
    * invulnerable tras un golpe reciente, se ignora; si no, resta una vida
-   * (game over solo si era la última — ver takeDamage). El pez grande y la
-   * corriente NO pasan por aquí, no son peligros que quiten vida. */
+   * (game over solo si era la última — ver takeDamage). El pez grande, la
+   * corriente y el arrecife NO pasan por aquí, no son peligros que quiten
+   * vida (el arrecife solo bloquea físicamente, ver collider más arriba). */
   private handleHazardHit(reason: DeathReason, sourceSprite?: Phaser.GameObjects.Components.Transform) {
     if (this.isDying || this.isGameOver) return;
     if (this.time.now < this.shieldGraceUntil) return;
@@ -471,10 +471,8 @@ export class PondScene extends Phaser.Scene {
     }
 
     // Empujoncito hacia atrás para separarla del peligro que la golpeó —
-    // lejos de la fuente cuando el peligro tiene sprite propio (los 4
-    // animales), o en la dirección opuesta a la que ya llevaba (coral,
-    // que no tiene un único trozo que señalar) o aleatoria si estaba
-    // quieta.
+    // lejos de la fuente (los 4 animales, todos con sprite propio), o
+    // aleatoria si estaba quieta.
     const body = this.lumi.sprite.body as Phaser.Physics.Arcade.Body;
     const awayX = sourceSprite ? this.lumi.sprite.x - sourceSprite.x : -body.velocity.x;
     const direction = awayX === 0 ? (Math.random() < 0.5 ? -1 : 1) : Math.sign(awayX);

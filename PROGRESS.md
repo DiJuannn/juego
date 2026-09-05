@@ -350,6 +350,48 @@ funciona **hoy**, verificado en el código — no lo que el diseño aspira a ten
   Paso manual pendiente del usuario (una vez): activar "GitHub Actions"
   como fuente en Settings → Pages del repo — después la URL
   `https://dijuannn.github.io/juego/` queda siempre actualizada.
+- **Lumi -10%, mundo mucho más angosto, arrecife sin daño** — pedido
+  explícito tras confirmar que el despliegue ya funciona: "toca
+  empequeñar a lumi un 10% y que sea más pequeño el mapa, hacerlo más
+  angosto el límite... ahora hay mucho mapa para desplazarse lateralmente
+  que haya muchísimo menos. Y que los obstáculos no te hagan daño."
+  - `LUMI_SCALE` (`GameConfig.ts`): `0.075 * 3 * 1.2` → `0.075 * 3 * 1.2 *
+    0.9` (10% menos sobre el tamaño ya aprobado). Verificado leyendo
+    `lumi.sprite.scale`/`displayWidth` en runtime.
+  - `WORLD_WIDTH` (`GameConfig.ts`): `1376` → `600`. Antes coincidía con
+    el ancho nativo de `background_far.png`/`rocks_back.png`, pero dejaba
+    muchísimo margen lateral antes de tocar cualquier obstáculo de
+    `ReefTemplates.ts` (que salen de los bordes del mundo). `background_far`
+    no depende de este valor (TileSprite anclado a cámara); `rocks_back`
+    sí, pero al ser una sola imagen centrada un mundo más angosto solo la
+    recoloca. Riesgo evaluado antes de tocar nada: las posiciones de
+    piezas en `ReefTemplates.ts` son fracciones de `worldWidth`
+    (`worldWidth * 0.28`, etc.) así que el espacio absoluto entre piezas
+    se redujo, pero la escala de render de cada pieza (independiente del
+    ancho de mundo) se dejó intacta a propósito — verificado con capturas
+    con la cámara en zoom `405/600` (ancho de mundo completo visible) de
+    las 4 plantillas de `REEF_TEMPLATES` en sus posiciones reales del
+    Tramo 1: ninguna se ve amontonada ni solapada de forma rota.
+  - **Arrecife ya no hace daño** (`PondScene.ts`): el
+    `physics.add.overlap(lumi, reefClusterSpawner.group, () =>
+    handleHazardHit("coral"))` se cambió por un
+    `physics.add.collider(lumi, reefClusterSpawner.group)` simple — sigue
+    siendo un obstáculo físico sólido (Lumi no lo atraviesa, hay que
+    rodearlo o pasar por el hueco de la composición), pero tocarlo ya no
+    resta vidas ni dispara la secuencia de golpe/muerte. Se limpiaron los
+    restos muertos de `"coral"` como `DeathReason` (el tipo, el mensaje en
+    `DEATH_MESSAGES`, comentarios que lo mencionaban) ya que
+    `reefClusterSpawner.group` es el único sitio que lo usaba
+    (`CoralSpawner.ts`, código legado sin usar, no lo referenciaba).
+    Verificado con Playwright: teletransportando a Lumi encima de una
+    pieza real del grupo y dejando correr la física 30 frames, las vidas
+    se mantienen en 3, `isGameOver`/`isDying` siguen en `false`, y la
+    posición de Lumi se desplaza (el collider la empuja fuera de la
+    pieza) — confirma bloqueo físico sin daño.
+  - `npx tsc --noEmit` limpio. Playtest automático (bot con zigzag
+    aleatorio) ya no muere cerca del primer cúmulo de arrecife como antes
+    (llegaba a morir sobre altura ~150-250); en esta pasada superó altura
+    292 sin game over dentro de la ventana de prueba.
 
 # PENDIENTE
 

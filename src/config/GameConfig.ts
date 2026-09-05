@@ -9,10 +9,16 @@
 export const GAME_WIDTH = 405;
 export const GAME_HEIGHT = 720;
 
-// El ancho coincide EXACTAMENTE con el de los PNG de fondo (1376px) para
-// poder colocarlos una sola vez, a su resolución real, sin estirarlos ni
-// repetirlos en mosaico (eso fue lo que se veía mal antes).
-export const WORLD_WIDTH = 1376;
+// Antes coincidía con el ancho nativo del fondo (1376px), pero eso dejaba
+// muchísimo margen para desplazarse de lado a lado antes de llegar a
+// cualquier obstáculo lateral — pedido explícito del usuario: un mundo
+// mucho más angosto, para que los obstáculos que "salen de los laterales"
+// (ver ReefTemplates.ts) estén realmente cerca sea cual sea el lado en el
+// que esté Lumi. background_far.png ya no depende de este valor (es un
+// TileSprite anclado a la cámara, no al mundo, ver ParallaxLayer) —
+// rocks_back.png sí se ancla a WORLD_WIDTH/2, pero al ser una sola imagen
+// centrada, un mundo más estrecho solo la recoloca, no la rompe.
+export const WORLD_WIDTH = 600;
 
 // Juego de escalada infinita: no hay un "final" del mundo hacia arriba, así
 // que el límite de físicas es simplemente muy alto — nadie llega tan lejos
@@ -27,9 +33,10 @@ export const WORLD_HEIGHT = 2_000_000;
 export const START_Y = 700;
 
 // Pedido explícito del usuario: tamaño final, un 20% más sobre el "mucho
-// más grande" anterior (0.075*3). Supera bastante el "10-15% de la
-// pantalla" de STYLE_GUIDE.md — avisado, no es un descuido.
-export const LUMI_SCALE = 0.075 * 3 * 1.2;
+// más grande" anterior (0.075*3), y luego un 10% menos (pedido posterior:
+// "empequeñar a lumi un 10%"). Supera bastante el "10-15% de la pantalla"
+// de STYLE_GUIDE.md — avisado, no es un descuido.
+export const LUMI_SCALE = 0.075 * 3 * 1.2 * 0.9;
 
 // Pedido explícito: Lumi se sentía lenta. Subido de 220 a 260, y de nuevo
 // tras seguir sintiéndose lenta a 310.
