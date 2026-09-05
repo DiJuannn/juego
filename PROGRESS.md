@@ -695,6 +695,35 @@ funciona **hoy**, verificado en el código — no lo que el diseño aspira a ten
     entre ambos, no aparecen pegados. Playtest automático completó el
     recorrido (altura 705 sin game over en la ventana de prueba, frente a
     reef/densidad previa). `npx tsc --noEmit` limpio.
+- **Tres pedidos explícitos más en la misma línea**: "Hazlo mucho mucho
+  más separado y un 15% mas ancho. y el propulsor del nenúfar bájale un
+  20%".
+  - **Aún más espacio**: ×2 adicional sobre el ×1.6 de la ronda anterior
+    (×3.2 acumulado desde el valor original) en `Zone1Level.ts` (todos
+    los offsets y `ZONE1_LEVEL_END_OFFSET`) y en `GameConfig.ts`
+    (`CAMERA_RISE_RAMP_ALTITUDE`, `CURRENT_ZONE_START_OFFSET`,
+    `SHARK_CHASE_MIN_OFFSET`, y los `MIN_GAP`/`MAX_GAP` de medusa/erizo/
+    tiburón/calamar/pez grande/ReefCluster). La Zona 1 ahora termina en
+    altura ~2080 (antes ~1040, antes de eso ~650). Las X laterales de
+    cada entrada NO se tocaron (no dependen del espaciado vertical).
+  - **`WORLD_WIDTH` un 15% más ancho**: `600` → `600 * 1.15` (690).
+    Verificado leyendo `physics.world.bounds.width` en juego (690 exacto,
+    `camWidth` sigue en 405 — el mundo es más ancho que la pantalla, no
+    al revés). Las X hardcodeadas de `Zone1Level.ts` (rango ~110-490)
+    siguen dentro de los límites del mundo nuevo sin tocarlas — no hacía
+    falta reescalarlas.
+  - **Propulsor del nenúfar -20%**: nuevo `LILY_PAD_BOOST_MULT=0.8`
+    (`GameConfig.ts`), usado SOLO en `Lumi.triggerBoost()` (el nenúfar) —
+    `Lumi.triggerSuperBoost()` (el power-up de boost) sigue usando su
+    propio `SUPER_BOOST_SPEED_MULT` sin tocar, ya que el usuario dijo
+    específicamente "el propulsor del nenúfar", no el power-up. Antes
+    `triggerBoost()` fijaba `boostSpeedMult=1`; ahora fija
+    `LILY_PAD_BOOST_MULT`. Verificado en juego: velocidad del primer
+    frame de impulso pasó de 1168.7 a 934.96 (exactamente ×0.8).
+  - `npx tsc --noEmit` limpio. Playtest automático sigue completando el
+    recorrido sin errores. Captura del mismo hueco reef→medusa muestra
+    ahora agua completamente abierta (ni siquiera se alcanza a ver el
+    cúmulo de arrecife en el mismo encuadre).
 
 # PENDIENTE
 

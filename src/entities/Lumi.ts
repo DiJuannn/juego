@@ -1,5 +1,6 @@
 import Phaser from "phaser";
 import {
+  LILY_PAD_BOOST_MULT,
   LUMI_DRIFT_SPEED,
   LUMI_SCALE,
   LUMI_SWIM_SPEED,
@@ -73,7 +74,7 @@ export class Lumi {
   /** Impulso al tocar un nenúfar: un empujón hacia arriba, tipo "jump". */
   triggerBoost() {
     this.boostRemainingMs = BOOST_DURATION_MS;
-    this.boostSpeedMult = 1;
+    this.boostSpeedMult = LILY_PAD_BOOST_MULT;
   }
 
   /** Power-up de impulso vertical (ver BoostPickup): mismo mecanismo que el

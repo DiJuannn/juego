@@ -18,8 +18,8 @@
 //   las X de aquí en adelante caen dentro de [~110,490], con margen real
 //   respecto a ambos bordes.
 //
-// Tramo 1 (0-6320): el original de la primera versión, con las X ya
-// corregidas. Tramo 2 (6320-10400): introduce el calamar y cierra con un
+// Tramo 1 (0-12640): el original de la primera versión, con las X ya
+// corregidas. Tramo 2 (12640-20800): introduce el calamar y cierra con un
 // gauntlet justo antes de la corriente de agua (ver
 // CURRENT_ZONE_START_OFFSET) — mismo criterio de densidad y descansos que
 // el Tramo 1, pero con datos (huecos deliberados) en vez de las bandas de
@@ -28,24 +28,24 @@
 // azar).
 //
 // Pedido explícito: "reestructuremos el nivel... hay que darle espacio a
-// las cosas, que todo esté mucho más separado, está todo muy pegado".
-// Todos los offsets de abajo (y el propio ZONE1_LEVEL_END_OFFSET) están
-// multiplicados ×1.6 respecto a la versión anterior: los huecos se
-// diseñaron cuando Lumi nadaba más despacio (220-310px/seg); al subir
-// LUMI_SWIM_SPEED a 403 sin re-tocar las distancias, el mismo hueco en
-// píxeles se cruzaba mucho más rápido — de ahí que se sintiera "pegado"
-// aunque los números en sí no habían cambiado. Las X laterales NO se
-// tocan (siguen dentro de los límites reales del mundo, eso no depende de
-// la velocidad de Lumi).
+// las cosas, que todo esté mucho más separado, está todo muy pegado", y
+// tras una primera pasada (×1.6): "hazlo mucho mucho más separado" — ×2
+// adicional sobre eso (×3.2 acumulado desde el valor original). Los
+// huecos se diseñaron cuando Lumi nadaba más despacio (220-310px/seg); al
+// subir LUMI_SWIM_SPEED a 403 sin re-tocar las distancias, el mismo hueco
+// en píxeles se cruzaba mucho más rápido — de ahí que se sintiera
+// "pegado" aunque los números en sí no habían cambiado. Las X laterales
+// NO se tocan (siguen dentro de los límites reales del mundo, eso no
+// depende de la velocidad de Lumi ni del espaciado vertical).
 //
 // Alturas de los ReefCluster calculadas para que sus bandas (yTop/yBottom,
 // ±230/250/300px según plantilla, un valor FIJO que no escala con lo
-// anterior) no se solapen entre sí — con los huecos ×1.6 el margen libre
-// entre cúmulos es ahora mayor que antes, no menor. Los peligros
+// anterior) no se solapen entre sí — con los huecos ×3.2 el margen libre
+// entre cúmulos es ahora mucho mayor que antes, no menor. Los peligros
 // "compañeros" de cada ReefCluster se colocan justo fuera de esa banda,
 // nunca dentro — así nunca tapan sin querer el único carril seguro del
 // cúmulo.
-export const ZONE1_LEVEL_END_OFFSET = 6500 * 1.6;
+export const ZONE1_LEVEL_END_OFFSET = 6500 * 1.6 * 2;
 
 export type Zone1LevelEntryType = "jellyfish" | "urchin" | "shark" | "squid" | "bigfish" | "reef";
 
@@ -63,39 +63,39 @@ export interface Zone1LevelEntry {
 }
 
 export const ZONE1_LEVEL_ENTRIES: Zone1LevelEntry[] = [
-  // --- Tramo 1 (0-6320) ---
+  // --- Tramo 1 (0-12640) ---
   // Primer combo: ya hay algo que esquivar desde el principio.
-  { type: "reef", offset: 480, reefTemplate: 0 }, // diagonalLeft — banda ~[230,730]
-  { type: "jellyfish", offset: 1040, x: 250 }, // justo tras salir del cúmulo 1
+  { type: "reef", offset: 960, reefTemplate: 0 }, // diagonalLeft — banda ~[710,1210]
+  { type: "jellyfish", offset: 2080, x: 250 }, // justo tras salir del cúmulo 1
 
-  { type: "reef", offset: 1600, reefTemplate: 3 }, // lateralWall — banda ~[1300,1900]
-  { type: "urchin", offset: 2160, x: 300 },
+  { type: "reef", offset: 3200, reefTemplate: 3 }, // lateralWall — banda ~[2900,3500]
+  { type: "urchin", offset: 4320, x: 300 },
 
-  { type: "reef", offset: 2720, reefTemplate: 1 }, // centerTwoPaths — banda ~[2490,2950]
-  { type: "jellyfish", offset: 3280, x: 250 },
+  { type: "reef", offset: 5440, reefTemplate: 1 }, // centerTwoPaths — banda ~[5210,5670]
+  { type: "jellyfish", offset: 6560, x: 250 },
 
-  { type: "reef", offset: 3840, reefTemplate: 2 }, // sCurveEdges — banda ~[3540,4140]
-  { type: "shark", offset: 4400, x: 300 },
+  { type: "reef", offset: 7680, reefTemplate: 2 }, // sCurveEdges — banda ~[7380,7980]
+  { type: "shark", offset: 8800, x: 300 },
 
-  { type: "reef", offset: 4960, reefTemplate: 0 }, // diagonalLeft — banda ~[4710,5210]
+  { type: "reef", offset: 9920, reefTemplate: 0 }, // diagonalLeft — banda ~[9670,10170]
 
-  // Tramo final (5600-6320): combo denso en zigzag, cierra el capítulo.
-  { type: "bigfish", offset: 5600, x: 350 },
-  { type: "urchin", offset: 5840, x: 150 },
-  { type: "jellyfish", offset: 6080, x: 450 },
-  { type: "urchin", offset: 6320, x: 250 },
+  // Tramo final (11200-12640): combo denso en zigzag, cierra el capítulo.
+  { type: "bigfish", offset: 11200, x: 350 },
+  { type: "urchin", offset: 11680, x: 150 },
+  { type: "jellyfish", offset: 12160, x: 450 },
+  { type: "urchin", offset: 12640, x: 250 },
 
-  // --- Tramo 2 (6320-10400): debut del calamar, cierra con la corriente ---
-  { type: "reef", offset: 7040, reefTemplate: 1 }, // centerTwoPaths — banda ~[6810,7270]
-  { type: "squid", offset: 7520, x: 300 }, // debut del calamar
+  // --- Tramo 2 (12640-20800): debut del calamar, cierra con la corriente ---
+  { type: "reef", offset: 14080, reefTemplate: 1 }, // centerTwoPaths — banda ~[13850,14310]
+  { type: "squid", offset: 15040, x: 300 }, // debut del calamar
 
-  { type: "reef", offset: 8160, reefTemplate: 2 }, // sCurveEdges — banda ~[7860,8460]
-  { type: "urchin", offset: 8720, x: 200 },
-  { type: "squid", offset: 9040, x: 420 },
+  { type: "reef", offset: 16320, reefTemplate: 2 }, // sCurveEdges — banda ~[16020,16620]
+  { type: "urchin", offset: 17440, x: 200 },
+  { type: "squid", offset: 18080, x: 420 },
 
-  { type: "reef", offset: 9600, reefTemplate: 3 }, // lateralWall — banda ~[9300,9900]
+  { type: "reef", offset: 19200, reefTemplate: 3 }, // lateralWall — banda ~[18900,19500]
 
-  // Gauntlet final antes de la corriente (10400).
-  { type: "jellyfish", offset: 10160, x: 300 },
-  { type: "bigfish", offset: 10400, x: 450 },
+  // Gauntlet final antes de la corriente (20800).
+  { type: "jellyfish", offset: 20320, x: 300 },
+  { type: "bigfish", offset: 20800, x: 450 },
 ];
