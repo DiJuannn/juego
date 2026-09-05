@@ -65,38 +65,42 @@ funciona **hoy**, verificado en el código — no lo que el diseño aspira a ten
   quedan intactos sin usarse por si hay que revertir): **prototipo con 4
   composiciones** (diagonal desde un lado, masa central con dos caminos,
   curva en S entrando por los bordes, y pared lateral que crece desde un
-  borde del mundo — la más nueva, pedido explícito del usuario: "objetos
-  que salen por la izquierda o laterales... haciendo que el ajolote tenga
-  que cambiar de ruta"), con 4 capas de profundidad (fondo/decoración/
-  obstáculo/primer plano). Primera tanda de piezas (`coral_fan`/
-  `rock_cluster`/`seaweed_frond`) rechazada por el usuario ("horribles, no
-  funcionan como obstáculos de mapa") — sustituida por un conjunto nuevo
-  generado ENCADENANDO referencias (cada pieza usa la anterior como ancla)
-  para que se lean como un conjunto correlacionado y con más presencia
-  visual: `coral_mass` (masa densa, pieza principal), `rock_formation`,
-  `coral_mound`, `kelp_frond`. Moneda también rediseñada (perla dorada
-  nacarada) y reducida de escala 0.11 a 0.08 — a la escala vieja medían
-  más que la separación entre monedas del grupo y se solapaban. Verificado
-  con Playwright: las 4 plantillas ciclan sin repetirse, piezas
-  sustanciales y correlacionadas, monedas sin solape, la pared lateral se
-  lee claramente "saliendo del borde" en ambos lados (izquierda/derecha).
+  borde del mundo), con 4 capas de profundidad (fondo/decoración/
+  obstáculo/primer plano). **Tercera tanda de piezas** tras dos rechazos
+  del usuario:
+  1. `coral_fan`/`rock_cluster`/`seaweed_frond` — "horribles, no funcionan
+     como obstáculos de mapa".
+  2. `coral_mass`/`rock_formation`/`coral_mound`/`kelp_frond` (tonos
+     salmón/coral, generados encadenando referencias para que
+     correlacionaran entre sí) — rechazados también: "elimina todos esos
+     objetos de piedra, corales, etc." El usuario pidió en su lugar rocas
+     oscuras que combinen con el fondo azul/pizarra YA existente
+     (`background_far.png`), con coral solo como acento menor — "no solo
+     corales".
+  3. **Actual**: `dark_rock_branch` (repisa alargada en diagonal),
+     `dark_rock_plain` (cúmulo de rocas sin coral), `dark_rock_tall`
+     (peñasco vertical) — roca oscura tono pizarra/azul como protagonista
+     en las tres, igual que los arcos de piedra del fondo, con pequeños
+     acentos de coral/anémona de color como mucho. Moneda también
+     rediseñada (perla dorada nacarada) y reducida de escala 0.11 a 0.08.
+  Verificado con Playwright: las 4 plantillas ciclan sin repetirse, se
+  integran visualmente con el fondo existente (en vez de destacar encima
+  de él), la pared lateral se lee claramente "saliendo del borde" en
+  ambos lados, playtest automatizado sigue pasando sin problema.
   **Pendiente de aprobación visual del usuario antes de generalizarlo al
   resto de la Zona 1** — es el pedido explícito, no está aprobado todavía.
-  Dirección de arquitectura ya confirmada por el usuario: el fondo pintado
-  (ver siguiente punto) es decoración pura, `ReefCluster` sigue siendo el
-  sistema real de colisión.
-- Primer fondo de escena pintado con Gemini (formato vertical 9:16, sin
-  transparencia — ver `scripts/gen_asset.py --background --aspect-ratio`,
-  ambos flags nuevos) generado a partir de un prompt del usuario. Resultado
-  aprobado visualmente pero **todavía no integrado en el juego** (solo en
-  `/tmp`, no en `assets/`) — falta generar más secciones variadas para el
-  scroll infinito y decidir cómo se ancla/recicla verticalmente.
+- Se abandonó la idea de un fondo de escena pintado como imagen única
+  (se había generado un primer ejemplo con Gemini, nunca integrado) — el
+  usuario confirmó explícitamente que quiere mantener el fondo actual
+  (`background_far.png`/`rocks_back.png`, sin cambios) y que los
+  obstáculos de `ReefCluster` sean lo único que "sale" de vez en cuando.
+  `scripts/gen_asset.py` conserva los flags `--background`/`--aspect-ratio`
+  añadidos para ese intento (útiles para cualquier fondo futuro), pero no
+  hay ningún plan activo de generar más secciones pintadas.
 
 # PENDIENTE
 
 - Aprobación del usuario del prototipo de `ReefCluster` (ver EN PROGRESO).
-- Generar más secciones del fondo pintado + integrarlo en el juego
-  (reemplaza o complementa a `background_far.png`/`rocks_back.png`).
 - Arte y diseño propios para la Zona 2 ("Arrecife") en adelante.
 - Conectar la animación de "dormir" (`sleep/`, el asset ya existe) a un trigger
   real de inactividad del jugador — hoy no se usa en ningún sitio del código.
@@ -113,19 +117,17 @@ funciona **hoy**, verificado en el código — no lo que el diseño aspira a ten
 
 # PRÓXIMA TAREA
 
-Dirección de arquitectura ya confirmada por el usuario (fondo pintado =
-decoración pura, `ReefCluster` = colisión real, con piezas entrando desde
-los laterales) — falta:
+Esperar la aprobación visual del usuario sobre la tercera tanda de piezas
+de `ReefCluster` (rocas oscuras tono pizarra, ver EN PROGRESO) antes de
+generalizar el sistema al resto de la Zona 1 — no hacerlo sin ese visto
+bueno explícito. El fondo (`background_far.png`/`rocks_back.png`) se
+queda tal cual, sin cambios — confirmado por el usuario, no tocar.
 
-1. Generar más secciones del fondo pintado (formato vertical, mismo estilo
-   que la primera aprobada) e integrarlas en el juego (`assets/`, wiring en
-   `ParallaxLayer`/`BootScene`), decidiendo cómo se reciclan verticalmente
-   para el scroll infinito.
-2. Retomar el prototipo de `ReefCluster` (4 plantillas, ver EN PROGRESO):
-   sigue pendiente de aprobación visual antes de generalizarlo al resto de
-   la Zona 1 — no generalizar sin ese visto bueno explícito.
+Si se aprueba: sustituir del todo `CoralWall`/`CoralSpawner` por
+`ReefClusterSpawner` en el resto de la progresión de Zona 1. Si se pide
+ajustar algo más (más piezas oscuras variadas, otra composición), iterar
+sobre las 4 plantillas antes de generalizar.
 
 Después de eso: corregir la continuidad del fondo actual (franja decorada
-seguida de un tramo largo vacío) — puede que quede resuelto de paso al
-generar las nuevas secciones del punto 1. Ver detalle en GAME_DESIGN.md
-(sección ENVIRONMENT).
+seguida de un tramo largo vacío antes de repetirse) — ver detalle en
+GAME_DESIGN.md (sección ENVIRONMENT).
