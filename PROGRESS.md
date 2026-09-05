@@ -1004,6 +1004,47 @@ funciona **hoy**, verificado en el código — no lo que el diseño aspira a ten
     incluye las 5 imágenes nuevas, playtest automático completa el
     recorrido, y capturas de las 4 plantillas confirmando composición
     legible y sin amontonamiento.
+- **Segunda pasada: seguía viéndose amontonado, y rediseño de los 4
+  "corales rama"** (pedido explícito: "pones todos los obstaculos encima
+  de otros todos juntos... no queda bonito asi todo apeñuzcado... REDISEÑA
+  TODOS LOS CORALES TMB PARA QUE NO IMPORTA COMO SE PONGAN QUEDEN BIEN").
+  - **`reef_coral_branch`/`reef_branch_straight`/`reef_branch_hook`/
+    `reef_branch_short` rediseñados por completo**: los 4 eran un brazo
+    largo y direccional con coral concentrado solo en una punta — el MISMO
+    problema estructural que ya se arregló en `boulder_rock` (una
+    composición pensada para un contexto fijo, no reutilizable en
+    cualquier orientación). Nuevos diseños, todos cúmulos compactos y
+    omnidireccionales: arbusto de coral rosa, coral cerebro lavanda/verde,
+    bola de coral tubular, bola de coral de encaje fino. Dos de los 4
+    tuvieron huecos de fondo atrapados entre ramas que se corrigieron con
+    la misma técnica de rondas anteriores (uno necesitaba SOLO el borde
+    limpio, el otro — el de encaje, con huecos intencionados entre
+    ramitas — necesitaba también limpiar el interior, al revés que el
+    resto de esta sesión: ahí el hueco blanco SÍ era el defecto, no un
+    detalle real).
+  - **Causa real del amontonamiento, encontrada con capturas**: las piezas
+    viejas eran un brazo delgado — poca "masa" pintada por unidad de
+    escala nominal. Las piezas nuevas (rediseñadas sin base + las 4
+    piezas nuevas de la ronda anterior) son cúmulos redondos y rellenos:
+    a la MISMA escala nominal ocupan muchísimo más espacio en pantalla —
+    confirmado con una captura donde una sola pieza de coral llegaba a
+    ocupar más de media altura de pantalla ella sola. Se añadió
+    `GLOBAL_PACK_SCALE` (×0.5) en el único punto por el que pasan todas
+    las piezas (`piece()`), en vez de recalcular a mano decenas de valores
+    — deja cada pieza en ~110-150px de lado, similar al tamaño ya
+    aceptado de un erizo/medusa.
+  - **Reposicionamiento puntual** en las 4 plantillas: las piezas de
+    acompañamiento (antes pegadas a 90-150px del cúmulo principal) se
+    movieron a los extremos menos ocupados de cada banda vertical (p.ej.
+    la anémona de `diagonalLeft` pasó de estar pegada a la roca+rama a ir
+    arriba del todo, lejos de ambas).
+  - Verificado con una nueva utilidad de captura que aísla una sola
+    plantilla a la vez (forzando el cursor interno del spawner lejos antes
+    de generarla, para que la cadencia automática no rellene cúmulos de
+    más en el encuadre): las 4 plantillas se ven ahora con piezas
+    separadas y legibles, ninguna domina la composición. `npx tsc
+    --noEmit` limpio, build de producción real, playtest automático
+    completa el recorrido.
 - **El usuario reportó "otra vez ese bug" tras el fix anterior** — el
   workflow de GitHub Actions confirmó que el deploy de ese commit se
   completó bien (`success`), así que el archivo corregido SÍ estaba

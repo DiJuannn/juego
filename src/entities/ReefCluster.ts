@@ -36,15 +36,20 @@ const DEPTH_BY_ROLE: Record<ReefDepthRole, number> = {
  * silueta real"), pero en fracción en vez de píxeles fijos para que sirva
  * con cualquier escala/reutilización. Aproximado a ojo sobre cada asset. */
 const HITBOX_FRACTION: Record<string, [number, number, number, number]> = {
-  reef_coral_branch: [0.0, 0.0, 0.95, 0.9],
   // Rediseñado (pedido explícito: "ponle una base o sin base para que en
   // el lado que estén no queden mal puestos") — cúmulo redondeado
   // omnidireccional en vez de un montículo con base plana, se lee bien
   // rotado 90º en cualquier dirección. bbox medido sobre el nuevo PNG.
   reef_boulder_rock: [0.18, 0.28, 0.82, 0.78],
-  reef_branch_straight: [0.0, 0.05, 0.98, 0.95],
-  reef_branch_hook: [0.0, 0.0, 0.95, 0.95],
-  reef_branch_short: [0.0, 0.0, 0.95, 0.95],
+  // Familia "rama" rediseñada por completo (pedido explícito: "REDISEÑA
+  // TODOS LOS CORALES... QUE NO IMPORTA COMO SE PONGAN QUEDEN BIEN"): los
+  // 4 eran un brazo largo y direccional con coral solo en una punta (el
+  // mismo problema que tenía boulder_rock) — ahora son cúmulos compactos
+  // de coral, cada uno omnidireccional, bbox medido sobre el PNG nuevo.
+  reef_coral_branch: [0.176, 0.268, 0.853, 0.738],
+  reef_branch_straight: [0.177, 0.188, 0.819, 0.8],
+  reef_branch_hook: [0.152, 0.225, 0.843, 0.76],
+  reef_branch_short: [0.153, 0.19, 0.834, 0.817],
   // Estrella/piedra pasaron de decoración a obstáculo real (pedido
   // explícito del usuario) — necesitan su propia caja de colisión, igual
   // que el resto de piezas de esta tabla.

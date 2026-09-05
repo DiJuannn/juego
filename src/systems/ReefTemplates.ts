@@ -21,8 +21,21 @@ import type { ReefClusterSpec, ReefPieceSpec } from "@/entities/ReefCluster";
 const JITTER_SCALE = 0.06;
 const JITTER_ROT = 0.05;
 
+// Pedido explícito: "pones todos los obstaculos encima de otros todos
+// juntos... no queda bonito asi todo apeñuzcado". Causa real (confirmada
+// con capturas): las piezas viejas (branch_*) eran un brazo largo y
+// DELGADO — poca "masa" pintada real por unidad de escala nominal. Las
+// piezas nuevas (rediseñadas sin base, más las 4 nuevas) son cúmulos
+// REDONDOS Y RELLENOS — a la misma escala nominal ocupan muchísimo más
+// espacio en pantalla (confirmado: con el primer ajuste, ×0.8, una sola
+// pieza de coral llegaba a ocupar más de media altura de pantalla). Bajado
+// a ×0.5 — con esto una pieza "obstacle" mide ~110-150px de lado, similar
+// al tamaño ya aceptado de un erizo/medusa (ver URCHIN_SCALE), en vez de
+// dominar la composición ella sola.
+const GLOBAL_PACK_SCALE = 0.5;
+
 function jitterScale(base: number): number {
-  return base * (1 + Phaser.Math.FloatBetween(-JITTER_SCALE, JITTER_SCALE));
+  return base * GLOBAL_PACK_SCALE * (1 + Phaser.Math.FloatBetween(-JITTER_SCALE, JITTER_SCALE));
 }
 
 function jitterRot(base: number): number {
@@ -157,12 +170,11 @@ function diagonalLeft(worldWidth: number, centerY: number): ReefClusterSpec {
       role: "obstacle",
     }),
     // Pedido explícito: "no los acumules todos en un mismo sitio, piensa
-    // dónde poner cada uno" — cada plantilla tiene su propio reparto de
-    // piezas secundarias en vez de repetir siempre estrella+piedra en las
-    // 4. Una sola pieza grande de acompañamiento (no dos, para no
-    // amontonar el cúmulo) — anémona, nunca sobre la ruta guía (que va por
-    // la derecha, 0.63-0.73W).
-    piece({ key: "anemone", x: fromEdge(worldWidth, "left", 0.26), y: centerY + 100, scale: 0.3, role: "obstacle" }),
+    // dónde poner cada uno" (y, tras verla amontonada con la roca+rama en
+    // la primera versión: "no queda bonito asi todo apeñuzcado") — la
+    // anémona va arriba del todo, lejos de la roca (y+160) y la rama
+    // (y-40), en vez de justo al lado.
+    piece({ key: "anemone", x: fromEdge(worldWidth, "left", 0.14), y: centerY - 210, scale: 0.28, role: "obstacle" }),
   ];
 
   const path = [
@@ -210,9 +222,9 @@ function centerTwoPaths(worldWidth: number, centerY: number): ReefClusterSpec {
     // demás piezas de esta lista, deliberadamente NO está pegada a un
     // lateral: el hueco libre a su alrededor sigue siendo amplio de sobra.
     piece({ key: "decor_pebble", x: worldWidth * 0.5, y: centerY + 200, scale: 0.3, role: "obstacle" }),
-    // Pieza nueva: concha pegada a la masa de la izquierda, lejos de la
-    // ruta guía (serpentea por 0.3-0.68W).
-    piece({ key: "decor_shell", x: fromEdge(worldWidth, "left", 0.09), y: centerY - 100, scale: 0.26, role: "obstacle" }),
+    // Pieza nueva: concha bien arriba de la roca (y+50), lejos de la ruta
+    // guía (serpentea por 0.3-0.68W) y sin pegarse al cúmulo de abajo.
+    piece({ key: "decor_shell", x: fromEdge(worldWidth, "left", 0.06), y: centerY - 190, scale: 0.24, role: "obstacle" }),
   ];
 
   // Serpentea por el centro: abajo se aparta hacia la derecha (huyendo de
@@ -261,10 +273,10 @@ function sCurveEdges(worldWidth: number, centerY: number): ReefClusterSpec {
       flipX: branchFlipX(sCurveBranchKey, true),
       role: "obstacle",
     }),
-    // Pedido explícito: "piensa dónde poner cada uno" — esponja en la
-    // banda superior, en vez de repetir la estrella que ya llevan otras
-    // plantillas.
-    piece({ key: "sponge", x: fromEdge(worldWidth, "right", 0.14), y: midY - 100, scale: 0.26, role: "obstacle" }),
+    // Pedido explícito: "piensa dónde poner cada uno" — esponja pegada al
+    // techo de la banda, lejos de la rama media (midY-30) y del cúmulo
+    // superior (topY, lado contrario).
+    piece({ key: "sponge", x: fromEdge(worldWidth, "right", 0.1), y: topY - 100, scale: 0.24, role: "obstacle" }),
 
     // Banda inferior: entra por la izquierda otra vez — el "distinto
     // alcance" respecto a la superior ahora lo da la decoración (la roca
@@ -277,8 +289,9 @@ function sCurveEdges(worldWidth: number, centerY: number): ReefClusterSpec {
       rotation: edgeRotation("left"),
       role: "obstacle",
     }),
-    // Balanos en la banda inferior — mismo criterio de reparto.
-    piece({ key: "barnacle", x: fromEdge(worldWidth, "left", 0.26), y: bottomY - 90, scale: 0.24, role: "obstacle" }),
+    // Balanos pegados al fondo de la banda — mismo lado que el cúmulo
+    // inferior pero bien por debajo, no encima.
+    piece({ key: "barnacle", x: fromEdge(worldWidth, "left", 0.3), y: bottomY + 110, scale: 0.22, role: "obstacle" }),
   ];
 
   // La ruta serpentea: derecha (abajo) -> izquierda (medio) -> derecha
@@ -337,12 +350,13 @@ function lateralWall(worldWidth: number, centerY: number): ReefClusterSpec {
       flipX: branchFlipX(wallBranchKey, side === "right"),
       role: "obstacle",
     }),
-    // Mismo criterio de reparto: abanico de coral (arriba), almeja gigante
-    // (medio) y estrella (abajo) — únicas en esta plantilla, repartidas en
-    // toda la banda vertical (600px) para que no se amontonen entre sí.
-    piece({ key: "coral_fan", x: fromEdge(worldWidth, side, 0.22), y: centerY - 220, scale: 0.24, role: "obstacle" }),
-    piece({ key: "giant_clam", x: fromEdge(worldWidth, side, 0.28), y: centerY + 30, scale: 0.28, role: "obstacle" }),
-    piece({ key: "decor_starfish", x: fromEdge(worldWidth, side, 0.13), y: centerY + 250, scale: 0.3, role: "obstacle" }),
+    // Mismo criterio de reparto: abanico de coral (arriba del todo), almeja
+    // gigante (justo debajo, separada de la rama en y-60) y estrella (abajo
+    // del todo) — únicas en esta plantilla, con al menos ~150px libres
+    // entre cada una para que no se amontonen.
+    piece({ key: "coral_fan", x: fromEdge(worldWidth, side, 0.16), y: centerY - 260, scale: 0.22, role: "obstacle" }),
+    piece({ key: "giant_clam", x: fromEdge(worldWidth, side, 0.3), y: centerY + 100, scale: 0.26, role: "obstacle" }),
+    piece({ key: "decor_starfish", x: fromEdge(worldWidth, side, 0.13), y: centerY + 260, scale: 0.28, role: "obstacle" }),
   ];
 
   // El carril libre queda en el lado contrario a la masa, con margen
