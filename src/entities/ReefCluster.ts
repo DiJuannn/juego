@@ -43,6 +43,74 @@ const HITBOX_FRACTION: Record<string, [number, number, number, number]> = {
   reef_branch_short: [0.0, 0.0, 0.95, 0.95],
 };
 
+/**
+ * Calcula el tamaño/offset de body que hace que un `StaticBody` (rectángulo
+ * SIN rotar) coincida con la silueta de un sprite YA GIRADO por `rotation`
+ * — pedido explícito del usuario: girar `boulder_rock` 90º según el lado
+ * para que su parte plana quede pegada al lateral.
+ *
+ * Ojo, esto NO es tan simple como "Phaser no rota el body": para un
+ * `StaticBody`, `refreshBody()` internamente llama a `sprite.getTopLeft()`,
+ * que SÍ tiene en cuenta la rotación — pero solo rota la POSICIÓN de la
+ * esquina superior-izquierda "de fábrica" (un único punto, girado alrededor
+ * del centro del sprite), sin rotar ni intercambiar el ancho/alto del
+ * rectángulo (que se quedan en `displayWidth/displayHeight`, siempre sin
+ * rotar). El resultado es un rectángulo desplazado a un punto girado pero
+ * con la forma sin girar — no coincide con la silueta real (confirmado con
+ * un probe: con `frac` de boulder_rock y 90º, el body por defecto salía
+ * centrado lejos del dibujo). Y `body.setOffset(x,y)` no coloca el body en
+ * `(x,y)` a secas: internamente hace `position -= offsetAnterior; position
+ * += offsetNuevo`, es decir, el offset se suma sobre esa posición base ya
+ * desplazada por `getTopLeft()`, no sobre la esquina sin rotar.
+ *
+ * Por eso aquí se calcula todo a mano: se giran los 4 vértices del recorte
+ * (`frac`) alrededor del centro para obtener su caja delimitadora (AABB)
+ * ya en coordenadas de mundo reales, y se le resta esa misma posición base
+ * de `getTopLeft()` (replicada aquí, girando el punto
+ * `(-displayWidth/2, -displayHeight/2)`) para obtener el offset que hay que
+ * pasarle a `setOffset` para que el resultado final caiga exactamente en el
+ * AABB deseado. Exacto para cualquier ángulo cuando el recorte ya es un
+ * rectángulo alineado a ejes (como estos), incluido el jitter de rotación
+ * de unos pocos grados que ya llevan casi todas las piezas.
+ */
+function rotatedFractionalBody(
+  tex: HTMLImageElement,
+  frac: [number, number, number, number],
+  rotation: number,
+  scale: number,
+): { w: number; h: number; offsetX: number; offsetY: number } {
+  const [fx0, fy0, fx1, fy1] = frac;
+  const dW = tex.width * scale;
+  const dH = tex.height * scale;
+  const cos = Math.cos(rotation);
+  const sin = Math.sin(rotation);
+  const rotate = (x: number, y: number): [number, number] => [x * cos - y * sin, x * sin + y * cos];
+
+  // AABB del recorte ya girado, en coordenadas de mundo centradas en el
+  // sprite (su pivote de rotación, el origen 0.5/0.5 por defecto).
+  const a = (fx0 - 0.5) * dW;
+  const b = (fx1 - 0.5) * dW;
+  const c = (fy0 - 0.5) * dH;
+  const d = (fy1 - 0.5) * dH;
+  const corners = [rotate(a, c), rotate(b, c), rotate(a, d), rotate(b, d)];
+  const xs = corners.map(([x]) => x);
+  const ys = corners.map(([, y]) => y);
+  const xmin = Math.min(...xs);
+  const ymin = Math.min(...ys);
+
+  // Posición base que `refreshBody()` ya deja en el body (su
+  // `getTopLeft()`, ver comentario arriba): la esquina sin rotar
+  // (-dW/2,-dH/2) girada alrededor del centro.
+  const [baseX, baseY] = rotate(-0.5 * dW, -0.5 * dH);
+
+  return {
+    w: Math.max(...xs) - xmin,
+    h: Math.max(...ys) - ymin,
+    offsetX: xmin - baseX,
+    offsetY: ymin - baseY,
+  };
+}
+
 export interface ReefPieceSpec {
   key: string;
   x: number;
@@ -86,20 +154,17 @@ export class ReefCluster {
 
         const frac = HITBOX_FRACTION[piece.key];
         if (frac) {
-          const tex = scene.textures.get(piece.key).getSourceImage();
-          const [fx0, fy0, fx1, fy1] = frac;
           // Phaser NO escala el tamaño/offset del body con el scale del
           // sprite (confirmado con un probe en juego: un body creado con
           // valores en píxeles nativos se queda en esos píxeles tal cual,
           // sin multiplicar por setScale) — hay que aplicar piece.scale a
           // mano aquí, si no la hitbox queda mucho más grande que el
           // dibujo visible (mismo bug que tenían Jellyfish/Urchin/Shark/
-          // Squid/BigFish, arreglado en el mismo cambio).
-          const w = tex.width * (fx1 - fx0) * piece.scale;
-          const h = tex.height * (fy1 - fy0) * piece.scale;
-          (sprite.body as Phaser.Physics.Arcade.StaticBody)
-            .setSize(w, h)
-            .setOffset(tex.width * fx0 * piece.scale, tex.height * fy0 * piece.scale);
+          // Squid/BigFish, arreglado en el mismo cambio). Tampoco rota el
+          // body con sprite.rotation, ver rotatedFractionalBody arriba.
+          const tex = scene.textures.get(piece.key).getSourceImage() as HTMLImageElement;
+          const { w, h, offsetX, offsetY } = rotatedFractionalBody(tex, frac, piece.rotation ?? 0, piece.scale);
+          (sprite.body as Phaser.Physics.Arcade.StaticBody).setSize(w, h).setOffset(offsetX, offsetY);
         }
 
         this.obstacleSprites.push(sprite);

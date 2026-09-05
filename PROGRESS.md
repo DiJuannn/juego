@@ -124,6 +124,52 @@ funciona **hoy**, verificado en el código — no lo que el diseño aspira a ten
   por fecha) antes de generar nada — si no hay archivo, pedirle que las
   suba al repo (p.ej. a `/reference`) en vez de generar de memoria/
   descripción, que ya falló dos veces por este motivo.
+  **5ª tanda, tras revisión de la 4ª por el usuario** (4 pedidos en un solo
+  mensaje):
+  1. "La textura la quitaste un poco mal": `fix_transparency.py` con su
+     `interior_hole_mask` por defecto volvió a comerse textura clara
+     legítima (bandas de brillo pastel) en las 3 variantes de rama nuevas
+     — mismo bug ya visto una vez con `coral_branch`. Rehechas las 3
+     (`branch_straight`/`branch_hook`/`branch_short`) limpiando solo el
+     borde (`border_connected_mask`, sin tocar el interior) — verificado
+     sin fantasmas ni textura perdida contra el fondo real del juego.
+     **Lección para el futuro**: con este estilo de acuarela pastel, la
+     limpieza de transparencia por defecto NO es segura — usar siempre
+     solo borde salvo que un hueco interior concreto y verificado lo
+     necesite.
+  2. "El espejo se rompe con las otras": verificado con una rejilla
+     Playwright que compara las 4 variantes lado a lado (sin espejo vs.
+     `flipX`, la pieza pegada a una línea de "borde" simulada) — con las
+     texturas ya limpias del punto 1, las 4 quedan correctamente
+     espejadas (coral pegado al borde en ambos lados). La sensación de
+     "roto" venía de las texturas dañadas del punto 1, no de la lógica de
+     `flipX` en sí — no hizo falta ningún cambio de código adicional.
+  3. "Las ramas largas más pequeñas": añadido `branchScale()` en
+     `ReefTemplates.ts` — las 3 variantes largas (`reef_coral_branch`,
+     `reef_branch_straight`, `reef_branch_hook`) se colocan al 85% de la
+     escala pedida; `reef_branch_short` (ya compacta) se queda igual.
+  4. "Girar `boulder_rock` 90º según el lado, para que la parte plana
+     quede pegada al lateral": añadida rotación (`±90°` según el lado) en
+     la pieza de roca pegada al borde de `lateralWall`. Esto exigió
+     arreglar cómo `ReefCluster.ts` calcula la hitbox de piezas giradas:
+     un `StaticBody` de Arcade Physics NO gira su rectángulo con
+     `sprite.rotation`, y además `refreshBody()` deja el body en una
+     posición ya desplazada (vía `sprite.getTopLeft()`, que sí tiene en
+     cuenta la rotación para un único punto, pero sin girar ni
+     intercambiar ancho/alto) — un primer intento de "intercambiar
+     ancho/alto si la rotación es ~90°" (sin tener esto en cuenta)
+     quedaba con la hitbox muy lejos del dibujo real. Arreglado con
+     `rotatedFractionalBody()`: gira a mano los 4 vértices del recorte
+     alrededor del centro del sprite para obtener su caja delimitadora en
+     coordenadas de mundo, y le resta la posición base que `refreshBody()`
+     ya dejó puesta, para que el offset final caiga exacto. Verificado con
+     un probe numérico + captura (rectángulo de debug dibujado con
+     `body.x/y/width/height` encima del sprite real, para cualquier
+     ángulo) tanto de forma aislada como a través del spawner real
+     (`ReefClusterSpawner`) — coincide con la silueta girada en ambos
+     lados.
+  Playtest automatizado (zigzag simple) sigue pasando sin golpes tras
+  estos 4 cambios.
 - Se abandonó la idea de un fondo de escena pintado como imagen única
   (se había generado un primer ejemplo con Gemini, nunca integrado) — el
   usuario confirmó explícitamente que quiere mantener el fondo actual
