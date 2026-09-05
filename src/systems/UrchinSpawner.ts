@@ -30,9 +30,20 @@ export class UrchinSpawner {
     if (this.isWithinCoralBand?.(y)) return;
     // Progresión de Zona 1 en tramos (ver Zone1Segments).
     if (!isHazardAllowed(START_Y - y)) return;
-    const x = Phaser.Math.Between(120, this.worldWidth - 120);
+    this.place(y);
+  }
+
+  /** Colocación exacta desde el nivel scripteado del Tramo 1 (ver
+   * Zone1Level.ts) — sin las comprobaciones de banda/descanso, que son
+   * solo para la generación al azar de más arriba. */
+  spawnExact(y: number, x?: number) {
+    this.place(y, x);
+  }
+
+  private place(y: number, x?: number) {
+    const finalX = x ?? Phaser.Math.Between(120, this.worldWidth - 120);
     const scale = URCHIN_SCALE * Phaser.Math.FloatBetween(0.9, 1.1);
-    const urchin = new Urchin(this.scene, x, y, scale);
+    const urchin = new Urchin(this.scene, finalX, y, scale);
     this.group.add(urchin.sprite);
     this.urchins.push(urchin);
     if (y < this.highestY) this.highestY = y;

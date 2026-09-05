@@ -2,7 +2,6 @@ import Phaser from "phaser";
 import {
   BIG_FISH_PUSH_COOLDOWN_MS,
   BIG_FISH_PUSH_STRENGTH,
-  BIG_FISH_START_OFFSET,
   BOOST_PICKUP_START_OFFSET,
   CAMERA_RISE_RAMP_ALTITUDE,
   CAMERA_RISE_SPEED_MAX,
@@ -12,17 +11,15 @@ import {
   LUMI_HIT_KNOCKBACK_STRENGTH,
   LUMI_INVULNERABILITY_MS,
   LUMI_LIVES_START,
-  REEF_CLUSTER_START_OFFSET,
-  SHARK_START_OFFSET,
   SHIELD_AURA_ALPHA,
   SHIELD_AURA_SCALE,
   SHIELD_START_OFFSET,
   SQUID_START_OFFSET,
   START_Y,
-  URCHIN_START_OFFSET,
   WORLD_HEIGHT,
   WORLD_WIDTH,
 } from "@/config/GameConfig";
+import { ZONE1_LEVEL_END_OFFSET, ZONE1_LEVEL_ENTRIES } from "@/config/Zone1Level";
 import { BigFish } from "@/entities/BigFish";
 import { Lumi } from "@/entities/Lumi";
 import { BackgroundDecorSpawner } from "@/systems/BackgroundDecorSpawner";
@@ -244,7 +241,7 @@ export class PondScene extends Phaser.Scene {
     // intactos sin usarse, por si hay que revertir). Se crea ANTES que
     // medusa/erizo para poder pasarles su comprobación de banda y que
     // nunca coloquen un animal estático encima de una ruta guía.
-    this.reefClusterSpawner = new ReefClusterSpawner(this, WORLD_WIDTH, START_Y - REEF_CLUSTER_START_OFFSET);
+    this.reefClusterSpawner = new ReefClusterSpawner(this, WORLD_WIDTH, START_Y - ZONE1_LEVEL_END_OFFSET);
     this.physics.add.overlap(this.lumi.sprite, this.reefClusterSpawner.group, () => {
       this.handleHazardHit("coral");
     });
@@ -257,7 +254,7 @@ export class PondScene extends Phaser.Scene {
     // Medusas: primer enemigo. Empiezan a aparecer algo por encima de la
     // salida (no justo donde arranca la partida) y tocarlas es game over
     // (salvo que el escudo la absorba).
-    this.jellyfishSpawner = new JellyfishSpawner(this, WORLD_WIDTH, START_Y - 600, (y) =>
+    this.jellyfishSpawner = new JellyfishSpawner(this, WORLD_WIDTH, START_Y - ZONE1_LEVEL_END_OFFSET, (y) =>
       this.reefClusterSpawner.isWithinAnyClusterBand(y),
     );
     this.physics.add.overlap(this.lumi.sprite, this.jellyfishSpawner.group, (_lumiObj, jellyObj) => {
@@ -266,7 +263,7 @@ export class PondScene extends Phaser.Scene {
 
     // Erizos: cuarto enemigo, entre la medusa y el tiburón. Casi no se
     // mueven, son un obstáculo a esquivar, no una criatura que persigue.
-    this.urchinSpawner = new UrchinSpawner(this, WORLD_WIDTH, START_Y - URCHIN_START_OFFSET, (y) =>
+    this.urchinSpawner = new UrchinSpawner(this, WORLD_WIDTH, START_Y - ZONE1_LEVEL_END_OFFSET, (y) =>
       this.reefClusterSpawner.isWithinAnyClusterBand(y),
     );
     this.physics.add.overlap(this.lumi.sprite, this.urchinSpawner.group, (_lumiObj, urchinObj) => {
@@ -275,7 +272,7 @@ export class PondScene extends Phaser.Scene {
 
     // Tiburones: segundo enemigo, más arriba que la medusa. Patrullan de
     // lado a lado en vez de solo derivar.
-    this.sharkSpawner = new SharkSpawner(this, WORLD_WIDTH, START_Y - SHARK_START_OFFSET, () => ({
+    this.sharkSpawner = new SharkSpawner(this, WORLD_WIDTH, START_Y - ZONE1_LEVEL_END_OFFSET, () => ({
       x: this.lumi.sprite.x,
       y: this.lumi.sprite.y,
     }));
@@ -285,7 +282,7 @@ export class PondScene extends Phaser.Scene {
 
     // Pez grande: NO mata, solo empuja lejos a Lumi — un estorbo, no un
     // peligro letal. Reutiliza el arte de pez decorativo a mayor escala.
-    this.bigFishSpawner = new BigFishSpawner(this, WORLD_WIDTH, START_Y - BIG_FISH_START_OFFSET);
+    this.bigFishSpawner = new BigFishSpawner(this, WORLD_WIDTH, START_Y - ZONE1_LEVEL_END_OFFSET);
     this.physics.add.overlap(this.lumi.sprite, this.bigFishSpawner.group, (_lumiObj, fishObj) => {
       this.pushLumiAway(fishObj as Phaser.Physics.Arcade.Image);
     });
@@ -295,6 +292,33 @@ export class PondScene extends Phaser.Scene {
     this.physics.add.overlap(this.lumi.sprite, this.squidSpawner.group, (_lumiObj, squidObj) => {
       this.handleHazardHit("calamar", squidObj as Phaser.Physics.Arcade.Image);
     });
+
+    // Tramo 1 de la Zona 1 (0 a ZONE1_LEVEL_END_OFFSET): nivel diseñado a
+    // mano (ver Zone1Level.ts), no generación al azar — pedido explícito
+    // del usuario ("como si fuera el Mario Maker"). A partir de aquí, los
+    // spawners de arriba retoman su cadencia aleatoria de siempre (todos
+    // arrancan justo en ZONE1_LEVEL_END_OFFSET). Coins/nenúfar/escudo/
+    // boost NO se tocan: siguen con su generación continua de siempre.
+    for (const entry of ZONE1_LEVEL_ENTRIES) {
+      const y = START_Y - entry.offset;
+      switch (entry.type) {
+        case "jellyfish":
+          this.jellyfishSpawner.spawnExact(y, entry.x);
+          break;
+        case "urchin":
+          this.urchinSpawner.spawnExact(y, entry.x);
+          break;
+        case "shark":
+          this.sharkSpawner.spawnExact(y, entry.x);
+          break;
+        case "bigfish":
+          this.bigFishSpawner.spawnExact(y, entry.x);
+          break;
+        case "reef":
+          this.reefClusterSpawner.spawnExact(y, entry.reefTemplate ?? 0);
+          break;
+      }
+    }
 
     // Corriente de agua: último obstáculo de la Zona 1. No es un overlap:
     // PondScene consulta su empuje cada frame (ver update()).

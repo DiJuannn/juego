@@ -26,9 +26,20 @@ export class BigFishSpawner {
   private spawnAt(y: number) {
     // Progresión de Zona 1 en tramos (ver Zone1Segments).
     if (!isHazardAllowed(START_Y - y)) return;
+    this.place(y);
+  }
+
+  /** Colocación exacta desde el nivel scripteado del Tramo 1 (ver
+   * Zone1Level.ts) — sin la comprobación de descanso, que es solo para la
+   * generación al azar de más arriba. */
+  spawnExact(y: number, x?: number) {
+    this.place(y, x);
+  }
+
+  private place(y: number, x?: number) {
     const scale = BIG_FISH_SCALE * Phaser.Math.FloatBetween(0.9, 1.1);
-    const x = Phaser.Math.Between(this.worldWidth * 0.3, this.worldWidth * 0.7);
-    const fish = new BigFish(this.scene, x, y, scale, PATROL_MARGIN_X, this.worldWidth - PATROL_MARGIN_X);
+    const finalX = x ?? Phaser.Math.Between(this.worldWidth * 0.3, this.worldWidth * 0.7);
+    const fish = new BigFish(this.scene, finalX, y, scale, PATROL_MARGIN_X, this.worldWidth - PATROL_MARGIN_X);
     this.group.add(fish.sprite);
     this.fish.push(fish);
     if (y < this.highestY) this.highestY = y;

@@ -72,7 +72,19 @@ export class ReefClusterSpawner {
     // Progresión de Zona 1 en tramos (ver Zone1Segments) — mismo umbral
     // que usaba el coral estrecho antes.
     if (!isHazardAllowed(START_Y - y)) return;
-    const template = REEF_TEMPLATES[this.pickTemplateIndex()];
+    this.place(y, this.pickTemplateIndex());
+  }
+
+  /** Colocación exacta desde el nivel scripteado del Tramo 1 (ver
+   * Zone1Level.ts) — plantilla elegida a mano, sin la comprobación de
+   * descanso (solo aplica a la generación al azar de más arriba). */
+  spawnExact(y: number, templateIndex: number) {
+    this.lastTemplateIndex = templateIndex;
+    this.place(y, templateIndex);
+  }
+
+  private place(y: number, templateIndex: number) {
+    const template = REEF_TEMPLATES[templateIndex];
     const spec = template(this.worldWidth, y);
     const cluster = new ReefCluster(this.scene, spec);
     for (const sprite of cluster.obstacleSprites) this.group.add(sprite);

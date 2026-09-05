@@ -35,9 +35,20 @@ export class JellyfishSpawner {
     // Progresión de Zona 1 en tramos (ver Zone1Segments): la medusa no
     // aparece en los tramos de descanso ni antes de su propia introducción.
     if (!isHazardAllowed(START_Y - y)) return;
-    const x = Phaser.Math.Between(MARGIN_X, this.worldWidth - MARGIN_X);
+    this.place(y);
+  }
+
+  /** Colocación exacta desde el nivel scripteado del Tramo 1 (ver
+   * Zone1Level.ts) — sin las comprobaciones de banda/descanso, que son
+   * solo para la generación al azar de más arriba. */
+  spawnExact(y: number, x?: number) {
+    this.place(y, x);
+  }
+
+  private place(y: number, x?: number) {
+    const finalX = x ?? Phaser.Math.Between(MARGIN_X, this.worldWidth - MARGIN_X);
     const scale = JELLYFISH_SCALE * Phaser.Math.FloatBetween(0.85, 1.15);
-    const jelly = new Jellyfish(this.scene, x, y, scale);
+    const jelly = new Jellyfish(this.scene, finalX, y, scale);
     this.group.add(jelly.sprite);
     this.jellies.push(jelly);
     if (y < this.highestY) this.highestY = y;

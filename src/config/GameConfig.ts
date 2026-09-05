@@ -81,12 +81,13 @@ export const CAMERA_RISE_SPEED_START = 42;
 export const CAMERA_RISE_SPEED_MAX = 76;
 export const CAMERA_RISE_RAMP_ALTITUDE = 10000;
 
-// Tiburones: segundo enemigo, "poco a poco" tras la medusa — empiezan a
-// aparecer más arriba (altura ~300, dentro de la Zona 1) y patrullan de
+// Tiburones: segundo enemigo, "poco a poco" tras la medusa — patrullan de
 // lado a lado en vez de solo derivar como la medusa. Patrullan un radio
 // local (no todo el ancho del mundo) para que el vaivén se note dentro del
-// tiempo que dura el encuentro, no una sola pasada en una dirección.
-export const SHARK_START_OFFSET = 3000; // px por encima de START_Y (altura ~300)
+// tiempo que dura el encuentro, no una sola pasada en una dirección. Su
+// primera aparición ya no es un *_START_OFFSET fijo: la decide el nivel
+// scripteado del Tramo 1 (ver Zone1Level.ts) — estos valores solo rigen
+// su cadencia aleatoria a partir de ahí.
 export const SHARK_MIN_GAP = 1200;
 export const SHARK_MAX_GAP = 2000;
 export const SHARK_SCALE = 0.22;
@@ -111,18 +112,19 @@ export const SQUID_MIN_GAP = 1100;
 export const SQUID_MAX_GAP = 1900;
 export const SQUID_SCALE = 0.18;
 
-// Erizos: cuarto enemigo, entre la medusa y el tiburón (altura ~150) — casi
-// no se mueven, son un obstáculo "plantado" a esquivar, no una criatura que
-// persigue.
-export const URCHIN_START_OFFSET = 1500; // altura ~150
+// Erizos: cuarto enemigo — casi no se mueven, son un obstáculo "plantado"
+// a esquivar, no una criatura que persigue. Su primera aparición la decide
+// el nivel scripteado del Tramo 1 (ver Zone1Level.ts), igual que el
+// tiburón; estos valores solo rigen su cadencia aleatoria a partir de ahí.
 export const URCHIN_MIN_GAP = 900;
 export const URCHIN_MAX_GAP = 1500;
 export const URCHIN_SCALE = 0.17;
 
 // Pez grande: reutiliza el arte de pez ya existente (fish_05) a mayor
 // escala — a diferencia del resto, tocarlo NO es game over, solo empuja a
-// Lumi lejos (un obstáculo que estorba, no que mata).
-export const BIG_FISH_START_OFFSET = 4000; // altura ~400
+// Lumi lejos (un obstáculo que estorba, no que mata). Su primera aparición
+// la decide el nivel scripteado del Tramo 1 (ver Zone1Level.ts); estos
+// valores solo rigen su cadencia aleatoria a partir de ahí.
 export const BIG_FISH_MIN_GAP = 1300;
 export const BIG_FISH_MAX_GAP = 2100;
 export const BIG_FISH_SCALE = 0.5;
@@ -150,8 +152,9 @@ export const CORAL_CHUNK_SCALE = 0.32;
 // varias piezas (coral/roca/alga) en una composición diseñada a mano, con
 // una ruta curva propia en vez de un simple hueco recto. CoralWall/
 // CoralSpawner no se borran, solo dejan de usarse, por si hay que
-// revertir. Mismos huecos de altura que el coral estrecho anterior.
-export const REEF_CLUSTER_START_OFFSET = 2200; // altura ~220
+// revertir. Sus primeras apariciones (Tramo 1) las decide el nivel
+// scripteado (ver Zone1Level.ts); estos valores solo rigen su cadencia
+// aleatoria a partir de ahí.
 export const REEF_CLUSTER_MIN_GAP = 2000;
 export const REEF_CLUSTER_MAX_GAP = 3200;
 export const REEF_COIN_SPACING = 90; // separación entre monedas a lo largo de la ruta guía

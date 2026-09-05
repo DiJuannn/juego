@@ -232,10 +232,51 @@ funciona **hoy**, verificado en el código — no lo que el diseño aspira a ten
   puntos de scroll (incluido un salto de 20000px) sin costuras visibles;
   playtest automatizado sigue pasando (background es puramente visual, no
   toca colisiones).
+- **Prototipo de `ReefCluster` aprobado** por el usuario ("MUY BIEN AHORA
+  SI") tras las 8 tandas de ajustes documentadas arriba — ya no está
+  pendiente de visto bueno.
+- **Tramo 1 de la Zona 1 diseñado a mano** (`config/Zone1Level.ts`),
+  pedido explícito: "un nivel como si fuera el Mario Maker" — sustituye a
+  la generación al azar de medusa/erizo/tiburón/pez grande/`ReefCluster`
+  SOLO en el rango 0–4000 (`ZONE1_LEVEL_END_OFFSET`); a partir de ahí esos
+  mismos spawners retoman su cadencia aleatoria de siempre (todos arrancan
+  justo en ese límite). Coins/nenúfar/escudo/boost no se tocan, siguen con
+  su generación continua de siempre. Reglas de diseño (2ª versión, tras
+  rechazar la 1ª por "no me cuadra"):
+  - Dificultad desde el minuto uno — el primer `ReefCluster` aparece a
+    altura 300, no hay tramo de agua vacía de bienvenida.
+  - Nunca un peligro solo: cada criatura queda a menos de ~400px de un
+    `ReefCluster` o de otra criatura.
+  - El tramo dura hasta altura 4000 (antes cada peligro tenía su propio
+    `*_START_OFFSET` bastante más bajo, 600-2200).
+  Contenido: 5 `ReefCluster` (uno de cada plantilla + una repetida) con
+  centros separados ~700px para que sus bandas de colisión no se solapen,
+  y 8 criaturas (3 medusas, 3 erizos, 1 tiburón, 1 pez grande) colocadas en
+  los huecos entre bandas (con ~50-100px de margen) — nunca dentro de la
+  banda de un cúmulo, para no tapar sin querer su único carril seguro.
+  Cada spawner (`Jellyfish/Urchin/Shark/BigFish/ReefClusterSpawner`) ganó
+  un método público `spawnExact(y, ...)` que reutiliza toda su lógica
+  interna (grupo, update, despawn, overlaps ya conectados en PondScene)
+  sin las comprobaciones de banda/descanso — esas son solo para la
+  generación al azar de más arriba. Verificado numéricamente (posiciones
+  exactas de las 5 bandas + 8 criaturas, todas en los huecos esperados,
+  cero solapes) y con capturas a ancho completo del mundo en cada punto de
+  combo. Playtest automatizado (zigzag simple, sin esquiva real): muere de
+  forma consistente cerca del primer `ReefCluster` (altura ~150-250) — es
+  la primera vez que ese bot ciego se enfrenta a una masa que bloquea gran
+  parte del ancho (antes solo esquivaba peligros puntuales por suerte);
+  no es evidencia sólida de que sea injusto para un jugador real que sí ve
+  el hueco, pero queda anotado para que el usuario lo juzgue jugando él
+  mismo.
 
 # PENDIENTE
 
-- Aprobación del usuario del prototipo de `ReefCluster` (ver EN PROGRESO).
+- Diseñar el Tramo 2 de la Zona 1 (4000 en adelante: introducir el
+  calamar, gauntlet final, corriente) — pendiente de que el usuario dé el
+  visto bueno al Tramo 1 primero.
+- Una vez el Tramo 1 esté aprobado y estable: variaciones del mismo
+  esqueleto para que no sea idéntico entre intentos (pedido explícito,
+  para después).
 - Arte y diseño propios para la Zona 2 ("Arrecife") en adelante.
 - Conectar la animación de "dormir" (`sleep/`, el asset ya existe) a un trigger
   real de inactividad del jugador — hoy no se usa en ningún sitio del código.
@@ -252,17 +293,20 @@ funciona **hoy**, verificado en el código — no lo que el diseño aspira a ten
 
 # PRÓXIMA TAREA
 
-Esperar la aprobación visual del usuario sobre la tercera tanda de piezas
-de `ReefCluster` (rocas oscuras tono pizarra, ver EN PROGRESO) antes de
-generalizar el sistema al resto de la Zona 1 — no hacerlo sin ese visto
-bueno explícito. El fondo (`background_far.png`/`rocks_back.png`) se
-queda tal cual, sin cambios — confirmado por el usuario, no tocar.
+Esperar la validación del usuario sobre el Tramo 1 de la Zona 1
+(`config/Zone1Level.ts`, ver EN PROGRESO) — le mandé fotos de cada combo y
+un vídeo del recorrido. Según lo que diga:
+- Si pide ajustar densidad/posiciones/qué criatura va con qué cúmulo,
+  iterar sobre `ZONE1_LEVEL_ENTRIES` (son solo datos, cambios rápidos).
+- Si el tramo 1 queda bien: diseñar el Tramo 2 (4000 en adelante, ver
+  PENDIENTE) siguiendo el mismo patrón de `spawnExact` ya construido.
+- Después: variaciones del mismo esqueleto para que no sea idéntico entre
+  intentos (pedido explícito, para más adelante, no antes de que el
+  esqueleto fijo esté aprobado).
 
-Si se aprueba: sustituir del todo `CoralWall`/`CoralSpawner` por
-`ReefClusterSpawner` en el resto de la progresión de Zona 1. Si se pide
-ajustar algo más (más piezas oscuras variadas, otra composición), iterar
-sobre las 4 plantillas antes de generalizar.
+El fondo (`background_far.png`/`rocks_back.png`) y el prototipo de
+`ReefCluster` ya están aprobados y no se tocan salvo pedido explícito.
 
-Después de eso: corregir la continuidad del fondo actual (franja decorada
-seguida de un tramo largo vacío antes de repetirse) — ver detalle en
-GAME_DESIGN.md (sección ENVIRONMENT).
+Pendiente aparte (no bloquea lo anterior): corregir la continuidad del
+fondo actual (franja decorada seguida de un tramo largo vacío antes de
+repetirse) — ver detalle en GAME_DESIGN.md (sección ENVIRONMENT).
