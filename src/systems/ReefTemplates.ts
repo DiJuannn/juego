@@ -148,7 +148,6 @@ function diagonalLeft(worldWidth: number, centerY: number): ReefClusterSpec {
     // Decoración: crece pegada a los obstáculos, sin colisión.
     piece({ key: "decor_starfish", x: fromEdge(worldWidth, "left", 0.09), y: centerY - 30, scale: 0.28, role: "decoration" }),
     piece({ key: "decor_pebble", x: fromEdge(worldWidth, "left", 0.04), y: centerY + 200, scale: 0.32, role: "decoration" }),
-    piece({ key: "decor_shell", x: fromEdge(worldWidth, "left", 0.19), y: centerY - 175, scale: 0.26, role: "decoration" }),
     // Fondo: un eco pequeño y difuminado del arrecife más allá del hueco,
     // para dar profundidad sin ocupar la ruta.
     piece({ key: "reef_boulder_rock", x: fromEdge(worldWidth, "right", 0.08), y: centerY - 30, scale: 0.09, role: "background", alpha: 0.4 }),
@@ -195,7 +194,6 @@ function centerTwoPaths(worldWidth: number, centerY: number): ReefClusterSpec {
       role: "obstacle",
     }),
     piece({ key: "decor_starfish", x: fromEdge(worldWidth, "left", 0.14), y: centerY + 95, scale: 0.3, role: "decoration" }),
-    piece({ key: "decor_shell", x: fromEdge(worldWidth, "right", 0.09), y: centerY - 100, scale: 0.3, role: "decoration" }),
     piece({ key: "decor_pebble", x: worldWidth * 0.5, y: centerY + 200, scale: 0.3, role: "decoration" }),
     piece({ key: "reef_boulder_rock", x: fromEdge(worldWidth, "left", 0.1), y: centerY - 10, scale: 0.08, role: "background", alpha: 0.35 }),
   ];
@@ -234,7 +232,6 @@ function sCurveEdges(worldWidth: number, centerY: number): ReefClusterSpec {
       rotation: edgeRotation("left"),
       role: "obstacle",
     }),
-    piece({ key: "decor_shell", x: fromEdge(worldWidth, "left", 0.16), y: topY + 90, scale: 0.28, role: "decoration" }),
 
     // Banda media: entra por la derecha — espejada (ver BRANCH_VARIANTS),
     // para que la parte con coral quede pegada al borde.
@@ -320,7 +317,6 @@ function lateralWall(worldWidth: number, centerY: number): ReefClusterSpec {
       role: "obstacle",
     }),
     piece({ key: "decor_starfish", x: fromEdge(worldWidth, side, 0.2), y: centerY + 30, scale: 0.3, role: "decoration" }),
-    piece({ key: "decor_shell", x: fromEdge(worldWidth, side, 0.28), y: centerY + 220, scale: 0.28, role: "decoration" }),
     piece({ key: "decor_pebble", x: fromEdge(worldWidth, side, 0.05), y: centerY + 250, scale: 0.3, role: "decoration" }),
     // Fondo: un eco pequeño y difuminado del lado abierto, para que no se
     // sienta completamente vacío sin invadir la ruta.

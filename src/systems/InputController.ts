@@ -37,7 +37,9 @@ const BUTTON_GAP = 5;
 const OFFSET = BUTTON_SIZE + BUTTON_GAP;
 const HUB_SIZE = BUTTON_SIZE * 0.62;
 const CORNER_RADIUS = 12;
-const PAD_MARGIN_Y = 130;
+// Pedido explícito: subirla un poco más (antes 130) — más lejos del borde
+// inferior, donde el pulgar la tapa menos.
+const PAD_MARGIN_Y = 165;
 // Margen de tolerancia por fuera de cada botón — un dedo que cae un poco
 // fuera del cuadrado exacto igual debe registrar esa dirección.
 const HIT_MARGIN = 10;

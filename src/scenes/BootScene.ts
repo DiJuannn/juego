@@ -74,7 +74,6 @@ export class BootScene extends Phaser.Scene {
     this.load.image("lily_pad_01", assetPath("/objects/lily_pad/lily_pad_01.png"));
 
     this.load.image("decor_pebble", assetPath("/objects/decor/pebble.png"));
-    this.load.image("decor_shell", assetPath("/objects/decor/shell.png"));
     this.load.image("decor_starfish", assetPath("/objects/decor/starfish.png"));
 
     this.load.image("jellyfish", assetPath("/objects/enemies/jellyfish.png"));

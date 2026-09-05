@@ -34,7 +34,6 @@ import { InputController } from "@/systems/InputController";
 import { JellyfishSpawner } from "@/systems/JellyfishSpawner";
 import { LilyPadSpawner } from "@/systems/LilyPadSpawner";
 import { LivesSystem } from "@/systems/LivesSystem";
-import { LumiBubbleTrail } from "@/systems/LumiBubbleTrail";
 import { ParallaxLayer } from "@/systems/ParallaxLayer";
 import { ReefClusterSpawner } from "@/systems/ReefClusterSpawner";
 import { SharkSpawner } from "@/systems/SharkSpawner";
@@ -161,7 +160,6 @@ export class PondScene extends Phaser.Scene {
 
     this.lumi = new Lumi(this, WORLD_WIDTH / 2, START_Y);
     this.lumi.setDepth(5);
-    new LumiBubbleTrail(this, this.lumi.sprite, 4.6);
 
     // Explosión de burbujas al tocar un nenúfar: vende el impulso mucho
     // mejor que una pose nueva. "emitting: false" porque solo se disparan

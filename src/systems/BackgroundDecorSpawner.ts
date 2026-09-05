@@ -1,6 +1,8 @@
 import Phaser from "phaser";
 
-export const DECOR_KEYS = ["decor_pebble", "decor_shell", "decor_starfish"];
+// Pedido explícito del usuario: "las conchas las quitaría" — decor_shell
+// se elimina de la rotación (y de su carga en BootScene).
+export const DECOR_KEYS = ["decor_pebble", "decor_starfish"];
 
 const MIN_GAP = 260;
 const MAX_GAP = 520;

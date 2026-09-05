@@ -454,9 +454,48 @@ funciona **hoy**, verificado en el código — no lo que el diseño aspira a ten
     lógica interna) y que el botón se resalta en rosa al presionarlo.
   - `npx tsc --noEmit` limpio. Playtest automático (teclado) sigue
     completando el recorrido sin problemas (superó altura 300).
+- **Ajustes tras probar en el móvil real** — pedido explícito: "LUMI VA
+  MUY LENTO LE AUMENTARIA EL TAMAÑO", "LA CRUZETA LA SUBIRIA UN POCO
+  MAS", "LAS BURBUJAS QUE PROPULSAN LAS QUITARIA NO ME GUSTAN", "LAS
+  CONCHAS LAS QUITARIA". Cuatro cambios pequeños y mecánicos, hechos ya
+  (el resto del mensaje — reestructurar obstáculos/enemigos, más orden,
+  estrellas/piedras como obstáculos de nivel, monedas en fila/diagonal —
+  es un pedido de PLAN, no de implementación; ver el plan mandado al
+  usuario, pendiente de que lo apruebe antes de tocar código de nivel).
+  - `LUMI_SCALE` (`GameConfig.ts`): de `0.075*3*1.2*0.9` (≈0.243) a
+    `0.075*3*1.35` (≈0.304, +25%) — una Lumi más grande en pantalla se
+    siente más rápida a igual velocidad real (`LUMI_SWIM_SPEED` sin
+    tocar). Verificado leyendo `lumi.sprite.scale`/`displayWidth` en
+    runtime.
+  - `InputController.ts`: `PAD_MARGIN_Y` de 130 a 165 — la cruceta queda
+    más arriba, más lejos del borde inferior.
+  - Eliminado `LumiBubbleTrail` (el rastro de burbujas que seguía a Lumi
+    al nadar, "las burbujas que propulsan") — se quita su instanciación
+    en `PondScene.ts` y se borra el archivo entero (no queda ningún otro
+    uso). El resto de burbujas del juego (fondo ambiental, ráfaga al
+    recoger power-ups) no se toca, no es lo que el usuario señaló.
+  - `decor_shell` eliminado del todo: de `DECOR_KEYS`
+    (`BackgroundDecorSpawner.ts`, decoración ambiental aleatoria), de su
+    carga en `BootScene.ts`, y de las 4 plantillas de `ReefTemplates.ts`
+    que la usaban como decoración de cúmulo. `decor_pebble`/
+    `decor_starfish` se quedan tal cual por ahora (pasarán a ser
+    obstáculos de nivel según el plan, no en esta ronda).
+  - `npx tsc --noEmit` limpio, sin referencias sueltas a `decor_shell` ni
+    a `LumiBubbleTrail`. Playtest automático sigue completando el
+    recorrido. Capturas confirman el tamaño nuevo de Lumi, la cruceta más
+    arriba y la ausencia de burbujas de propulsión.
 
 # PENDIENTE
 
+- **Bloqueante, esperando aprobación del usuario**: plan de
+  reestructuración de obstáculos/enemigos de la Zona 1 (mapa más angosto
+  = más difícil, nivel "desordenado", estrellas/piedras sueltas pasan a
+  ser obstáculos de nivel, monedas en fila/diagonal con separación
+  constante) — mandado como plan de texto, no implementado todavía. Una
+  vez el usuario dé el visto bueno (o pida cambios), ejecutar sobre
+  `ZONE1_LEVEL_ENTRIES` (`Zone1Level.ts`), `ReefTemplates.ts`,
+  `BackgroundDecorSpawner.ts` (probablemente retirado del todo) y
+  `CoinSpawner.ts`/`ReefClusterSpawner.spawnCoinsAlongPath`.
 - Diseñar el Tramo 2 de la Zona 1 (4000 en adelante: introducir el
   calamar, gauntlet final, corriente) — pendiente de que el usuario dé el
   visto bueno al Tramo 1 primero.

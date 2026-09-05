@@ -33,10 +33,13 @@ export const WORLD_HEIGHT = 2_000_000;
 export const START_Y = 700;
 
 // Pedido explícito del usuario: tamaño final, un 20% más sobre el "mucho
-// más grande" anterior (0.075*3), y luego un 10% menos (pedido posterior:
-// "empequeñar a lumi un 10%"). Supera bastante el "10-15% de la pantalla"
-// de STYLE_GUIDE.md — avisado, no es un descuido.
-export const LUMI_SCALE = 0.075 * 3 * 1.2 * 0.9;
+// más grande" anterior (0.075*3), luego un 10% menos ("empequeñar a lumi
+// un 10%"), y de nuevo hacia arriba tras probarlo en el móvil real ("va
+// muy lento, le aumentaría el tamaño" — una Lumi más grande se siente más
+// rápida a igual velocidad real, ver LUMI_SWIM_SPEED sin tocar). Supera
+// bastante el "10-15% de la pantalla" de STYLE_GUIDE.md — avisado, no es
+// un descuido.
+export const LUMI_SCALE = 0.075 * 3 * 1.35;
 
 // Pedido explícito: Lumi se sentía lenta. Subido de 220 a 260, y de nuevo
 // tras seguir sintiéndose lenta a 310.
