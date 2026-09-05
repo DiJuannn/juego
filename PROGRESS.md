@@ -93,11 +93,23 @@ funciona **hoy**, verificado en el código — no lo que el diseño aspira a ten
   los archivos reales como referencia de Gemini — coinciden con el estilo
   pedido mucho más de cerca que las tandas anteriores. Moneda también
   rediseñada (perla dorada nacarada) y reducida de escala 0.11 a 0.08.
+  **Ajustes tras revisión del usuario sobre esta 4ª tanda**: la pared
+  lateral por la derecha usaba `coral_branch` sin espejar, dejando la
+  parte lisa pegada al borde y el coral apuntando hacia el interior (al
+  revés de como se ve entrando por la izquierda) — arreglado con `flipX`
+  en `lateralWall` y en la banda derecha de `sCurveEdges`. Además, pedido
+  explícito de generar "muchos [obstáculos] e irlos poniendo de distintas
+  formas": añadida una familia de 3 variantes de rama a partir de
+  `coral_branch.png` como ancla — `branch_straight` (recta, coral en una
+  punta), `branch_hook` (horizontal que se curva hacia arriba al final) y
+  `branch_short` (más corta y compacta); las plantillas que usan una rama
+  eligen una al azar en cada aparición (`pickBranch()` en
+  `ReefTemplates.ts`) en vez de repetir siempre la misma.
   Verificado con Playwright: las 4 plantillas ciclan sin repetirse, se
   integran visualmente con el fondo existente, la pared lateral se lee
   claramente "saliendo del borde" dejando espacio de sobra en el lado
-  contrario (pedido explícito del usuario), playtest automatizado sigue
-  pasando sin problema.
+  contrario y con el coral correctamente pegado al borde en ambos lados,
+  playtest automatizado sigue pasando sin problema.
   **Pendiente de aprobación visual del usuario antes de generalizarlo al
   resto de la Zona 1** — es el pedido explícito, no está aprobado todavía.
   **Nota para futuras sesiones**: si el usuario adjunta imágenes de
