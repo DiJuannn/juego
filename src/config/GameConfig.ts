@@ -242,6 +242,18 @@ export const CRAB_DASH_DURATION_MS = 220;
 export const CRAB_PAUSE_MIN_MS = 500;
 export const CRAB_PAUSE_MAX_MS = 1100;
 export const BIG_FISH_SCALE = 0.5 * 0.8; // -20%, ver SHARK_SCALE
+
+// Almeja gigante: séptimo enemigo (pedido explícito: "crea más animales...
+// la almeja podrías crearle una animación y que te coma"). Antes era una
+// pieza decorativa de ReefCluster sin colisión real; ahora es un animal de
+// verdad — igual de quieta que el erizo (una trampa "plantada", no una
+// criatura que persigue), pero al tocarla se cierra de golpe como parte de
+// la secuencia de muerte (ver GiantClam.ts y playClamBite en PondScene.ts).
+// Gap parecido al del cangrejo (encuentro poco frecuente, no un peligro
+// constante) — es más un "susto" puntual que una amenaza habitual.
+export const GIANT_CLAM_MIN_GAP = 3800;
+export const GIANT_CLAM_MAX_GAP = 6000;
+export const GIANT_CLAM_SCALE = 0.24;
 export const BIG_FISH_PATROL_SPEED = 60;
 export const BIG_FISH_PUSH_STRENGTH = 300;
 export const BIG_FISH_PUSH_COOLDOWN_MS = 500;

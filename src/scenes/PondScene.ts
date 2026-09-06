@@ -29,6 +29,7 @@ import { CoinSpawner } from "@/systems/CoinSpawner";
 import { CrabSpawner } from "@/systems/CrabSpawner";
 import { CrossfadePlant } from "@/systems/CrossfadePlant";
 import { CurrentZoneSpawner } from "@/systems/CurrentZoneSpawner";
+import { GiantClamSpawner } from "@/systems/GiantClamSpawner";
 import { InputController } from "@/systems/InputController";
 import { JellyfishSpawner } from "@/systems/JellyfishSpawner";
 import { LilyPadSpawner } from "@/systems/LilyPadSpawner";
@@ -42,7 +43,7 @@ import { UrchinSpawner } from "@/systems/UrchinSpawner";
 import { ZoneManager } from "@/systems/ZoneManager";
 import { pondLayerKey, pondPlantFrameKey } from "./BootScene";
 
-type DeathReason = "atras" | "medusa" | "tiburon" | "calamar" | "erizo" | "cangrejo";
+type DeathReason = "atras" | "medusa" | "tiburon" | "calamar" | "erizo" | "cangrejo" | "almeja";
 
 /**
  * Escalada infinita: la cámara solo sube (nunca retrocede) siguiendo a
@@ -61,6 +62,7 @@ export class PondScene extends Phaser.Scene {
   private squidSpawner!: SquidSpawner;
   private crabSpawner!: CrabSpawner;
   private urchinSpawner!: UrchinSpawner;
+  private giantClamSpawner!: GiantClamSpawner;
   private reefClusterSpawner!: ReefClusterSpawner;
   private bigFishSpawner!: BigFishSpawner;
   private currentZoneSpawner!: CurrentZoneSpawner;
@@ -285,6 +287,17 @@ export class PondScene extends Phaser.Scene {
       this.handleHazardHit("erizo", urchinObj as Phaser.Physics.Arcade.Image);
     });
 
+    // Almejas gigantes: séptimo enemigo (pedido explícito: "la almeja
+    // podrías crearle una animación y que te coma"). Antes eran una pieza
+    // decorativa estática de ReefCluster (lateralWall) sin peligro real —
+    // ahora son un animal más, casi inmóvil como el erizo.
+    this.giantClamSpawner = new GiantClamSpawner(this, WORLD_WIDTH, START_Y - ZONE1_LEVEL_END_OFFSET, (y) =>
+      this.reefClusterSpawner.isWithinAnyClusterBand(y),
+    );
+    this.physics.add.overlap(this.lumi.sprite, this.giantClamSpawner.group, (_lumiObj, clamObj) => {
+      this.handleHazardHit("almeja", clamObj as Phaser.Physics.Arcade.Image);
+    });
+
     // Tiburones: segundo enemigo, más arriba que la medusa. Patrullan de
     // lado a lado en vez de solo derivar.
     this.sharkSpawner = new SharkSpawner(
@@ -478,6 +491,7 @@ export class PondScene extends Phaser.Scene {
     calamar: "Un calamar te ha atrapado...",
     erizo: "Te has pinchado con un erizo...",
     cangrejo: "Un cangrejo te ha pellizcado...",
+    almeja: "¡Una almeja gigante te ha atrapado!",
   };
 
   /** Punto de entrada de los 4 peligros (medusa/tiburón/calamar/erizo): si
@@ -637,6 +651,16 @@ export class PondScene extends Phaser.Scene {
       this.playElectricShock(sourceSprite.x, sourceSprite.y, sprite.x, sprite.y);
     }
 
+    // Almeja: se cierra de golpe (arte real, no un efecto de código) y
+    // arrastra a Lumi hacia su centro en vez del hundimiento genérico hacia
+    // abajo — pedido explícito: "que te coma" tiene que leerse como que la
+    // almeja se la traga, no como una caída normal.
+    if (reason === "almeja" && sourceSprite) {
+      (sourceSprite as Phaser.Physics.Arcade.Image).setTexture("giant_clam_closed");
+    }
+    const sinkTargetX = reason === "almeja" && sourceSprite ? sourceSprite.x : sprite.x;
+    const sinkTargetY = reason === "almeja" && sourceSprite ? sourceSprite.y : sprite.y + 40;
+
     // Los ojos en cruz ya no son un Graphics dibujado por código: son arte
     // de verdad generado con Gemini (ver assets/characters/lumi/death/ y
     // Lumi.prepareForDeath, que ya puso esa textura). Aquí solo queda el
@@ -646,7 +670,8 @@ export class PondScene extends Phaser.Scene {
       angle: sprite.flipX ? -360 : 360,
       scaleX: sprite.scaleX * 0.15,
       scaleY: sprite.scaleY * 0.15,
-      y: sprite.y + 40,
+      x: sinkTargetX,
+      y: sinkTargetY,
       alpha: 0,
       duration: 700,
       ease: "Cubic.easeIn",
@@ -767,6 +792,7 @@ export class PondScene extends Phaser.Scene {
     this.coinSpawner.update(cam.scrollY, cam.scrollY + cam.height, time);
     this.jellyfishSpawner.update(cam.scrollY, cam.scrollY + cam.height, time);
     this.urchinSpawner.update(cam.scrollY, cam.scrollY + cam.height, time);
+    this.giantClamSpawner.update(cam.scrollY, cam.scrollY + cam.height, time);
     this.sharkSpawner.update(cam.scrollY, cam.scrollY + cam.height, time);
     this.bigFishSpawner.update(cam.scrollY, cam.scrollY + cam.height, time);
     this.squidSpawner.update(cam.scrollY, cam.scrollY + cam.height, time);

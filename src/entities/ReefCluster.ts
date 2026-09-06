@@ -65,7 +65,9 @@ const HITBOX_FRACTION: Record<string, [number, number, number, number]> = {
   coral_fan: [0.14, 0.19, 0.87, 0.78],
   sponge: [0.17, 0.22, 0.84, 0.79],
   barnacle: [0.2, 0.22, 0.81, 0.79],
-  giant_clam: [0.13, 0.21, 0.87, 0.8],
+  // giant_clam ya no es una pieza estática de ReefCluster (ver
+  // entities/GiantClam.ts, que reutiliza esta misma bbox [0.13,0.21,0.87,0.8]
+  // directamente en su propio StaticBody).
   // Pedido explícito: "crea diferentes estilos de rocas... de distintos
   // tamaños, más largas tmb pueden ser" — 2 estilos nuevos para variar la
   // pieza de pared lateral (ver WALL_PIECE_POOL en ReefTemplates.ts), bbox

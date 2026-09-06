@@ -96,6 +96,10 @@ export class BootScene extends Phaser.Scene {
     // ver entities/Crab.ts.
     this.load.image("crab", assetPath("/objects/enemies/crab.png"));
     this.load.image("crab_blink", assetPath("/objects/enemies/crab_blink.png"));
+    // Séptimo enemigo (pedido explícito: "crea más animales... la almeja
+    // podrías crearle una animación y que te coma"), ver entities/GiantClam.ts.
+    this.load.image("giant_clam", assetPath("/objects/enemies/giant_clam.png"));
+    this.load.image("giant_clam_closed", assetPath("/objects/enemies/giant_clam_closed.png"));
     // Librería de piezas para ReefCluster (composiciones orgánicas de
     // obstáculos de Zona 1, ver systems/ReefCluster.ts). Tercera tanda,
     // generada directamente a partir de las 3 imágenes de referencia que
@@ -121,7 +125,6 @@ export class BootScene extends Phaser.Scene {
     this.load.image("coral_fan", assetPath("/objects/reef/coral_fan.png"));
     this.load.image("sponge", assetPath("/objects/reef/sponge.png"));
     this.load.image("barnacle", assetPath("/objects/reef/barnacle.png"));
-    this.load.image("giant_clam", assetPath("/objects/reef/giant_clam.png"));
     // Pedido explícito: "crea diferentes estilos de rocas... de distintos
     // tamaños, más largas tmb pueden ser" — más variedad para la pieza de
     // pared lateral (antes SIEMPRE reef_boulder_rock, ver ReefTemplates.ts

@@ -1366,9 +1366,68 @@ funciona **hoy**, verificado en el código — no lo que el diseño aspira a ten
     --noEmit` limpio, playtest automático sin errores (aparte de muertes
     normales del bot al no apuntar al hueco a propósito), build de
     producción real exitoso.
+- **Séptimo enemigo: la almeja gigante ahora "come" a Lumi** — pedido
+  explícito: "concentrarnos en mejorar los animales... son muy pacíficos
+  algunos... la almeja podrías crearle una animación y que te coma y por
+  ende una animación de que te comió la almeja a lumi". Antes `giant_clam`
+  era solo una pieza decorativa estática de `ReefCluster` (plantilla
+  `lateralWall`) sin colisión de peligro real (los `role: "obstacle"` de
+  ReefCluster solo bloquean físicamente, nunca restan vida). Ahora:
+  - Nueva entidad `entities/GiantClam.ts` y `systems/GiantClamSpawner.ts`,
+    calcados del patrón ya probado de `Urchin`/`UrchinSpawner` (casi
+    inmóvil, con el mismo balanceo/pulso de "respiración" que el resto de
+    animales, reciclaje al salir de cámara, exclusión de banda de
+    arrecife vía `isWithinAnyClusterBand`). Nuevas constantes en
+    `GameConfig.ts`: `GIANT_CLAM_MIN_GAP`/`MAX_GAP` (3800-6000) y
+    `GIANT_CLAM_SCALE`.
+  - Arte nuevo generado con Gemini (misma ancla de estilo que el
+    `giant_clam` ya aprobado): `giant_clam_closed.png`, la concha cerrada
+    de golpe. `fix_transparency.py` con `border_connected_mask` únicamente
+    (igual criterio que `rock_slab`/`rock_spikes` antes esta sesión) para
+    no comerse la textura de la concha inferior. El archivo original se
+    movió de `assets/objects/reef/` a `assets/objects/enemies/` (`git mv`)
+    porque pasa de pieza decorativa a animal real — mismo criterio de
+    carpetas que medusa/tiburón/calamar/erizo/cangrejo.
+  - Nuevo `DeathReason` `"almeja"` en `PondScene.ts`, con mensaje propio
+    y una secuencia de muerte propia: en vez del hundimiento genérico
+    (`y: sprite.y + 40`), la almeja cambia su textura a `giant_clam_closed`
+    (cierre visible) y el tween de muerte arrastra a Lumi hacia el centro
+    exacto de la almeja (`x/y: sourceSprite.x/y`) en lugar de hundirla
+    hacia abajo — se lee claramente como "la almeja se la tragó", sin
+    tocar el arte de Lumi (reutiliza 100% la animación de ojos en cruz ya
+    aprobada, solo cambia el destino del tween).
+  - Retirada la pieza `giant_clam` de `ReefTemplates.ts` (`lateralWall`) y
+    su entrada en `HITBOX_FRACTION` de `ReefCluster.ts` — ya no existe
+    como obstáculo estático, solo como animal.
+  - Verificado en el motor real (Playwright): las texturas `giant_clam`/
+    `giant_clam_closed` cargan, la almeja bobea/respira igual que el
+    erizo (8 muestras con variación continua de `y`/escala), y al
+    forzar el contacto con Lumi se dispara `handleHazardHit("almeja", …)`
+    → cambia a `giant_clam_closed`, `isDying`/`isGameOver` pasan a
+    `true`, y el texto de game over muestra "¡Una almeja gigante te ha
+    atrapado!" con la concha cerrada visible detrás de la tarjeta
+    (captura confirmada). `npx tsc --noEmit` limpio, build de producción
+    real exitoso con ambos PNGs nuevos bundleados
+    (`dist/objects/enemies/giant_clam.png` y `giant_clam_closed.png`).
 
 # PENDIENTE
 
+- **"Crea más animales para que sea mejor, más animales y menos
+  obstáculos"** (pedido explícito, mismo mensaje que la almeja) — no
+  arrancado todavía. La almeja ya sube el recuento de animales reales de
+  6 a 7; falta decidir con el usuario qué otras piezas hoy decorativas de
+  `ReefTemplates.ts` (anémona, percebe, esponja...) tienen sentido como
+  animal activo en vez de obstáculo estático, siguiendo el mismo patrón
+  Entity+Spawner+overlap ya usado 7 veces.
+- **"Los obstáculos tengan menos importancia, es que se ven muy feos
+  algunos ahí flotando solos"** (mismo mensaje) — no arrancado. Pedido
+  aún sin acotar del todo: falta preguntar al usuario si se refiere a (a)
+  piezas concretas que se sienten sueltas/sin componer bien dentro de las
+  6 plantillas de `ReefTemplates.ts`, (b) reducir la escala/protagonismo
+  visual de los `bgAccent` o piezas `role: "obstacle"` en general, o (c)
+  bajar la frecuencia de aparición de arrecife frente a animales. Mejor
+  pedir un ejemplo concreto (altura/plantilla) antes de re-tunear a
+  ciegas, mismo criterio que ya se aplicó con el fondo/animales antes.
 - Una vez el Tramo 1+2 esté aprobado y estable: variaciones del mismo
   esqueleto para que no sea idéntico entre intentos (pedido explícito,
   para después).
@@ -1389,20 +1448,21 @@ que se cerraron)
 
 # PRÓXIMA TAREA
 
-Esperar la reacción del usuario a `reefLabyrinth` ya garantizado justo al
-empezar una partida nueva (Tramo 0, offset 1200) — con esto debería
-resolverse del todo el "no me sale" del mensaje anterior. Ojo: al ser lo
-primero que ve el jugador, el arranque del juego ahora es notablemente
-más exigente que antes (toca cruzar 3 bandas en zigzag desde el primer
-segundo, en vez de un único cúmulo sencillo) — si el usuario lo siente
-"demasiado duro para empezar", la vía más simple es mover esta entrada
-más adentro del Tramo 1 (no hace falta que sea literalmente lo primero)
-en vez de tocar las garantías de hueco/espaciado ya verificadas. Esperar
-también su reacción al resto de la ronda que sigue en pie (medusa con
-movimiento visible, roca de pinchos nueva en `WALL_PIECE_POOL`). Según lo
-que diga:
-- Si el arrecife ya "se siente terminado": retomar el roadmap normal —
-  Tramo 2 en adelante, variaciones de esqueleto, Zona 2.
-- Si sigue faltando algo puntual: pedir que describa el momento exacto
-  (altura/zona/qué estaba haciendo) en vez de re-tunear números a ciegas —
-  ya se agotó ese enfoque una vez esta sesión sin resultado.
+La almeja gigante ya está convertida en animal real y verificada de
+punta a punta (ver EN PROGRESO). Del mismo mensaje del usuario quedan
+dos pedidos explícitos sin empezar — ver PENDIENTE para el detalle de
+cada uno:
+1. Más animales nuevos (además de la almeja).
+2. Bajar el protagonismo visual de los obstáculos sueltos de arrecife.
+
+Para el (2) en concreto, mejor preguntar por un ejemplo puntual
+("¿cuál obstáculo en concreto se ve feo flotando solo, y en qué
+plantilla/altura?") antes de re-tunear escalas/composición a ciegas —
+el pedido admite varias lecturas distintas (ver PENDIENTE) y ya se
+demostró esta sesión que adivinar mal una corrección ambigua (el
+episodio de "las dos rocas gigantes no, déjalas como estaban") cuesta
+una ronda entera de ida y vuelta. Si el usuario da un ejemplo concreto,
+usarlo para decidir cuál de las 3 lecturas es la correcta; si prefiere
+que se decida sin más detalle, empezar por (b) — reducir escala/opacidad
+de los `bgAccent` decorativos, que es el cambio más barato de revertir
+si no es lo que pedía.

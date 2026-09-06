@@ -377,12 +377,13 @@ function lateralWall(worldWidth: number, centerY: number): ReefClusterSpec {
       flipX: branchFlipX(wallBranchKey, side === "right"),
       role: "obstacle",
     }),
-    // Mismo criterio de reparto: abanico de coral (arriba del todo), almeja
-    // gigante (justo debajo, separada de la rama en y-60) y estrella (abajo
-    // del todo) — únicas en esta plantilla, con al menos ~150px libres
-    // entre cada una para que no se amontonen.
+    // Mismo criterio de reparto: abanico de coral (arriba del todo) y
+    // estrella (abajo del todo) — únicas en esta plantilla, con al menos
+    // ~150px libres entre cada una para que no se amontonen. La almeja
+    // gigante que iba aquí se retiró como pieza estática: ahora es un
+    // animal real (ver entities/GiantClam.ts, pedido explícito de que "te
+    // coma" en vez de ser solo un obstáculo decorativo).
     piece({ key: "coral_fan", x: fromEdge(worldWidth, side, 0.16), y: centerY - 260, scale: 0.22, role: "obstacle" }),
-    piece({ key: "giant_clam", x: fromEdge(worldWidth, side, 0.3), y: centerY + 100, scale: 0.26, role: "obstacle" }),
     piece({ key: "decor_starfish", x: fromEdge(worldWidth, side, 0.13), y: centerY + 260, scale: 0.28, role: "obstacle" }),
     // Acento de fondo: en el lado abierto (el contrario a la pared), lejos
     // de la ruta guía que serpentea por `openCenterX` — sugiere más
