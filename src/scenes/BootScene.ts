@@ -129,6 +129,13 @@ export class BootScene extends Phaser.Scene {
     this.load.image("mantaray", assetPath("/objects/enemies/mantaray.png"));
     // Duodécimo enemigo, mismo pedido — ver entities/FlyingFish.ts.
     this.load.image("flyingfish", assetPath("/objects/enemies/flyingfish.png"));
+    // Decimotercer enemigo (pedido explícito: "un dragón marino Largo que
+    // vaya... de lado a lado, pero que salga del mapa y reaparezca la otra
+    // parte en el otro lateral... que deje un hueco justo para que pase
+    // Lumi por ahí") — dos mitades del mismo dibujo (cabeza+cuello arriba,
+    // cuerpo+cola abajo), ver entities/SeaDragon.ts.
+    this.load.image("sea_dragon_head", assetPath("/objects/enemies/sea_dragon_head.png"));
+    this.load.image("sea_dragon_tail", assetPath("/objects/enemies/sea_dragon_tail.png"));
     // Librería de piezas para ReefCluster (composiciones orgánicas de
     // obstáculos de Zona 1, ver systems/ReefCluster.ts). Tercera tanda,
     // generada directamente a partir de las 3 imágenes de referencia que

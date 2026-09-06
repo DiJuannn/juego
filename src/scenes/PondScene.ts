@@ -41,6 +41,7 @@ import { LivesSystem } from "@/systems/LivesSystem";
 import { MantaRaySpawner } from "@/systems/MantaRaySpawner";
 import { ParallaxLayer } from "@/systems/ParallaxLayer";
 import { ReefClusterSpawner } from "@/systems/ReefClusterSpawner";
+import { SeaDragonSpawner } from "@/systems/SeaDragonSpawner";
 import { SeahorseSpawner } from "@/systems/SeahorseSpawner";
 import { SharkSpawner } from "@/systems/SharkSpawner";
 import { ShieldPickupSpawner } from "@/systems/ShieldPickupSpawner";
@@ -61,7 +62,8 @@ type DeathReason =
   | "caballito"
   | "balano"
   | "mantarraya"
-  | "pezvolador";
+  | "pezvolador"
+  | "dragon";
 
 /**
  * Escalada infinita: la cámara solo sube (nunca retrocede) siguiendo a
@@ -86,6 +88,7 @@ export class PondScene extends Phaser.Scene {
   private seahorseSpawner!: SeahorseSpawner;
   private mantaRaySpawner!: MantaRaySpawner;
   private flyingFishSpawner!: FlyingFishSpawner;
+  private seaDragonSpawner!: SeaDragonSpawner;
   private reefClusterSpawner!: ReefClusterSpawner;
   private bigFishSpawner!: BigFishSpawner;
   private currentZoneSpawner!: CurrentZoneSpawner;
@@ -407,6 +410,17 @@ export class PondScene extends Phaser.Scene {
       this.handleHazardHit("pezvolador", fishObj as Phaser.Physics.Arcade.Image);
     });
 
+    // Decimotercer enemigo (pedido explícito: "un dragón marino Largo que
+    // vaya... de lado a lado, pero que salga del mapa y reaparezca la otra
+    // parte en el otro lateral... que deje un hueco justo para que pase
+    // Lumi por ahí"), ver entities/SeaDragon.ts.
+    this.seaDragonSpawner = new SeaDragonSpawner(this, WORLD_WIDTH, START_Y - ZONE1_LEVEL_END_OFFSET, (y) =>
+      this.reefClusterSpawner.isWithinAnyClusterBand(y),
+    );
+    this.physics.add.overlap(this.lumi.sprite, this.seaDragonSpawner.group, (_lumiObj, dragonObj) => {
+      this.handleHazardHit("dragon", dragonObj as Phaser.Physics.Arcade.Image);
+    });
+
     // Tiburones: segundo enemigo, más arriba que la medusa. Patrullan de
     // lado a lado en vez de solo derivar.
     this.sharkSpawner = new SharkSpawner(
@@ -630,6 +644,7 @@ export class PondScene extends Phaser.Scene {
     balano: "¡Un balano te ha pellizcado!",
     mantarraya: "¡Una mantarraya te ha golpeado!",
     pezvolador: "¡Un pez volador te ha golpeado en pleno salto!",
+    dragon: "¡Un dragón marino te ha atrapado!",
   };
 
   /** Punto de entrada de los 4 peligros (medusa/tiburón/calamar/erizo): si
@@ -946,6 +961,7 @@ export class PondScene extends Phaser.Scene {
     this.barnacleSpawner.update(cam.scrollY, cam.scrollY + cam.height, time);
     this.mantaRaySpawner.update(cam.scrollY, cam.scrollY + cam.height, time);
     this.flyingFishSpawner.update(cam.scrollY, cam.scrollY + cam.height, time);
+    this.seaDragonSpawner.update(cam.scrollY, cam.scrollY + cam.height, time);
     this.sharkSpawner.update(cam.scrollY, cam.scrollY + cam.height, time);
     this.bigFishSpawner.update(cam.scrollY, cam.scrollY + cam.height, time);
     this.squidSpawner.update(cam.scrollY, cam.scrollY + cam.height, time);

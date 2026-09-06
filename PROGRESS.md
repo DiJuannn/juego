@@ -182,6 +182,30 @@ funciona **hoy**, verificado en el código — no lo que el diseño aspira a ten
     Verificado en el propio juego: ya no se lee ningún cuadrado, y el
     body físico sigue llegando exactamente al borde del mundo (offset
     -10px de solape, igual que el resto de piezas `edgeFlush`).
+- **Decimotercer enemigo: dragón marino** (pedido explícito: "un dragón
+  marino Largo que vaya en vertical de lado a lado, pero que salga del
+  mapa y reaparezca la otra parte en el otro lateral... que deje un hueco
+  justo para que pase Lumi por ahí"). Arte nuevo con Gemini: un dragón/
+  serpiente marina larga y sinuosa (referencias: mantarraya + caballito de
+  mar, mismo estilo pastel/contorno lavanda), generado como un único
+  dibujo de cabeza a cola y luego cortado en dos mitades (`sea_dragon_head`/
+  `sea_dragon_tail`) por un punto estrecho del cuerpo en forma de S —
+  `entities/SeaDragon.ts` las coloca compartiendo SIEMPRE la misma X, con
+  un hueco vertical fijo (`SEA_DRAGON_GAP_HEIGHT`) entre ambas. Las dos
+  mitades se deslizan juntas en X sin parar (`SEA_DRAGON_SPEED`) y NUNCA
+  rebotan — al salir del todo por un lado del MUNDO (no solo de la cámara)
+  la posición envuelve y reaparecen entrando por el lado contrario, un
+  bucle infinito calculado con una única fórmula de módulo (sin guardar
+  estado de "qué lado le toca ahora"). Dirección (izquierda/derecha) al
+  azar por instancia, con el arte espejado a juego (mismo criterio que
+  tiburón/caballito/mantarraya). Dos sprites físicos por instancia
+  (`SeaDragonSpawner`, mismo patrón de reciclado que el resto de
+  spawners, solo que añade/quita los DOS sprites juntos), con hitbox
+  ajustada al bbox real de cada mitad (no al lienzo completo, que tiene
+  mucho margen transparente por el serpenteo). Verificado: deslizamiento +
+  envoltura (muestreo de X a lo largo de varios ciclos, sin saltos), hueco
+  real en Y donde Lumi puede colarse (captura in-game), y colisión letal
+  real contra cualquiera de las dos mitades (game over con mensaje propio).
 
 # EN PROGRESO
 
@@ -2284,11 +2308,15 @@ avanzando)
 
 # PRÓXIMA TAREA
 
-Esperar la reacción del usuario a esta ronda (paredes de laberinto de
-conchas/esponjas rehechas como montículo de lóbulos redondeados en vez de
-festoneado fino, monedas con distancia matemáticamente idéntica siempre).
-Si el usuario sigue viendo algo "cuadrado" en las paredes de laberinto tras
-esto, probablemente haga falta ver la captura exacta para saber si es una
+Esperar la reacción del usuario a esta ronda (dragón marino nuevo — cuerpo
+largo en dos mitades que se desliza de lado a lado del mundo, envuelve al
+salir por un lateral y reaparece por el otro, con un hueco fijo para
+colarse). No se pudo confirmar por captura automatizada si el TIMING real
+de cronometrar el hueco se siente bien jugado a mano (solo se verificó
+geometría/colisión/envoltura programáticamente) — pedir confirmación de
+juego real antes de ajustar velocidad/tamaño del hueco. Si el usuario sigue
+viendo algo "cuadrado" en las paredes de laberinto de la ronda anterior,
+probablemente haga falta ver la captura exacta para saber si es una
 plantilla concreta (`reef_maze_wall` de hojas, que sigue siendo casi a
 sangre completa por diseño) o un ángulo/escala donde el montículo nuevo
 aún no convence. Líneas abiertas explícitas (rondas anteriores, sin
