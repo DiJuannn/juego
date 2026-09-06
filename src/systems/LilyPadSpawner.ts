@@ -5,12 +5,18 @@ import {
   LILY_PAD_BOOST_DISTANCE,
   LILY_PAD_MAX_GAP,
   LILY_PAD_MIN_GAP,
+  LILY_PAD_SCALE,
   REEF_COIN_SPACING,
 } from "@/config/GameConfig";
 
 const SPAWN_LOOKAHEAD = 900;
 const DESPAWN_MARGIN = 1200;
 const PAD_MARGIN_X = 120;
+// Cuántas posiciones X distintas se prueban antes de rendirse y saltarse
+// ese nenúfar del todo (ver overlapsObstacle abajo) — un cúmulo normal deja
+// libre la mayor parte del ancho, así que unos pocos intentos casi siempre
+// bastan para encontrar un hueco real.
+const OBSTACLE_AVOID_ATTEMPTS = 8;
 
 /**
  * Genera nenúfares sin parar por encima de Lumi según la cámara sube (nunca
@@ -24,16 +30,29 @@ export class LilyPadSpawner {
   private pads: LilyPad[] = [];
   private coins: CoinPickup[] = [];
   private highestY: number;
+  private padHalfWidth: number;
+  private padHalfHeight: number;
 
   constructor(
     private scene: Phaser.Scene,
     private worldWidth: number,
     startX: number,
     startY: number,
+    // Pedido explícito con captura real: un nenúfar apareció encima de la
+    // pared de un laberinto — "si hay un obstáculo obstruyendo el
+    // propulsor del nenúfar, obviamente no se pone". LilyPadSpawner no
+    // sabe nada de ReefCluster (viven en su propio spawner); PondScene le
+    // pasa la misma comprobación real que ya usa ReefClusterSpawner.
+    private readonly overlapsObstacle?: (x: number, yTop: number, yBottom: number, halfWidth: number) => boolean,
   ) {
     this.group = scene.physics.add.staticGroup();
     this.coinGroup = scene.physics.add.staticGroup();
     this.highestY = startY;
+
+    const tex = scene.textures.get("lily_pad_01").getSourceImage() as HTMLImageElement;
+    this.padHalfWidth = (tex.width * LILY_PAD_SCALE) / 2;
+    this.padHalfHeight = (tex.height * LILY_PAD_SCALE) / 2;
+
     this.spawnAt(startX, startY);
   }
 
@@ -62,11 +81,28 @@ export class LilyPadSpawner {
     }
   }
 
+  /** Prueba varias X al azar en esta altura y usa la primera que no
+   * solape ningún obstáculo real (nenúfar + toda la columna de su propio
+   * impulso hacia arriba, ver overlapsObstacle). Si ninguna de las
+   * pruebas sirve (cúmulo casi tan ancho como el mundo, muy raro), este
+   * nenúfar simplemente no aparece — mejor una ronda de generación
+   * saltada que uno colocado encima de una roca o una pared. */
+  private trySpawnAvoidingObstacles(y: number) {
+    const yTop = y - LILY_PAD_BOOST_DISTANCE;
+    const yBottom = y + this.padHalfHeight;
+    for (let i = 0; i < OBSTACLE_AVOID_ATTEMPTS; i++) {
+      const x = Phaser.Math.Between(PAD_MARGIN_X, this.worldWidth - PAD_MARGIN_X);
+      if (!this.overlapsObstacle?.(x, yTop, yBottom, this.padHalfWidth)) {
+        this.spawnAt(x, y);
+        return;
+      }
+    }
+  }
+
   update(cameraTopY: number, cameraBottomY: number, time: number) {
     while (this.highestY > cameraTopY - SPAWN_LOOKAHEAD) {
       this.highestY -= Phaser.Math.Between(LILY_PAD_MIN_GAP, LILY_PAD_MAX_GAP);
-      const x = Phaser.Math.Between(PAD_MARGIN_X, this.worldWidth - PAD_MARGIN_X);
-      this.spawnAt(x, this.highestY);
+      this.trySpawnAvoidingObstacles(this.highestY);
     }
 
     this.pads = this.pads.filter((pad) => {

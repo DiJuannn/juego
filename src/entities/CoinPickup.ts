@@ -3,7 +3,6 @@ import { COIN_SCALE } from "@/config/GameConfig";
 
 const BOB_AMPLITUDE = 6;
 const BOB_SPEED = 1.4;
-const SPIN_SPEED = 0.9;
 
 /**
  * Moneda: recompensa + guía visual de ruta (ver CoinSpawner, que las coloca
@@ -25,12 +24,14 @@ export class CoinPickup {
     this.phase = Phaser.Math.FloatBetween(0, Math.PI * 2);
   }
 
-  /** Balanceo vertical + un leve "destello" de giro (escala X oscilando),
-   * para que se note interactiva sin necesitar un sprite animado nuevo. */
+  /** Solo balanceo vertical — pedido explícito: "que sean todas del mismo
+   * tamaño". El "destello" de giro anterior escalaba solo el eje X para
+   * simular un spin, pero eso hacía que dos monedas vistas en el mismo
+   * instante (cada una con su propia fase aleatoria) se leyeran de
+   * tamaño distinto. Todas quedan siempre a COIN_SCALE fijo. */
   update(time: number) {
     const t = time / 1000;
     this.sprite.y = this.baseY + Math.sin(t * BOB_SPEED + this.phase) * BOB_AMPLITUDE;
-    this.sprite.setScale(COIN_SCALE * (0.85 + 0.15 * Math.cos(t * SPIN_SPEED + this.phase)), COIN_SCALE);
   }
 
   playPickupAndDestroy(scene: Phaser.Scene, onComplete: () => void) {

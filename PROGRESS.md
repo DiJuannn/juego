@@ -87,6 +87,63 @@ funciona **hoy**, verificado en el código — no lo que el diseño aspira a ten
   propio juego, forzando la cámara a distintas altitudes: crossfade limpio
   `background_deep` → `background_abyss` entrando a offset 30000 (justo
   antes del tinte de la Zona 4 "Aguas profundas", a 37500).
+- **Corte cuadrado en `reef_maze_wall_shell`/`reef_maze_wall_sponge`**
+  (reportado con captura real: "estas cosas se ven el corte"). Causa real
+  encontrada: a diferencia de `reef_maze_wall` (rectángulo 1344×768, borde
+  irregular en un lado, pero on-screen ocupa casi toda `CORRIDOR_BAND_SPACING`
+  así que sus otros 3 bordes duros casi nunca se ven), `reef_maze_wall_shell`/
+  `_sponge` son un lienzo CUADRADO (1024×1024): con el mismo `edgeReach`,
+  su extensión on-screen queda en ~384px, muy por debajo de
+  `CORRIDOR_BAND_SPACING` (700) — dejando sus otros 3 bordes (duros, a
+  sangre completa) muy expuestos contra el agua abierta. `reef_maze_wall_shell`
+  encima solo tenía TRANSPARENCIA REAL en 0 de sus 4 bordes (ni siquiera el
+  de "alcance") — el más roto de los dos. Arreglado en dos pasos: (1)
+  generado con Gemini un borde festoneado limpio (conchas de altura
+  desigual con hueco transparente real entre ellas, mismo criterio que
+  `reef_maze_wall`/`_sponge`) tras 2 intentos fallidos (uno sin canal alpha,
+  otro con relación de aspecto equivocada) — el 3er intento sí sirvió,
+  recortado a cuadrado y reescalado a 1024×1024 preservando proporciones;
+  (2) aplicado ese MISMO perfil de festoneado (reutilizado, no una nueva
+  generación) también a los bordes izquierdo y derecho de AMBAS texturas
+  (shell y sponge — sponge ya tenía su borde superior bien pero los otros 3
+  igual de duros/expuestos), dejando solo el borde inferior a sangre
+  completa (el que de verdad queda oculto contra el borde del mundo, ver
+  `edgeFlush`). Verificado con composite en magenta y en el propio juego
+  forzando `reefClusterSpawner.spawnExact` con las plantillas shellMaze/
+  spongeMaze/reeflabyrinth una al lado de otra para comparar: ya no se lee
+  un rectángulo con esquinas duras, silueta festoneada en los 3 lados
+  expuestos igual que el resto de paredes de laberinto.
+- **Moneda rediseñada**: pedido explícito "que sean doradas redonditas y
+  que tengan el relieve de la cara de lumi frontal y que sean todas del
+  mismo tamaño". Nuevo `coin.png` generado con Gemini (disco dorado
+  metálico, cara de Lumi grabada en relieve en tonos dorados —no rosa—,
+  contorno lavanda, mismo destello que la moneda anterior), usando el
+  crop de la carita de Lumi de `idle_01.png` como referencia de qué
+  grabar. Además, `CoinPickup.update()` tenía un "destello de giro" que
+  oscilaba solo la escala X (simulando un spin) — eso hacía que dos
+  monedas vistas en el mismo instante, cada una con su propia fase
+  aleatoria, se leyeran de tamaño distinto; quitado del todo, ahora el
+  tamaño es `COIN_SCALE` fijo siempre (verificado programáticamente: todas
+  las monedas activas en juego con `scaleX === scaleY === COIN_SCALE`).
+- **Nenúfar sobre un obstáculo**: pedido explícito con captura real ("si
+  hay un obstáculo obstruyendo el propulsor del nenúfar, obviamente no se
+  pone"). `LilyPadSpawner` colocaba nenúfares en X aleatoria sin ninguna
+  noción de `ReefCluster`/`ReefClusterSpawner` — podía coincidir con un
+  cúmulo o pared de laberinto real. Añadido `ReefClusterSpawner.
+  overlapsObstacle(x, yTop, yBottom, halfWidth)`, que comprueba la caja de
+  colisión REAL (ya rotada/escalada) de cada pieza de cada cúmulo activo
+  contra un rectángulo — el nenúfar en sí MÁS toda la columna que recorre
+  su propio impulso hacia arriba (`LILY_PAD_BOOST_DISTANCE`), no solo el
+  punto donde se dibuja. `LilyPadSpawner` prueba hasta 8 posiciones X al
+  azar por altura y usa la primera libre; si ninguna sirve, ese nenúfar
+  simplemente no aparece esa vez (mejor saltarse uno que ponerlo mal). Los
+  animales (medusa cerca de la salida de un laberinto, etc.) no se tocan
+  — la petición del usuario explícitamente los deja fuera ("a no ser que
+  sea un enemigo al final ese si se puede dejar"). Verificado con un
+  stress test: 40 cúmulos/laberintos pegados cada 500px (mucho más denso
+  que el juego real) + `LilyPadSpawner.update()` sobre todo ese rango —
+  cero nenúfares solapando ningún obstáculo real, comprobado con la misma
+  `overlapsObstacle` contra la caja física de cada pieza.
 
 # EN PROGRESO
 
@@ -2189,13 +2246,11 @@ avanzando)
 
 # PRÓXIMA TAREA
 
-Esperar la reacción del usuario a esta ronda (arreglo del corte en las
-algas + 4ª variante de fondo `background_abyss` para las alturas nuevas)
-antes de seguir. En concreto, confirmar si el arreglo de las algas
-(agrandadas y bajadas) resuelve de verdad lo que vio en su captura — al no
-haberse podido aislar la causa exacta pixel a pixel, conviene una
-confirmación visual explícita antes de dar el bug por cerrado del todo.
-Líneas abiertas explícitas (rondas anteriores, sin resolver todavía):
+Esperar la reacción del usuario a esta ronda (borde festoneado en las
+paredes de laberinto de conchas/esponjas en vez del corte cuadrado, moneda
+dorada con la cara de Lumi en relieve y tamaño fijo, nenúfares que ya no
+se colocan encima de un obstáculo). Líneas abiertas explícitas (rondas
+anteriores, sin resolver todavía):
 
 0. **Confirmar que la "zona en paralelo" de erizos se lee bien en el
    móvil** — el pasillo libre entre las 2 columnas (offset 18950-19350)

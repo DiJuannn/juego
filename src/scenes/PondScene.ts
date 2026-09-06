@@ -232,7 +232,13 @@ export class PondScene extends Phaser.Scene {
 
     // Nenúfares: uno de salida en la misma posición de siempre, y el resto
     // se generan sin parar según Lumi sube. Tocar cualquiera da un boost.
-    this.lilyPadSpawner = new LilyPadSpawner(this, WORLD_WIDTH, 562, START_Y - 158);
+    // El callback se resuelve en el momento de llamarse, no al construir
+    // (reefClusterSpawner todavía no existe aquí, se crea más abajo) —
+    // mismo patrón que el resto de spawners con isWithinAnyClusterBand,
+    // solo que este se construye antes en vez de después.
+    this.lilyPadSpawner = new LilyPadSpawner(this, WORLD_WIDTH, 562, START_Y - 158, (x, yTop, yBottom, halfWidth) =>
+      this.reefClusterSpawner?.overlapsObstacle(x, yTop, yBottom, halfWidth) ?? false,
+    );
     this.physics.add.overlap(
       this.lumi.sprite,
       this.lilyPadSpawner.group,

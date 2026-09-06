@@ -124,6 +124,31 @@ export class ReefClusterSpawner {
     );
   }
 
+  /** Consultado por LilyPadSpawner — pedido explícito con captura real: un
+   * nenúfar apareció encima de la pared de un laberinto ("si hay un
+   * obstáculo obstruyendo el propulsor del nenúfar, obviamente no se
+   * pone"). A diferencia de `isWithinAnyClusterBand` (solo altura, para
+   * animales que ya reciben su propio hueco garantizado dentro del
+   * cúmulo), esto comprueba la caja de colisión REAL (ya rotada/escalada,
+   * ver ReefCluster) de cada pieza contra el rectángulo `[x±halfWidth,
+   * yTop..yBottom]` — el nenúfar en sí más toda la columna que recorre su
+   * propio impulso hacia arriba, no solo el punto donde se dibuja. */
+  overlapsObstacle(x: number, yTop: number, yBottom: number, halfWidth: number): boolean {
+    const left = x - halfWidth;
+    const right = x + halfWidth;
+    for (const cluster of this.clusters) {
+      if (yBottom < cluster.yTop || yTop > cluster.yBottom) continue;
+      for (const sprite of cluster.obstacleSprites) {
+        const body = sprite.body as Phaser.Physics.Arcade.StaticBody;
+        if (right < body.x || left > body.x + body.width || yBottom < body.y || yTop > body.y + body.height) {
+          continue;
+        }
+        return true;
+      }
+    }
+    return false;
+  }
+
   update(cameraTopY: number, cameraBottomY: number, time: number) {
     while (this.highestY > cameraTopY - SPAWN_LOOKAHEAD) {
       this.highestY -= Phaser.Math.Between(REEF_CLUSTER_MIN_GAP, REEF_CLUSTER_MAX_GAP);
