@@ -203,15 +203,6 @@ export interface ReefPieceSpec {
    * `edgeFlushX`. Solo tiene efecto en piezas `role:"obstacle"` (necesita
    * la textura real cargada). */
   edgeFlush?: "left" | "right";
-  /** Complemento de `edgeFlush` (pedido explícito: un obstáculo "que ocupe
-   * casi todo el mapa" con un hueco justo para pasar) — en vez de fijar la
-   * escala e IGNORAR cuánto invade el carril libre, esto IGNORA `scale` y
-   * calcula la escala exacta para que la pieza penetre `reachPx` desde el
-   * borde `side`, sea cual sea la textura/proporción real que le toque
-   * (pensado para usarse con un pool de piezas de tamaño variable, ver
-   * `WALL_PIECE_POOL`/`GAUNTLET_POOL` en ReefTemplates.ts). `side` debe
-   * coincidir con el de `edgeFlush` en la misma pieza. */
-  edgeReach?: { side: "left" | "right"; reachPx: number };
 }
 
 export interface ReefClusterSpec {
@@ -277,29 +268,14 @@ export class ReefCluster {
       if (piece.role === "obstacle") {
         const frac = HITBOX_FRACTION[piece.key];
 
-        // `edgeReach` IGNORA piece.scale y lo recalcula: se busca la escala
-        // que hace que la pieza, YA ROTADA, penetre exactamente `reachPx`
-        // desde su borde — igual que `edgeFlushX` calcula X a partir de un
-        // scale dado, esto calcula el scale a partir de un reach dado.
-        // Como rotatedAABB es lineal en `scale` (confirmado: dW/dH y sus
-        // rotaciones son proporcionales, sin término constante), basta con
-        // medir el ancho de penetración a escala 1 y dividir.
-        let scale = piece.scale;
         let x = piece.x;
-        if (frac) {
+        if (piece.edgeFlush && frac) {
           const tex = scene.textures.get(piece.key).getSourceImage() as HTMLImageElement;
-          if (piece.edgeReach) {
-            const aabbAt1 = rotatedAABB(tex, frac, piece.rotation ?? 0, 1);
-            const reachAt1 = aabbAt1.xmax - aabbAt1.xmin;
-            scale = piece.edgeReach.reachPx / reachAt1;
-          }
-          if (piece.edgeFlush) {
-            x = edgeFlushX(tex, frac, piece.rotation ?? 0, scale, worldWidth, piece.edgeFlush);
-          }
+          x = edgeFlushX(tex, frac, piece.rotation ?? 0, piece.scale, worldWidth, piece.edgeFlush);
         }
 
         const sprite = scene.physics.add.staticImage(x, piece.y, piece.key);
-        sprite.setScale(scale);
+        sprite.setScale(piece.scale);
         sprite.setDepth(DEPTH_BY_ROLE.obstacle);
         if (piece.rotation) sprite.setRotation(piece.rotation);
         if (piece.flipX) sprite.setFlipX(true);
@@ -316,7 +292,7 @@ export class ReefCluster {
           // BigFish, arreglado en el mismo cambio). Tampoco rota el body
           // con sprite.rotation, ver rotatedFractionalBody arriba.
           const tex = scene.textures.get(piece.key).getSourceImage() as HTMLImageElement;
-          const { w, h, offsetX, offsetY } = rotatedFractionalBody(tex, frac, piece.rotation ?? 0, scale);
+          const { w, h, offsetX, offsetY } = rotatedFractionalBody(tex, frac, piece.rotation ?? 0, piece.scale);
           (sprite.body as Phaser.Physics.Arcade.StaticBody).setSize(w, h).setOffset(offsetX, offsetY);
           baseBody = { w, h, offsetX, offsetY };
         }
@@ -326,7 +302,7 @@ export class ReefCluster {
         if (!NO_BREATHE_KEYS.has(piece.key)) {
           this.breathingObstacles.push({
             sprite,
-            baseScale: scale,
+            baseScale: piece.scale,
             periodMs: Phaser.Math.FloatBetween(BREATHE_PERIOD_MIN, BREATHE_PERIOD_MAX),
             phase: Phaser.Math.FloatBetween(0, Math.PI * 2),
             body: baseBody,
