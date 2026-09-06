@@ -725,6 +725,65 @@ function grandMaze(worldWidth: number, centerY: number): ReefClusterSpec {
   return { pieces, path, yTop: yExit - 260, yBottom: yEntrance + 260 };
 }
 
+/**
+ * 8) Laberinto en zigzag doble: pedido explícito ("crea más estilos de
+ * laberintos con otros diseños que aparezcan más arriba") — un ritmo de
+ * paso distinto a los otros 3 laberintos. `reefLabyrinth`/`miniLabyrinth`
+ * alternan de lado en CADA banda (A/B/A); `grandMaze` mezcla corredores
+ * laterales con una "puerta" recta al centro. Aquí en cambio se insiste
+ * DOS bandas seguidas en el MISMO lado antes de cruzar del todo (A/A/B/B)
+ * — un pasillo largo pegado a un borde (dos bandas de "ir arriba" sin
+ * cambiar de lado) y luego un cruce completo al otro extremo, en vez de un
+ * zigzag constante. Mismo mecanismo de seguridad que el resto
+ * (`corridorWall`/`edgeReach`, hueco EXACTO garantizado por banda,
+ * ninguna animación de escala en vivo en las paredes) y mismos animales
+ * reales dentro según altura (`labyrinthAnimalTier`, ver miniLabyrinth).
+ */
+function doubleZigzagMaze(worldWidth: number, centerY: number): ReefClusterSpec {
+  const y1 = centerY + CORRIDOR_BAND_SPACING * 1.5;
+  const y2 = centerY + CORRIDOR_BAND_SPACING * 0.5;
+  const y3 = centerY - CORRIDOR_BAND_SPACING * 0.5;
+  const y4 = centerY - CORRIDOR_BAND_SPACING * 1.5;
+  const ys = [y1, y2, y3, y4];
+
+  const sideA: Side = Math.random() < 0.5 ? "left" : "right";
+  const sideB = otherSide(sideA);
+  const sides: Side[] = [sideA, sideA, sideB, sideB];
+
+  const jitterReach = () => CORRIDOR_REACH_PX * (1 + Phaser.Math.FloatBetween(-0.05, 0.05));
+  const reaches = sides.map(() => jitterReach());
+  const gaps = sides.map((side, i) => corridorGapCenterX(worldWidth, side, reaches[i]));
+
+  const pieces: ReefPieceSpec[] = sides.map((side, i) => corridorWall(side, ys[i], reaches[i]));
+  pieces.push(
+    bgAccent("reef_rock_spikes", sides[3] === "left" ? worldWidth * 0.08 : worldWidth * 0.92, y4 - 150, 0.16),
+  );
+
+  const path: { x: number; y: number }[] = [{ x: gaps[0], y: y1 + 200 }];
+  for (let i = 0; i < 4; i++) {
+    path.push({ x: gaps[i], y: ys[i] });
+    if (i < 3) path.push({ x: (gaps[i] + gaps[i + 1]) / 2, y: (ys[i] + ys[i + 1]) / 2 });
+  }
+  path.push({ x: gaps[3], y: y4 - 200 });
+
+  const tier = labyrinthAnimalTier(centerY);
+  const inward = (side: Side) => (side === "left" ? 1 : -1);
+  const bands = sides.map((side, i) => ({ side, gap: gaps[i], y: ys[i] }));
+  const animalHints = Phaser.Utils.Array.Shuffle(bands.slice())
+    .slice(0, tier)
+    .map((band) => {
+      const type = (Math.random() < 0.5 ? "urchin" : "seahorse") as "urchin" | "seahorse";
+      return {
+        type,
+        x: band.gap + inward(band.side) * LABYRINTH_ANIMAL_OFFSET_PX,
+        y: band.y,
+        patrolRadius: type === "seahorse" ? LABYRINTH_SEAHORSE_PATROL_RADIUS : undefined,
+      };
+    });
+
+  return { pieces, path, yTop: y4 - 250, yBottom: y1 + 250, animalHints };
+}
+
 export const REEF_TEMPLATES: ((worldWidth: number, centerY: number) => ReefClusterSpec)[] = [
   diagonalLeft,
   centerTwoPaths,
@@ -733,4 +792,5 @@ export const REEF_TEMPLATES: ((worldWidth: number, centerY: number) => ReefClust
   reefLabyrinth,
   miniLabyrinth,
   grandMaze,
+  doubleZigzagMaze,
 ];

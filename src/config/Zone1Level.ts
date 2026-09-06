@@ -62,12 +62,23 @@ import type { UrchinVariant } from "@/entities/Urchin";
 // Tramo 3 (pedido explícito, segundo laberinto — ver el final del array):
 // grandMaze en offset 25600 ocupa el rango [25600-1760, 25600+1760] =
 // [23840,27360] (recalculado tras cambiar su arte a un seto de hojas:
-// GRAND_MAZE_BAND_SPACING subió de 820 a 1000, ver ReefTemplates.ts), así
-// que el nivel scripteado ya no termina en 23040 sino después de esa
-// banda + un margen para que Lumi tenga agua abierta para recuperarse
-// antes de que arranque la corriente (ver CURRENT_ZONE_START_OFFSET en
-// GameConfig.ts, que se deriva de este valor).
-export const ZONE1_LEVEL_END_OFFSET = 27360 + 800;
+// GRAND_MAZE_BAND_SPACING subió de 820 a 1000, ver ReefTemplates.ts).
+// Tramo 4 (pedido explícito de una ronda posterior: "crea más estilos de
+// laberintos con otros diseños que aparezcan más arriba o diferentes
+// combinaciones de los ya existentes") — "gran final" de 3 laberintos
+// distintos seguidos, cada uno más arriba que el anterior: grandMaze (ya
+// colocado arriba) → reefLabyrinth REPETIDO más arriba (índice 4, hasta
+// ahora solo usado una vez, al principio de todo — "combinación de los ya
+// existentes") → doubleZigzagMaze, el estilo nuevo (índice 7). reefLabyrinth
+// centrado en 28710 ocupa [28710-950,28710+950]=[27760,29660] (margen de
+// 400 tras el final de grandMaze en 27360); doubleZigzagMaze centrado en
+// 31360 ocupa [31360-1300,31360+1300]=[30060,32660] (margen de 400 tras el
+// final del laberinto anterior en 29660). El nivel scripteado ya no
+// termina en 27360 sino después de esta banda + el mismo margen de
+// siempre para que Lumi tenga agua abierta para recuperarse antes de que
+// arranque la corriente (ver CURRENT_ZONE_START_OFFSET en GameConfig.ts,
+// que se deriva de este valor).
+export const ZONE1_LEVEL_END_OFFSET = 32660 + 800;
 
 export type Zone1LevelEntryType =
   | "jellyfish"
@@ -95,7 +106,7 @@ export interface Zone1LevelEntry {
   x?: number;
   /** Solo para "reef": índice en REEF_TEMPLATES (0=diagonalLeft,
    * 1=centerTwoPaths, 2=sCurveEdges, 3=lateralWall, 4=reefLabyrinth,
-   * 5=miniLabyrinth, 6=grandMaze). */
+   * 5=miniLabyrinth, 6=grandMaze, 7=doubleZigzagMaze). */
   reefTemplate?: number;
   /** Solo para "shark": fuerza el sentido de patrulla en vez de tirarlo al
    * azar — pedido explícito: dos tiburones seguidos patrullando en
@@ -295,4 +306,29 @@ export const ZONE1_LEVEL_ENTRIES: Zone1LevelEntry[] = [
   // después de ZONE1_LEVEL_END_OFFSET, para que el usuario lo encuentre
   // de verdad sin depender de una partida muy larga.
   { type: "reef", offset: 25600, reefTemplate: 6 }, // grandMaze — banda ~[23840,27360]
+
+  // --- Tramo 4: "gran final" de laberintos (pedido explícito: "crea más
+  // estilos de laberintos con otros diseños que aparezcan más arriba o
+  // diferentes combinaciones de los ya existentes") — 2 laberintos más,
+  // cada uno más arriba y distinto del anterior, cerrando el nivel
+  // scripteado con el tramo más difícil de todos. El tiburón de aquí ya
+  // cae en el segundo umbral de persecución (SHARK_CHASE_MIN_OFFSET_HARD
+  // = 22000): persigue más rápido y con más frecuencia que los de más
+  // abajo — pedido explícito ("entre más arriba los animales hagan
+  // distintos movimientos... para que sean más difíciles").
+  { type: "shark", offset: 27560, x: 350 },
+
+  // reefLabyrinth REPETIDO (índice 4) — hasta ahora solo aparecía una vez,
+  // al principio de todo (offset 1200): "diferentes combinaciones de los
+  // ya existentes" es literalmente esto, el mismo diseño probado pero
+  // mucho más arriba, con la cámara ya más rápida y el tiburón ya
+  // agresivo alrededor. Banda [28710-950,28710+950]=[27760,29660].
+  { type: "reef", offset: 28710, reefTemplate: 4 }, // reefLabyrinth — banda ~[27760,29660]
+  { type: "flyingfish", offset: 29860, x: 300 },
+
+  // doubleZigzagMaze, el estilo NUEVO (índice 7, ver ReefTemplates.ts) —
+  // dos bandas seguidas pegadas al mismo lado antes de cruzar del todo,
+  // en vez del zigzag de siempre. Cierra el nivel scripteado en el punto
+  // más alto y más difícil. Banda [31360-1300,31360+1300]=[30060,32660].
+  { type: "reef", offset: 31360, reefTemplate: 7 }, // doubleZigzagMaze — banda ~[30060,32660]
 ];

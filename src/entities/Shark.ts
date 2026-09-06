@@ -1,5 +1,6 @@
 import Phaser from "phaser";
 import {
+  SHARK_CHASE_COOLDOWN_MS,
   SHARK_CHASE_DURATION_MS,
   SHARK_CHASE_SPEED,
   SHARK_CHASE_TRIGGER_RANGE_X,
@@ -30,9 +31,15 @@ const WORLD_MARGIN_X = 80;
  *
  * Progresión (pedido explícito): los tiburones marcados `canChase` (ver
  * SharkSpawner — solo los que aparecen ya cerca del final de la Zona 1)
- * pueden lanzarse UNA vez, si Lumi pasa cerca, en una persecución corta a
- * mayor velocidad antes de volver a su patrulla normal — nunca de forma
- * permanente.
+ * pueden lanzarse, si Lumi pasa cerca, en una persecución corta a mayor
+ * velocidad antes de volver a su patrulla normal. Pedido explícito de una
+ * ronda posterior ("que persigan y te dejen de perseguir etc"): esto ya
+ * NO es un evento de una sola vez por tiburón — tras un enfriamiento
+ * (`chaseCooldownMs`) puede volver a lanzarse si Lumi se le acerca otra
+ * vez, indefinidamente. Más arriba en altura (`chaseSpeed`/
+ * `chaseCooldownMs` más agresivos, ver SharkSpawner) persigue más rápido
+ * y con más frecuencia — la progresión de dificultad no es solo "puede
+ * perseguir sí/no", sino "cuánto de agresiva es esa persecución".
  */
 export class Shark {
   readonly sprite: Phaser.Physics.Arcade.Image;
@@ -43,8 +50,9 @@ export class Shark {
   private direction: 1 | -1;
   private readonly blinkTimer = new BlinkTimer();
   private isBlinking = false;
-  private hasChased = false;
+  private wasChasing = false;
   private chasingUntil = 0;
+  private nextChaseAllowedMs = 0;
 
   constructor(
     scene: Phaser.Scene,
@@ -57,6 +65,8 @@ export class Shark {
     private readonly canChase: boolean,
     private readonly getLumiPosition: () => { x: number; y: number },
     forcedDirection?: 1 | -1,
+    private readonly chaseSpeed: number = SHARK_CHASE_SPEED,
+    private readonly chaseCooldownMs: number = SHARK_CHASE_COOLDOWN_MS,
   ) {
     this.sprite = scene.physics.add.image(x, y, "shark");
     this.sprite.setScale(scale);
@@ -92,14 +102,17 @@ export class Shark {
   }
 
   private maybeStartChase(time: number) {
-    if (!this.canChase || this.hasChased) return;
+    if (!this.canChase || time < this.nextChaseAllowedMs) return;
     const lumi = this.getLumiPosition();
     const closeEnough =
       Math.abs(lumi.x - this.sprite.x) < SHARK_CHASE_TRIGGER_RANGE_X &&
       Math.abs(lumi.y - this.sprite.y) < SHARK_CHASE_TRIGGER_RANGE_Y;
     if (!closeEnough) return;
-    this.hasChased = true;
     this.chasingUntil = time + SHARK_CHASE_DURATION_MS;
+    // El enfriamiento se cuenta desde que ESTA persecución termina, no
+    // desde ahora — así la duración de la persecución en sí nunca se lo
+    // come.
+    this.nextChaseAllowedMs = this.chasingUntil + this.chaseCooldownMs;
   }
 
   update(time: number) {
@@ -112,15 +125,16 @@ export class Shark {
       const lumi = this.getLumiPosition();
       this.direction = lumi.x >= this.sprite.x ? 1 : -1;
       this.sprite.setFlipX(this.direction === 1);
-      this.sprite.setVelocityX(SHARK_CHASE_SPEED * this.direction);
+      this.sprite.setVelocityX(this.chaseSpeed * this.direction);
+      this.wasChasing = true;
     } else {
-      if (this.hasChased && this.chasingUntil !== 0) {
+      if (this.wasChasing) {
         // La persecución acaba de terminar: recentra el radio de patrulla
         // alrededor de donde quedó, recortado a los bordes del mundo, para
         // no dejarlo "colgado" fuera de su rango original de vaivén.
         this.minX = Math.max(WORLD_MARGIN_X, this.sprite.x - SHARK_PATROL_RANGE);
         this.maxX = Math.min(this.worldWidth - WORLD_MARGIN_X, this.sprite.x + SHARK_PATROL_RANGE);
-        this.chasingUntil = 0;
+        this.wasChasing = false;
       }
 
       if (this.sprite.x >= this.maxX && this.direction === 1) {

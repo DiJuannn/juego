@@ -178,8 +178,10 @@ export const CAMERA_RISE_RAMP_ALTITUDE = 650 * 1.6 * 2;
 // primera aparición ya no es un *_START_OFFSET fijo: la decide el nivel
 // scripteado del Tramo 1 (ver Zone1Level.ts) — estos valores solo rigen
 // su cadencia aleatoria a partir de ahí.
-export const SHARK_MIN_GAP = 1200 * 1.6 * 2;
-export const SHARK_MAX_GAP = 2000 * 1.6 * 2;
+// Pedido explícito: "que los tiburones salgan más a menudo" — bajado
+// ~35% (antes 3840/6400) para que aparezcan con bastante más frecuencia.
+export const SHARK_MIN_GAP = 1200 * 1.6 * 2 * 0.65;
+export const SHARK_MAX_GAP = 2000 * 1.6 * 2 * 0.65;
 // Pedido explícito: "los animales un 20% más pequeños todos menos el
 // erizo y la medusa" — tiburón, calamar y pez grande sí, erizo/medusa no
 // se tocan (ver URCHIN_SCALE/JELLYFISH_SCALE).
@@ -195,14 +197,26 @@ export const SHARK_PATROL_SPEED = 130;
 export const SHARK_PATROL_RANGE = 1000; // px a cada lado del punto de aparición (recortado a los márgenes del mundo)
 
 // Progresión del tiburón: los que aparecen ya cerca del final de la Zona 1
-// pueden, una única vez cada uno (nunca de forma permanente), lanzarse en
-// una persecución corta hacia Lumi si pasa cerca — un evento puntual que
-// culmina la progresión del enemigo, no un comportamiento nuevo constante.
+// pueden lanzarse en una persecución corta hacia Lumi si pasa cerca.
+// Pedido explícito de una ronda posterior: "que persigan y te dejen de
+// perseguir etc" — ya NO es un evento de una sola vez por tiburón (antes
+// `hasChased`), sino un ciclo que se puede repetir tras un enfriamiento
+// (ver SHARK_CHASE_COOLDOWN_MS): persigue, vuelve a patrullar, y si Lumi
+// se le vuelve a acercar más tarde, puede lanzarse otra vez.
 export const SHARK_CHASE_MIN_OFFSET = 5000 * 1.6 * 2; // reescalado con el resto de la Zona 1 (ver arriba)
 export const SHARK_CHASE_TRIGGER_RANGE_X = 260;
 export const SHARK_CHASE_TRIGGER_RANGE_Y = 240;
 export const SHARK_CHASE_SPEED = 240;
 export const SHARK_CHASE_DURATION_MS = 2200;
+export const SHARK_CHASE_COOLDOWN_MS = 4000;
+// Segundo umbral, más arriba (pedido explícito: "entre más arriba los
+// animales hagan distintos movimientos... para que sean más difíciles") —
+// pasado este punto los tiburones persiguen con más frecuencia (menos
+// enfriamiento) y más rápido, en vez de quedarse siempre con la misma
+// intensidad de persecución del primer umbral.
+export const SHARK_CHASE_MIN_OFFSET_HARD = 22000;
+export const SHARK_CHASE_SPEED_HARD = 290;
+export const SHARK_CHASE_COOLDOWN_MS_HARD = 2000;
 
 // Calamares: tercer enemigo — impulsos rápidos en vez de patrulla
 // constante, para que cada peligro se esquive de forma distinta. Su debut

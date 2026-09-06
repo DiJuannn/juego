@@ -1,7 +1,12 @@
 import Phaser from "phaser";
 import { Shark } from "@/entities/Shark";
 import {
+  SHARK_CHASE_COOLDOWN_MS,
+  SHARK_CHASE_COOLDOWN_MS_HARD,
   SHARK_CHASE_MIN_OFFSET,
+  SHARK_CHASE_MIN_OFFSET_HARD,
+  SHARK_CHASE_SPEED,
+  SHARK_CHASE_SPEED_HARD,
   SHARK_MAX_GAP,
   SHARK_MIN_GAP,
   SHARK_PATROL_RANGE,
@@ -62,9 +67,17 @@ export class SharkSpawner {
     const minX = Math.max(WORLD_MARGIN_X, finalX - SHARK_PATROL_RANGE);
     const maxX = Math.min(this.worldWidth - WORLD_MARGIN_X, finalX + SHARK_PATROL_RANGE);
     // Progresión (pedido explícito): solo los tiburones que ya aparecen
-    // cerca del final de la Zona 1 pueden lanzar la persecución puntual —
-    // los primeros que ve el jugador se quedan en patrulla simple.
-    const canChase = START_Y - y >= SHARK_CHASE_MIN_OFFSET;
+    // cerca del final de la Zona 1 pueden perseguir — los primeros que ve
+    // el jugador se quedan en patrulla simple. Pedido explícito de una
+    // ronda posterior ("entre más arriba... para que sean más difíciles"):
+    // pasado un segundo umbral, más arriba todavía, persiguen más rápido y
+    // con más frecuencia (menos enfriamiento) en vez de con la misma
+    // intensidad de siempre.
+    const climbed = START_Y - y;
+    const canChase = climbed >= SHARK_CHASE_MIN_OFFSET;
+    const hardTier = climbed >= SHARK_CHASE_MIN_OFFSET_HARD;
+    const chaseSpeed = hardTier ? SHARK_CHASE_SPEED_HARD : SHARK_CHASE_SPEED;
+    const chaseCooldownMs = hardTier ? SHARK_CHASE_COOLDOWN_MS_HARD : SHARK_CHASE_COOLDOWN_MS;
     const shark = new Shark(
       this.scene,
       finalX,
@@ -76,6 +89,8 @@ export class SharkSpawner {
       canChase,
       this.getLumiPosition,
       direction,
+      chaseSpeed,
+      chaseCooldownMs,
     );
     this.group.add(shark.sprite);
     this.sharks.push(shark);

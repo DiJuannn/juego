@@ -1981,6 +1981,68 @@ funciona **hoy**, verificado en el código — no lo que el diseño aspira a ten
     hitbox por Playwright confirmando tamaño/textura correctos por tipo,
     captura in-game confirmando arte y estilo correctos, build de
     producción empaquetando ambos PNG nuevos.
+- **Tiburón: persecución repetible + más frecuente + más agresiva más
+  arriba** (pedido explícito: "que los tiburones salgan más a menudo, que
+  persigan y te dejen de perseguir etc" + "entre más arriba los animales
+  hagan distintos movimientos... para que sean más difíciles").
+  - `SHARK_MIN_GAP`/`SHARK_MAX_GAP` bajados ~35% — aparecen bastante más a
+    menudo.
+  - `Shark.ts`: la persecución YA NO es un evento de una sola vez por
+    tiburón (`hasChased` retirado) — ahora un ciclo repetible con
+    enfriamiento (`nextChaseAllowedMs`, contado desde que ESA persecución
+    termina): persigue, vuelve a patrullar, y si Lumi se le acerca otra
+    vez más tarde (pasado el enfriamiento), puede lanzarse de nuevo,
+    indefinidamente. `wasChasing` sustituye al chequeo `hasChased &&
+    chasingUntil !== 0` para decidir cuándo recentrar el radio de patrulla
+    tras cada persecución.
+  - Segundo umbral de altura (`SHARK_CHASE_MIN_OFFSET_HARD=22000`): pasado
+    ese punto, la persecución es más rápida (`SHARK_CHASE_SPEED_HARD=290`
+    vs 240) y con menos enfriamiento (`SHARK_CHASE_COOLDOWN_MS_HARD=2000`
+    vs 4000) — la progresión ya no es solo "puede perseguir sí/no", sino
+    "cuán agresiva es esa persecución", calculada en `SharkSpawner.place()`
+    a partir de la altura escalada (`START_Y - y`) y pasada al
+    constructor de `Shark`.
+  - Verificado con un probe dedicado (Playwright, tiburón colocado junto a
+    Lumi a una altura escalada por encima del umbral duro, con
+    `handleHazardHit` neutralizado solo para el probe): 2 ciclos completos
+    de persecución→patrulla→persecución observados de verdad (velocidad
+    -290/130/-290, distancia cerrándose y volviendo a abrirse), confirmando
+    que el enfriamiento y el nuevo disparo funcionan como se pidió.
+- **Nuevo estilo de laberinto: zigzag doble** (pedido explícito: "crea más
+  estilos de laberintos con otros diseños que aparezcan más arriba o
+  diferentes combinaciones de los ya existentes"). `doubleZigzagMaze`
+  (índice 7 en `REEF_TEMPLATES`, `ReefTemplates.ts`) reutiliza el mismo
+  mecanismo de seguridad que los otros 3 laberintos (`corridorWall`/
+  `edgeReach`, hueco EXACTO garantizado por banda) pero con un ritmo de
+  paso distinto: en vez de alternar de lado en CADA banda (A/B/A, como
+  `reefLabyrinth`/`miniLabyrinth`) o mezclar corredores con una "puerta"
+  central (`grandMaze`), aquí se insiste DOS bandas seguidas en el MISMO
+  lado antes de cruzar del todo al otro extremo (A/A/B/B) — un pasillo
+  largo pegado a un borde, luego un cruce completo, en vez de un zigzag
+  constante. Mismos animales reales dentro según altura
+  (`labyrinthAnimalTier`, reutilizado tal cual).
+  - Verificado matemáticamente (misma garantía que `reefLabyrinth`: una
+    sola pared por banda, `CORRIDOR_REACH_PX=400±5%` como máximo, nunca
+    más de 420px de penetración en un mundo de 690px → al menos 270px
+    libres siempre) y con un probe de Playwright: 6 instancias generadas a
+    distintas alturas, midiendo el hueco libre real de cada banda por
+    hitbox — todas entre 280-340px, dentro de lo esperado. Captura in-game
+    confirmando que se ve y se lee igual que `reefLabyrinth` (mismo pool de
+    rocas), solo con la secuencia de lados distinta.
+- **Tramo 4: "gran final" de laberintos** (misma tanda de pedido,
+  "diferentes combinaciones de los ya existentes" + "más arriba") —
+  extiende el nivel scripteado con 2 laberintos más después de `grandMaze`,
+  cada uno más arriba y distinto: un tiburón ya en el umbral agresivo
+  (offset 27560) → `reefLabyrinth` REPETIDO (índice 4, hasta ahora solo
+  usado una vez al principio de todo, offset 1200 — literalmente "una
+  combinación de los ya existentes" en un punto muy distinto del nivel) en
+  offset 28710 → un pez volador en el hueco → `doubleZigzagMaze`, el
+  estilo nuevo, en offset 31360, cerrando el nivel scripteado en el punto
+  más alto y difícil de todos. `ZONE1_LEVEL_END_OFFSET` subido de 28160 a
+  33460 en consecuencia (cambio puramente aditivo: ningún offset anterior
+  se tocó, solo se extendió la cola). Igual que el resto de repeticiones de
+  laberinto, ya no depende de la generación al azar para que el usuario lo
+  vea — está garantizado dentro del nivel diseñado a mano.
 
 # PENDIENTE
 
@@ -2045,15 +2107,20 @@ avanzando)
 
 # PRÓXIMA TAREA
 
-Esperar la reacción del usuario a esta ronda (2 tipos nuevos de erizo,
-columna vertical de erizos + zona de 2 columnas en paralelo) antes de
-seguir. Líneas abiertas explícitas:
+Esperar la reacción del usuario a esta ronda (tiburón más frecuente y con
+persecución repetible/progresiva, laberinto nuevo doubleZigzagMaze,
+Tramo 4 con reefLabyrinth repetido) antes de seguir. Líneas abiertas
+explícitas:
 
-0. **Confirmar que la "zona en paralelo" se lee bien en el móvil** — el
-   pasillo libre entre las 2 columnas (offset 18950-19350) mide ~260-320px
-   verificado por hitbox real, pero solo se probó en el viewport de
-   escritorio de este entorno de test; pedir confirmación real en pantalla
-   táctil antes de repetir el patrón en más sitios.
+0. **Confirmar que la "zona en paralelo" de erizos se lee bien en el
+   móvil** — el pasillo libre entre las 2 columnas (offset 18950-19350)
+   mide ~260-320px verificado por hitbox real, pero solo se probó en el
+   viewport de escritorio de este entorno de test; pedir confirmación real
+   en pantalla táctil antes de repetir el patrón en más sitios.
+0b. **El Tramo 4 nuevo (offset ~27560-32660) alarga bastante la partida
+   completa** — es un cambio puramente aditivo (nada anterior se movió),
+   pero conviene que el usuario confirme que el ritmo hasta el final se
+   sigue sintiendo bien tras la extensión, no solo que "funciona".
 1. **"Mejora las animaciones de los animales"** — atendido para el
    caballito en la ronda anterior; el resto (medusa aparte del rastro de
    burbujas, tiburón, calamar, erizo, cangrejo, pez grande, coral trampa,
