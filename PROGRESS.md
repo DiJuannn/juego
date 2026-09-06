@@ -1490,6 +1490,54 @@ funciona **hoy**, verificado en el código — no lo que el diseño aspira a ten
     refiere a otra cosa (p.ej. una formación de animales, no de rocas).
   - Playtest automático de 20s sin errores ni cuelgues (zigzag aleatorio),
     `npx tsc --noEmit` limpio, build de producción real exitoso.
+- **Segundo laberinto, distinto del primero (aclaración del usuario)**:
+  "lo del laberinto me refiero a otro extra, no el que ya tenemos. El que
+  ya tenemos está súper [no se toca]. Pero el que digo yo es hacer otro
+  pero diferente. Que sea más grande y mejor diseñado... hueco de entrada
+  y correr hacia al lado y luego hacia el frente y otra vez hacia al lado
+  y por último hacia arriba, pero que tenga un diseño como de laberinto
+  de verdad, laberinto submarino." Nueva 7ª plantilla `grandMaze` en
+  `ReefTemplates.ts` (índice 6), deliberadamente distinta de
+  `reefLabyrinth`/`miniLabyrinth`, no solo un reescalado:
+  - 4 bandas (una más que `reefLabyrinth`) con más penetración (430px vs
+    400px) y más separación vertical (820px vs 700px) — más grande de
+    verdad.
+  - Introduce un tipo de paso que ningún otro laberinto tenía: una
+    "puerta" (`mazeGate`) con pared de roca a AMBOS lados y un hueco
+    centrado (~320px) — hay que cruzar recto por el centro, no esquivar
+    hacia un lado. Se intercala entre los corredores de un solo lado de
+    siempre (entrada → puerta → corredor lado contrario → salida),
+    mezclando dos "idiomas" de paso distintos dentro del mismo cúmulo —
+    eso es lo que lo hace sentir como un laberinto real, pedido explícito
+    del usuario, y no una repetición del mismo patrón.
+  - Hornacina decorativa junto a la puerta (role "background", sin
+    colisión): un "camino falso" que no lleva a ningún sitio, como en un
+    laberinto de verdad, sin ningún riesgo real porque no colisiona.
+  - Misma garantía de seguridad que los otros dos laberintos: solo piezas
+    de roca sin animación de escala en vivo (`CORRIDOR_WALL_POOL`,
+    reutilizado tal cual) en las 4 bandas y en la puerta.
+  - Igual que `reefLabyrinth` en el Tramo 0: se garantiza en un nuevo
+    "Tramo 3" al final de `ZONE1_LEVEL_ENTRIES` (offset 25330, justo
+    después del gauntlet final de siempre) en vez de dejarlo solo a la
+    generación al azar de después de `ZONE1_LEVEL_END_OFFSET` — mismo
+    motivo que la vez pasada: así el usuario lo encuentra de verdad sin
+    depender de una partida muy larga. `ZONE1_LEVEL_END_OFFSET` se
+    recalculó para reflejar el nuevo final real del nivel scripteado
+    (26820 + 800 de margen antes de la corriente), y
+    `CURRENT_ZONE_START_OFFSET` en GameConfig.ts sigue derivándose de él
+    automáticamente (no se desincroniza).
+  - También añadido a la rotación normal de `REEF_TEMPLATES`, así que
+    también puede volver a aparecer al azar más adelante.
+  - Verificado con `body.position` (25 muestras aisladas): siempre 4
+    bandas, hueco mínimo 249px (>4× el ancho real de Lumi), cero
+    solapamiento vertical entre bandas en las 25, y el hueco de la puerta
+    (~320-340px con jitter) claramente distinto de los huecos de un solo
+    lado — confirma que el mecanismo de doble pared funciona. Confirmado
+    también que el Tramo 3 se coloca de verdad al arrancar una partida
+    nueva (10 cúmulos scripteados presentes desde el primer frame, el
+    último con el rango de banda exacto esperado del `grandMaze`).
+    Playtest automático sin errores, `npx tsc --noEmit` limpio, build de
+    producción real exitoso.
 
 # PENDIENTE
 
@@ -1534,23 +1582,19 @@ que se cerraron)
 
 # PRÓXIMA TAREA
 
-Ronda grande de 5 pedidos en un solo mensaje, todos atendidos salvo uno
-(ver EN PROGRESO para el detalle completo de cada arreglo): anémona/
-coral_fan ya animan mucho más (no "pngs quietos"), erizo y almeja tienen
-movimiento más elaborado, medusa/erizo a veces aparecen en pareja, y el
-mapa ya pesa más hacia animales que hacia obstáculos (hueco de arrecife
-de vuelta a su valor base). El "laberinto que sigues sin hacer" se
-investigó a fondo (33 despliegues de GitHub Actions, todos exitosos, el
-código en producción coincide con lo verificado en el motor) sin
-encontrar ninguna causa real del lado del código — se le pidió al usuario
-un refresco forzado del navegador y una aclaración de si por "laberinto"
-sigue refiriéndose al pasillo de rocas ya construido o a otra cosa.
+El usuario aclaró lo del laberinto: no se refería al que ya existe
+("está súper, no se toca") sino a pedir uno SEGUNDO y distinto, más
+grande y "de verdad" — ya construido como `grandMaze` (ver EN PROGRESO),
+con un mecanismo de paso nuevo (la "puerta" de doble pared) que ningún
+otro laberinto tenía, garantizado en un nuevo Tramo 3 al final del nivel
+scripteado. Esperar su reacción a este segundo laberinto antes de tocar
+nada más sobre el tema — si tampoco es exactamente lo que pedía, pedir
+que describa qué le falta en concreto (¿más bandas? ¿un tipo de paso
+distinto? ¿otra ubicación?) en vez de adivinar una tercera vez.
 
-Queda sin empezar: "crea más animales" (pedido dos veces seguidas) — la
-única tarea de esta ronda que necesita arte nuevo (Gemini), así que es la
-más grande. Al retomarla, decidir con el usuario qué piezas hoy
-decorativas (anémona, percebe, esponja...) tienen sentido como animal
-activo, o diseñar una especie nueva desde cero, siguiendo el mismo patrón
-Entity+Spawner+overlap ya usado 7 veces. Antes de eso, esperar su
-respuesta sobre el laberinto (para no seguir dando vueltas sobre el mismo
-malentendido) y su reacción a las animaciones/densidad de esta ronda.
+Sigue sin empezar, y sigue siendo lo más grande que queda: "crea más
+animales" (pedido varias veces) — la única tarea de todo este hilo que
+necesita arte nuevo (Gemini). Al retomarla, decidir con el usuario qué
+piezas hoy decorativas (anémona, percebe, esponja...) tienen sentido como
+animal activo, o diseñar una especie nueva desde cero, siguiendo el mismo
+patrón Entity+Spawner+overlap ya usado 7 veces.

@@ -649,6 +649,141 @@ function miniLabyrinth(worldWidth: number, centerY: number): ReefClusterSpec {
   return { pieces, path, yTop: topY - 150, yBottom: bottomY + 150 };
 }
 
+/**
+ * 7) Gran laberinto submarino: pedido explícito del usuario, distinto del
+ * ya construido — "el que ya tenemos está súper [no se toca]... pero el
+ * que digo yo es hacer otro pero diferente. Que sea más grande y mejor
+ * diseñado... hueco de entrada y correr hacia al lado y luego hacia el
+ * frente y otra vez hacia al lado y por último hacia arriba, pero que
+ * tenga un diseño como de laberinto de verdad". 4 bandas (una más que
+ * `reefLabyrinth`) con más penetración y más separación vertical — más
+ * grande de verdad, no solo un reescalado — y un tipo de paso que ningún
+ * otro laberinto tiene: una "puerta" con pared a AMBOS lados (hay que
+ * cruzar recto por el centro, no esquivar hacia un lado), intercalada
+ * entre los corredores de un solo lado de siempre. Esa mezcla de dos
+ * "idiomas" de paso distintos dentro del mismo cúmulo es lo que lo hace
+ * sentir como un laberinto real y no una repetición del mismo patrón:
+ * entrada (lado) → puerta (recto) → corredor (lado contrario) → salida
+ * (lado, hueco más generoso). Además, una hornacina decorativa sin
+ * colisión junto a la puerta — un "camino falso" que no lleva a ningún
+ * sitio, como en un laberinto de verdad, sin ningún riesgo real ya que no
+ * colisiona.
+ *
+ * Misma garantía de seguridad que los otros dos laberintos: solo piezas
+ * de roca (CORRIDOR_WALL_POOL, sin animación de escala en vivo) en las
+ * 4 bandas y en la puerta, así que cada hueco es siempre exactamente el
+ * calculado aquí, nunca varía en vivo.
+ */
+const GRAND_MAZE_REACH_PX = 430;
+const GRAND_MAZE_EXIT_REACH_PX = 380;
+// Hueco centrado de la "puerta" (pared a ambos lados) — igual de holgado
+// que el resto (WORLD_WIDTH=690, así que quedan ~185px de penetración por
+// lado, generoso de sobra para que la variedad de tamaño de
+// CORRIDOR_WALL_POOL nunca lo achique en la práctica).
+const GRAND_MAZE_GATE_GAP_PX = 320;
+// Espaciado entre bandas: mayor que el de reefLabyrinth (700) para que el
+// cúmulo entero sea más grande de verdad, con el mismo margen de sobra
+// (la extensión a lo largo de la pared de la pieza más ancha escala con
+// el reach: a 430px de reach queda ~580px de extensión, mitad ~290px —
+// 820px de separación deja de sobra para que dos bandas vecinas nunca se
+// pisen en vertical).
+const GRAND_MAZE_BAND_SPACING = 820;
+
+function mazeGate(y: number, gapPx: number, worldWidth: number): { pieces: ReefPieceSpec[]; reachEach: number } {
+  const reachEach = (worldWidth - gapPx) / 2;
+  return {
+    pieces: [corridorWall("left", y, reachEach), corridorWall("right", y, reachEach)],
+    reachEach,
+  };
+}
+
+function grandMaze(worldWidth: number, centerY: number): ReefClusterSpec {
+  const yEntrance = centerY + GRAND_MAZE_BAND_SPACING * 1.5;
+  const yGate = centerY + GRAND_MAZE_BAND_SPACING * 0.5;
+  const yCorridor = centerY - GRAND_MAZE_BAND_SPACING * 0.5;
+  const yExit = centerY - GRAND_MAZE_BAND_SPACING * 1.5;
+
+  const sideEntrance: Side = Math.random() < 0.5 ? "left" : "right";
+  const sideCorridor = otherSide(sideEntrance);
+  const sideExit: Side = Math.random() < 0.5 ? "left" : "right";
+
+  const jitterReach = (base: number) => base * (1 + Phaser.Math.FloatBetween(-0.05, 0.05));
+  const reachEntrance = jitterReach(GRAND_MAZE_REACH_PX);
+  const reachCorridor = jitterReach(GRAND_MAZE_REACH_PX);
+  const reachExit = jitterReach(GRAND_MAZE_EXIT_REACH_PX);
+
+  const gapEntrance = corridorGapCenterX(worldWidth, sideEntrance, reachEntrance);
+  const gapCorridor = corridorGapCenterX(worldWidth, sideCorridor, reachCorridor);
+  const gapExit = corridorGapCenterX(worldWidth, sideExit, reachExit);
+
+  const inward = (side: Side) => (side === "left" ? 1 : -1);
+  const wallTipEntrance = sideEntrance === "left" ? reachEntrance : worldWidth - reachEntrance;
+  const wallTipCorridor = sideCorridor === "left" ? reachCorridor : worldWidth - reachCorridor;
+  const wallTipExit = sideExit === "left" ? reachExit : worldWidth - reachExit;
+
+  const gate = mazeGate(yGate, GRAND_MAZE_GATE_GAP_PX, worldWidth);
+  // Hornacina decorativa junto a la puerta: un "camino falso" que no lleva
+  // a ningún sitio (role: "background", sin colisión) — pegada al lado
+  // opuesto al de la pared de entrada, para que se lea como una rama del
+  // recorrido real y no como parte obvia de la puerta.
+  const nookSide: Side = otherSide(sideEntrance);
+  const nookX = nookSide === "left" ? worldWidth * 0.1 : worldWidth * 0.9;
+
+  const pieces: ReefPieceSpec[] = [
+    corridorWall(sideEntrance, yEntrance, reachEntrance),
+    piece({
+      key: "decor_starfish",
+      x: wallTipEntrance + inward(sideEntrance) * 35,
+      y: yEntrance - 80,
+      scale: 0.24,
+      role: "decoration",
+    }),
+
+    ...gate.pieces,
+    piece({ key: "reef_rock_spikes", x: nookX, y: yGate + 60, scale: 0.16, alpha: 0.55, role: "background" }),
+    piece({ key: "sponge", x: nookX, y: yGate - 40, scale: 0.14, alpha: 0.55, role: "background" }),
+
+    corridorWall(sideCorridor, yCorridor, reachCorridor),
+    piece({
+      key: "coral_fan",
+      x: wallTipCorridor + inward(sideCorridor) * 35,
+      y: yCorridor + 80,
+      scale: 0.22,
+      role: "decoration",
+    }),
+
+    corridorWall(sideExit, yExit, reachExit),
+    piece({
+      key: "decor_shell",
+      x: wallTipExit + inward(sideExit) * 35,
+      y: yExit + 80,
+      scale: 0.22,
+      role: "decoration",
+    }),
+
+    bgAccent(
+      "reef_boulder_rock",
+      sideExit === "left" ? worldWidth * 0.92 : worldWidth * 0.08,
+      yExit - 160,
+      0.17,
+    ),
+  ];
+
+  const path = [
+    { x: gapEntrance, y: yEntrance + 220 },
+    { x: gapEntrance, y: yEntrance },
+    { x: (gapEntrance + worldWidth / 2) / 2, y: (yEntrance + yGate) / 2 },
+    { x: worldWidth / 2, y: yGate },
+    { x: (worldWidth / 2 + gapCorridor) / 2, y: (yGate + yCorridor) / 2 },
+    { x: gapCorridor, y: yCorridor },
+    { x: (gapCorridor + gapExit) / 2, y: (yCorridor + yExit) / 2 },
+    { x: gapExit, y: yExit },
+    { x: gapExit, y: yExit - 220 },
+  ];
+
+  return { pieces, path, yTop: yExit - 260, yBottom: yEntrance + 260 };
+}
+
 export const REEF_TEMPLATES: ((worldWidth: number, centerY: number) => ReefClusterSpec)[] = [
   diagonalLeft,
   centerTwoPaths,
@@ -656,4 +791,5 @@ export const REEF_TEMPLATES: ((worldWidth: number, centerY: number) => ReefClust
   lateralWall,
   reefLabyrinth,
   miniLabyrinth,
+  grandMaze,
 ];

@@ -57,7 +57,13 @@
 // menor. Los peligros "compañeros" de cada ReefCluster se colocan justo
 // fuera de esa banda, nunca dentro — así nunca tapan sin querer el único
 // carril seguro del cúmulo.
-export const ZONE1_LEVEL_END_OFFSET = 6500 * 1.6 * 2 + 2240;
+// Tramo 3 (pedido explícito, segundo laberinto — ver el final del array):
+// grandMaze ocupa el rango [25330-1490, 25330+1490] = [23840,26820], así
+// que el nivel scripteado ya no termina en 23040 sino después de esa
+// banda + un margen para que Lumi tenga agua abierta para recuperarse
+// antes de que arranque la corriente (ver CURRENT_ZONE_START_OFFSET en
+// GameConfig.ts, que se deriva de este valor).
+export const ZONE1_LEVEL_END_OFFSET = 26820 + 800;
 
 export type Zone1LevelEntryType = "jellyfish" | "urchin" | "shark" | "squid" | "bigfish" | "reef" | "lilypad" | "crab";
 
@@ -151,4 +157,14 @@ export const ZONE1_LEVEL_ENTRIES: Zone1LevelEntry[] = [
   // Gauntlet final antes de la corriente (23040).
   { type: "jellyfish", offset: 22560, x: 300 },
   { type: "bigfish", offset: 23040, x: 450 },
+
+  // --- Tramo 3: segundo laberinto, más grande y distinto (pedido
+  // explícito: "el que ya tenemos está súper [no se toca]... el que digo
+  // yo es hacer otro pero diferente. Que sea más grande y mejor
+  // diseñado... como de laberinto de verdad") — ver grandMaze en
+  // ReefTemplates.ts (índice 6). Igual que reefLabyrinth en el Tramo 0,
+  // se garantiza aquí en vez de dejarlo solo a la generación al azar de
+  // después de ZONE1_LEVEL_END_OFFSET, para que el usuario lo encuentre
+  // de verdad sin depender de una partida muy larga.
+  { type: "reef", offset: 25330, reefTemplate: 6 }, // grandMaze — banda ~[23840,26820]
 ];
