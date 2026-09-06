@@ -411,43 +411,47 @@ function lateralWall(worldWidth: number, centerY: number): ReefClusterSpec {
 }
 
 /**
- * 5) Gauntlet gigante: pedido explícito del usuario — "uno que ocupe casi
- * todo el mapa también y ese se coloque solito, que dé el espacio justo
- * para que lumi tenga que recorrer un camino... como un pequeño recorrido
- * al entrar al obstáculo". A diferencia de las otras 4 plantillas (que
- * siempre dejan la mayor parte del ancho libre y solo acompañan con
- * peligros/piezas menores), esta es deliberadamente una excepción sola: 2
- * bloques gigantes, cada uno entrando por un lateral distinto y penetrando
- * muy adentro del carril (`GAUNTLET_REACH_PX`, bastante más que el
- * `reach` de cualquier pieza de `wallPiece`), dejando solo un hueco justo
- * al lado contrario — cruzarla obliga a un recorrido en diagonal real, no
- * un simple esquive.
+ * 5) Pasillo/laberinto de arrecife: pedido explícito del usuario, en
+ * corrección a un primer intento ("no sea un obstáculo en sí, sino como
+ * una especie de pasillos diseñados de manera igual bonita, que tenga que
+ * ir para al lado y luego arriba y luego lado otra vez y ya ahí salir...
+ * como un laberinto o algo así pero bien diseñado"). El primer intento
+ * (2 bandas, un único cruce en diagonal) se leía como "dos rocas enormes
+ * que esquivar" — esto en cambio son 3 bandas alternando de lado
+ * (izquierda/derecha/izquierda o al revés, al azar), cada una penetrando
+ * muy adentro del carril, con espaciado vertical generoso entre bandas
+ * para que cada tramo se sienta como un desplazamiento real, no un giro
+ * instantáneo: lado (hueco de la banda 1) → arriba y al otro lado (hueco
+ * de la banda 2, en el lado contrario) → arriba y de vuelta (hueco de la
+ * banda 3, otra vez del lado de la 1) → salir. Pequeños acentos de
+ * decoración junto a cada hueco (sin colisión) para que se lea como un
+ * pasadizo cuidado, no como piedras sueltas.
  *
- * Solo piezas de roca (nunca corales/ramas, que respiran con un pulso de
- * escala — ver BREATHE_* en ReefCluster.ts): con un hueco ya de por sí
- * ajustado, una hitbox que cambia de tamaño en vivo podría, en el peor
- * caso, cerrar el paso. Usando solo piezas sin animación de escala el
- * hueco es SIEMPRE exactamente el calculado aquí, sin ninguna variable en
- * vivo de por medio.
+ * Solo piezas de roca en las 3 bandas (nunca corales/ramas, que respiran
+ * con un pulso de escala — ver BREATHE_* en ReefCluster.ts): una hitbox
+ * que cambia de tamaño en vivo podría, en el peor caso, cerrar el paso.
+ * Usando solo piezas sin animación de escala el hueco de cada banda es
+ * SIEMPRE exactamente el calculado aquí.
  */
-const GAUNTLET_POOL = ["reef_boulder_rock", "reef_rock_smooth", "reef_rock_spikes"];
-// Pensado con margen real: aun en el peor caso (reef_boulder_rock, la
-// pieza con más "ancho a lo largo de la pared" por unidad de penetración,
-// y el jitter de reach al +5%) el hueco libre resultante nunca baja de
-// ~215px — unas 3.7 veces el ancho real del hitbox de Lumi (~58px a
-// LUMI_SCALE) — tenso mirado al lado del resto del arrecife, pero
-// holgado de sobra para cruzarlo sin frustración.
-const GAUNTLET_REACH_PX = 450;
-// Separación entre las 2 bandas: tiene que ser mayor que la extensión a lo
-// largo de la pared de la pieza más "alta" a la penetración máxima
-// (reef_boulder_rock: ~655×472.5/512 ≈ 605px) para que la banda superior
-// (bloquea la izquierda) e inferior (bloquea la derecha) nunca se pisen en
-// vertical — si se pisaran, esa franja quedaría bloqueada por AMBOS lados
-// a la vez y no habría paso posible.
-const GAUNTLET_BAND_SPACING = 750;
+const CORRIDOR_WALL_POOL = ["reef_boulder_rock", "reef_rock_smooth", "reef_rock_spikes"];
+// Con margen real: aun en el peor caso (reef_boulder_rock, la pieza con
+// más "ancho a lo largo de la pared" por unidad de penetración, y el
+// jitter de reach al +5%) el hueco libre de cada banda nunca baja de
+// ~270px — unas 4.6 veces el ancho real del hitbox de Lumi (~58px a
+// LUMI_SCALE), holgado de sobra: aquí el reto es el recorrido en sí
+// (varios tramos, tres cambios de lado), no la precisión del hueco.
+const CORRIDOR_REACH_PX = 400;
+// Separación entre bandas consecutivas: tiene que ser mayor que la
+// extensión a lo largo de la pared de la pieza más "alta" a la
+// penetración máxima (reef_boulder_rock: ~655×420/512 ≈ 537px, mitad
+// ~269px) para que dos bandas vecinas nunca se pisen en vertical — si se
+// pisaran, esa franja quedaría bloqueada por los dos lados a la vez y no
+// habría paso posible. De paso, deja sitio real para el tramo "ir arriba"
+// entre cada cambio de lado.
+const CORRIDOR_BAND_SPACING = 700;
 
-function gauntletBlocker(side: Side, y: number, reachPx: number): ReefPieceSpec {
-  const key = Phaser.Utils.Array.GetRandom(GAUNTLET_POOL);
+function corridorWall(side: Side, y: number, reachPx: number): ReefPieceSpec {
+  const key = Phaser.Utils.Array.GetRandom(CORRIDOR_WALL_POOL);
   return piece({
     key,
     x: 0,
@@ -460,37 +464,91 @@ function gauntletBlocker(side: Side, y: number, reachPx: number): ReefPieceSpec 
   });
 }
 
-function grandGauntlet(worldWidth: number, centerY: number): ReefClusterSpec {
-  const topY = centerY - GAUNTLET_BAND_SPACING / 2;
-  const bottomY = centerY + GAUNTLET_BAND_SPACING / 2;
-  // Jitter pequeño e independiente por banda (en vez del jitter de escala
-  // genérico de `piece()`, que `edgeReach` ignora a propósito) — variedad
-  // sutil entre cúmulos sin arriesgar el margen de seguridad calculado
-  // arriba.
-  const reachTop = GAUNTLET_REACH_PX * (1 + Phaser.Math.FloatBetween(-0.05, 0.05));
-  const reachBottom = GAUNTLET_REACH_PX * (1 + Phaser.Math.FloatBetween(-0.05, 0.05));
+function otherSide(side: Side): Side {
+  return side === "left" ? "right" : "left";
+}
+
+/** Hueco libre (centro en X) que deja una pared con este `side`/`reachPx`. */
+function corridorGapCenterX(worldWidth: number, side: Side, reachPx: number): number {
+  return side === "left" ? (worldWidth + reachPx) / 2 : (worldWidth - reachPx) / 2;
+}
+
+function reefLabyrinth(worldWidth: number, centerY: number): ReefClusterSpec {
+  const bottomY = centerY + CORRIDOR_BAND_SPACING;
+  const midY = centerY;
+  const topY = centerY - CORRIDOR_BAND_SPACING;
+
+  // Lado de la banda inferior al azar — las otras dos se derivan para que
+  // el zigzag (lado/lado contrario/lado) quede garantizado sin importar
+  // cuál toque primero.
+  const sideBottom: Side = Math.random() < 0.5 ? "left" : "right";
+  const sideMid = otherSide(sideBottom);
+  const sideTop = sideBottom;
+
+  const jitterReach = () => CORRIDOR_REACH_PX * (1 + Phaser.Math.FloatBetween(-0.05, 0.05));
+  const reachBottom = jitterReach();
+  const reachMid = jitterReach();
+  const reachTop = jitterReach();
+
+  const gapBottom = corridorGapCenterX(worldWidth, sideBottom, reachBottom);
+  const gapMid = corridorGapCenterX(worldWidth, sideMid, reachMid);
+  const gapTop = corridorGapCenterX(worldWidth, sideTop, reachTop);
+
+  // Acentos junto a cada hueco (sin colisión, role:"decoration") — pegados
+  // a la punta de la pared, nunca dentro del carril libre, para que el
+  // paso se lea como un pasadizo cuidado en vez de piedras sueltas.
+  const wallTipBottom = sideBottom === "left" ? reachBottom : worldWidth - reachBottom;
+  const wallTipMid = sideMid === "left" ? reachMid : worldWidth - reachMid;
+  const wallTipTop = sideTop === "left" ? reachTop : worldWidth - reachTop;
+  const inward = (side: Side) => (side === "left" ? 1 : -1);
 
   const pieces: ReefPieceSpec[] = [
-    // Banda superior: bloquea desde la izquierda, hueco libre a la derecha.
-    gauntletBlocker("left", topY, reachTop),
-    // Banda inferior: bloquea desde la derecha, hueco libre a la
-    // izquierda — cruzar de un hueco al otro es el "pequeño recorrido".
-    gauntletBlocker("right", bottomY, reachBottom),
+    corridorWall(sideBottom, bottomY, reachBottom),
+    corridorWall(sideMid, midY, reachMid),
+    corridorWall(sideTop, topY, reachTop),
+    piece({
+      key: "decor_starfish",
+      x: wallTipBottom + inward(sideBottom) * 35,
+      y: bottomY - 70,
+      scale: 0.22,
+      role: "decoration",
+    }),
+    piece({
+      key: "coral_fan",
+      x: wallTipMid + inward(sideMid) * 35,
+      y: midY + 70,
+      scale: 0.2,
+      role: "decoration",
+    }),
+    piece({
+      key: "decor_shell",
+      x: wallTipTop + inward(sideTop) * 35,
+      y: topY + 70,
+      scale: 0.2,
+      role: "decoration",
+    }),
     // Acento de fondo único (mismo criterio que las otras 4 plantillas):
     // pegado al mismo lado que la banda superior, sugiriendo que esa masa
     // sigue más allá del borde — nunca suelto en mitad del carril libre.
-    bgAccent("reef_rock_spikes", worldWidth * 0.08, topY - 120, 0.16),
+    bgAccent(
+      "reef_rock_spikes",
+      sideTop === "left" ? worldWidth * 0.08 : worldWidth * 0.92,
+      topY - 150,
+      0.16,
+    ),
   ];
 
-  const gapTopCenterX = (worldWidth + reachTop) / 2;
-  const gapBottomCenterX = (worldWidth - reachBottom) / 2;
-
+  // El camino traza los 3 cambios de lado con un punto intermedio en cada
+  // tramo (mismo criterio que sCurveEdges) para que la curva se sienta
+  // como un desplazamiento continuo, no un giro en seco.
   const path = [
-    { x: gapBottomCenterX, y: bottomY + 220 },
-    { x: gapBottomCenterX, y: bottomY },
-    { x: (gapBottomCenterX + gapTopCenterX) / 2, y: centerY },
-    { x: gapTopCenterX, y: topY },
-    { x: gapTopCenterX, y: topY - 220 },
+    { x: gapBottom, y: bottomY + 200 },
+    { x: gapBottom, y: bottomY },
+    { x: (gapBottom + gapMid) / 2, y: (bottomY + midY) / 2 },
+    { x: gapMid, y: midY },
+    { x: (gapMid + gapTop) / 2, y: (midY + topY) / 2 },
+    { x: gapTop, y: topY },
+    { x: gapTop, y: topY - 200 },
   ];
 
   return { pieces, path, yTop: topY - 250, yBottom: bottomY + 250 };
@@ -501,5 +559,5 @@ export const REEF_TEMPLATES: ((worldWidth: number, centerY: number) => ReefClust
   centerTwoPaths,
   sCurveEdges,
   lateralWall,
-  grandGauntlet,
+  reefLabyrinth,
 ];

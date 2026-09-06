@@ -1273,6 +1273,36 @@ funciona **hoy**, verificado en el código — no lo que el diseño aspira a ten
   aportaba variedad real.
   - Verificado: `npx tsc --noEmit` limpio, playtest automático sin
     errores, build de producción real incluye el PNG nuevo.
+- **`grandGauntlet` corregido a `reefLabyrinth`: pasillo/laberinto de 3
+  bandas, no "un obstáculo gigante"** — el usuario corrigió el diseño
+  anterior: "yo me refiero que no sea un obstáculo en sí, sino como una
+  especie de pasillos diseñados de manera igual bonita, que tenga que ir
+  para al lado y luego arriba y luego lado otra vez y ya ahí salir...
+  como un laberinto o algo así pero bien diseñado". El primer intento (2
+  bandas, un único cruce en diagonal) se leía como "dos rocas enormes que
+  esquivar", no como un pasadizo con recorrido propio.
+  - Ahora son 3 bandas alternando de lado al azar (izquierda/derecha/
+    izquierda o al revés, derivado del lado de la primera para garantizar
+    el zigzag) en vez de 2 — el recorrido real es: hueco de la banda 1 →
+    desplazamiento lateral + subida hasta el hueco de la banda 2 (lado
+    contrario) → desplazamiento lateral + subida hasta el hueco de la
+    banda 3 (vuelta al lado original) → salir. Reach bajado de 450 a
+    400px (con 3 bandas ya no hacía falta ser tan extremo) y separación
+    entre bandas subida a 700px, con margen de sobra para que ninguna
+    banda vecina se pise en vertical (igual criterio de seguridad que
+    antes, recalculado para 3 bandas).
+  - Acentos de decoración (estrella, abanico de coral, concha — sin
+    colisión) pegados a la punta de cada pared, junto a su hueco, para
+    que se lea como un pasadizo cuidado y no como piedras sueltas — parte
+    de "diseñados de manera igual bonita".
+  - Verificado con `body.position` en las 3 bandas (20 muestras): hueco
+    mínimo 281.7px (Lumi mide ~58px, ~4.9× de margen — aquí el reto es el
+    recorrido en varios tramos, no la precisión del hueco), CERO
+    solapamiento vertical entre bandas vecinas en las 40 comparaciones
+    (banda1-2 y banda2-3 de cada muestra), y el patrón zigzag
+    (izquierda/derecha/izquierda o al revés) se cumplió en las 20. `npx
+    tsc --noEmit` limpio, playtest automático sin errores, build de
+    producción real exitoso.
 
 # PENDIENTE
 
@@ -1296,15 +1326,16 @@ que se cerraron)
 
 # PRÓXIMA TAREA
 
-Esperar la reacción del usuario a esta ronda (medusa ahora con movimiento
-claramente visible, obstáculo "gauntlet" nuevo que ocupa casi todo el
-mapa, roca de pinchos nueva) probada en su móvil real. El gauntlet
-(`grandGauntlet`, 5ª plantilla) solo entra en juego en la generación
-aleatoria de después de `ZONE1_LEVEL_END_OFFSET` — no se scripteó ninguna
-aparición garantizada en el Tramo 1/2 de `Zone1Level.ts`, así que el
-usuario puede tardar en topárselo si no juega lo bastante lejos; si
-pregunta por él y no lo ha visto, ofrecer añadirlo también al nivel
-scripteado. Según lo que diga:
+Esperar la reacción del usuario a `reefLabyrinth` (el pasillo/laberinto de
+3 bandas en zigzag, corregido tras su primer feedback de que el diseño
+anterior de 2 bandas se sentía "un obstáculo" y no "un pasadizo bonito") y
+al resto de esta ronda (medusa con movimiento visible, roca de pinchos)
+probados en su móvil real. `reefLabyrinth` (5ª plantilla) solo entra en
+juego en la generación aleatoria de después de `ZONE1_LEVEL_END_OFFSET` —
+no se scripteó ninguna aparición garantizada en el Tramo 1/2 de
+`Zone1Level.ts`, así que el usuario puede tardar en topárselo si no juega
+lo bastante lejos; si pregunta por él y no lo ha visto, ofrecer añadirlo
+también al nivel scripteado. Según lo que diga:
 - Si el arrecife ya "se siente terminado": retomar el roadmap normal —
   Tramo 2 en adelante, variaciones de esqueleto, Zona 2.
 - Si sigue faltando algo puntual: pedir que describa el momento exacto
