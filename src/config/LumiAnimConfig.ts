@@ -25,12 +25,29 @@ import { assetPath } from "@/config/assetPath";
 // de alpha — pedido explícito de más animación de BRAZOS. Los 2 frames
 // nuevos (ahora _02 y _04) alternan brazos adelante/atrás en un ciclo de
 // brazada; el antiguo _02 pasó a ser _03.
+//
+// idle/swim_right/swim_up/swim_diagonal DUPLICARON su número de frames
+// (pedido explícito: "tan pocos frames se ve cortado... agrégale muchos más
+// frames para que sea más fluido") insertando un frame INTERMEDIO generado
+// entre cada par de frames consecutivos del ciclo (incluida la vuelta del
+// último al primero, ya que todas estas animaciones hacen loop con
+// repeat:-1) — los frames originales conservan su pose exacta en las
+// posiciones impares, los nuevos van en las pares. Cada frame nuevo se
+// generó con Gemini a partir de sus dos vecinos como referencia y ancla de
+// estilo (ver skill lumi-asset-gen) y se registró sobre un punto focal
+// estable (el ojo — o el punto medio ojo+ceja en las poses de perfil con
+// dos manchas oscuras) para evitar el "fantasma" de cabeza duplicada.
+// LUMI_FPS se dobló en la misma ronda (ver más abajo) para que la duración
+// real del ciclo no cambie, solo su resolución temporal — doblar sólo el
+// número de frames sin doblar también el framerate habría dejado el mismo
+// ciclo reproduciéndose el doble de lento. sleep se deja para una ronda
+// aparte (animación poco visible, disparada solo por inactividad).
 export const LUMI_FRAME_COUNT: Record<string, number> = {
-  idle: 3,
+  idle: 6,
   sleep: 3,
-  swim_right: 4,
-  swim_up: 4,
-  swim_diagonal: 4,
+  swim_right: 8,
+  swim_up: 8,
+  swim_diagonal: 8,
   // Un solo frame: la pose de muerte (ojos en X, generada con Gemini, ver
   // lumi-asset-gen) no es una animación en bucle — se pone como textura
   // fija justo al empezar el giro/hundimiento (ver Lumi.showDeathFace).
@@ -45,6 +62,18 @@ export const LUMI_FRAME_COUNT: Record<string, number> = {
 };
 
 export const LUMI_FPS = 8; // pedido en el ejemplo de STYLE_GUIDE.md
+
+// Excepción por animación al LUMI_FPS por defecto: idle/swim_* doblaron su
+// número de frames en esta ronda (ver comentario de LUMI_FRAME_COUNT) y por
+// eso también doblan aquí su framerate — así el ciclo dura lo mismo en
+// tiempo real, solo con el doble de resolución temporal. sleep se queda
+// fuera a propósito (mismos 3 frames de siempre, sin tocar).
+export const LUMI_ANIM_FPS: Partial<Record<string, number>> = {
+  idle: 16,
+  swim_right: 16,
+  swim_up: 16,
+  swim_diagonal: 16,
+};
 
 export function framePath(folder: string, index: number): string {
   const n = String(index).padStart(2, "0");

@@ -2286,6 +2286,65 @@ funciona **hoy**, verificado en el código — no lo que el diseño aspira a ten
     ronda el propio `reachPx`, muy por debajo del margen de seguridad de
     `CORRIDOR_BAND_SPACING`), captura in-game confirmando arte correcto,
     build de producción empaquetando ambos PNG.
+- **Lumi: duplicar frames de idle/swim_right/swim_up/swim_diagonal**
+  (pedido explícito: "tan pocos frames se ve cortado, mejoremos y
+  agreguemos mucho más frames para su movilidad... agrégale muchos más
+  frames para que sea más fluido sus movimientos y saltos entre movimiento
+  y otro"). idle pasó de 3 a 6 frames, swim_right/swim_up/swim_diagonal de
+  4 a 8 cada una (swim_left/swim_down/boost siguen sin carpeta propia, se
+  derivan por flip de swim_right/swim_up; sleep se dejó fuera a propósito,
+  ver PRÓXIMA TAREA).
+  - **Método**: un frame INTERMEDIO nuevo entre cada par de frames
+    consecutivos del ciclo, incluida la vuelta del último al primero (las
+    4 animaciones hacen loop con `repeat:-1`, así que esa "costura" final
+    también necesitaba su intermedio). Cada frame se generó con Gemini
+    pasando SUS DOS VECINOS reales como referencia y pidiendo
+    explícitamente "el frame a medio camino entre A y B, no una pose
+    nueva" — mismo flujo de `lumi-asset-gen` que ya se usaba para
+    correcciones puntuales, aplicado aquí a generación de intermedios.
+  - **Registro sin fantasma**: siguiendo la advertencia ya documentada en
+    el skill (un frame puede encajar por bounding box completo y aun así
+    tener la cabeza desplazada respecto al resto del ciclo), cada frame
+    nuevo se realineó sobre un punto focal estable — el OJO — detectado
+    programáticamente como el blob oscuro más circular de la cabeza
+    (`fill area/bbox ≈0.8, aspecto ≈1`), no por bounding box. En las poses
+    de perfil (`swim_up`, `swim_diagonal`) hay una ceja/nariz cercana que
+    también sale oscura pero es un trazo fino y alargado (fill bajo,
+    aspecto muy distinto de 1) — promediarla con el ojo real (intento
+    inicial) desplazaba el punto de registro de forma inconsistente entre
+    frames y se notaba como un parpadeo del ojo en el blend de prueba;
+    corregido filtrando por circularidad para quedarse solo con el ojo de
+    verdad. Verificado con un blend sintético 50% entre cada frame nuevo y
+    sus dos vecinos reales (toda la cadena de cada animación, incluida la
+    costura del bucle) — cabeza/cara/cuerpo coinciden en una sola silueta
+    limpia en los 24 blends, el doble contorno solo aparece en las partes
+    que de verdad se mueven (brazos, patas, cola), que es lo esperado.
+  - **Un frame crudo de Gemini vino con fondo sólido en vez de
+    checkerboard/negro** (un lavado verde-grisáceo cubriendo el lienzo
+    entero) que `fix_transparency.py` no detecta (su heurística busca gris
+    casi neutro o negro, no cualquier color liso) — se añadió un limpiador
+    alternativo (flood-fill tolerante a degradado desde los bordes,
+    parando en el salto de contraste real del contorno lavanda del propio
+    dibujo) para ese caso puntual, sin tocar el script compartido.
+  - `LUMI_FPS` (usado por todas las animaciones de Lumi) se mantiene en 8,
+    pero ahora hay una excepción explícita por animación
+    (`LUMI_ANIM_FPS` en `LumiAnimConfig.ts`, leída por
+    `AnimationRegistry.ts`): idle/swim_right/swim_up/swim_diagonal pasan a
+    16 FPS — al doble de frames Y doble de framerate, el ciclo dura
+    exactamente lo mismo en tiempo real que antes, solo con el doble de
+    resolución temporal (doblar solo los frames sin doblar también el
+    framerate habría dejado el mismo ciclo reproduciéndose el doble de
+    lento). `sleep` se queda tal cual, a 8 FPS con sus 3 frames de
+    siempre.
+  - Verificado en juego con Playwright: `game.anims.get(key)` confirma
+    8/8/8/6 frames en el orden correcto y 16 FPS para las 4 animaciones
+    tocadas, 3 frames/8 FPS sin cambios para `sleep`; capturas in-game de
+    Lumi en idle y nadando (arriba/derecha) confirmando que el diseño
+    (proporciones, colores, contorno) no cambió, solo la cantidad de
+    frames; sin errores de consola nuevos (el único aviso de "MISSING
+    asset" es `water_overlay.png`, preexistente y ajeno a esta ronda).
+    `npx tsc --noEmit` y build de producción limpios, con los 30 PNG
+    nuevos/renumerados empaquetados en `dist/characters/lumi/`.
 
 # PENDIENTE
 
@@ -2350,15 +2409,31 @@ avanzando)
 
 # PRÓXIMA TAREA
 
-Esperar la reacción del usuario a esta ronda (corrección del dragón
-marino: ahora horizontal, cuerpo entero sin cortar, hueco solo antes de
-la cola, con vaivén de cuerpo + latigazo de cola). Verificado en juego
-que la orientación, el hueco y la animación se comportan como se pidió
-(capturas, muestreo de ángulos y posición, colisión letal), pero igual
-que con la primera versión, no se pudo confirmar por captura automatizada
-si el TIMING real de cronometrar el hueco (velocidad de deslizamiento,
-frecuencia de aparición) se siente bien jugado a mano — pedir
-confirmación de juego real antes de ajustar velocidad/tamaño del hueco.
+Esperar la reacción del usuario a dos rondas seguidas:
+
+1. **Dragón marino corregido** (horizontal, cuerpo entero sin cortar,
+   hueco solo antes de la cola, vaivén de cuerpo + latigazo de cola).
+   Verificado en juego que la orientación, el hueco y la animación se
+   comportan como se pidió (capturas, muestreo de ángulos y posición,
+   colisión letal), pero igual que con la primera versión, no se pudo
+   confirmar por captura automatizada si el TIMING real de cronometrar el
+   hueco (velocidad de deslizamiento, frecuencia de aparición) se siente
+   bien jugado a mano — pedir confirmación de juego real antes de ajustar
+   velocidad/tamaño del hueco.
+2. **Lumi: idle/swim_right/swim_up/swim_diagonal con el doble de frames**
+   (3→6 y 4→8). Verificado programáticamente que las 4 animaciones
+   reproducen el número de frames correcto, en el orden correcto, a 16
+   FPS (el doble de antes, así que el ciclo dura lo mismo en tiempo real)
+   y sin fantasma de cabeza duplicada en ningún blend de la cadena — pero
+   "se siente más fluido de verdad" es inherentemente subjetivo y solo se
+   puede confirmar jugando de verdad, igual que con el resto de
+   animaciones de este proyecto. `sleep` se dejó explícitamente FUERA de
+   esta ronda (sigue en 3 frames/8 FPS) — es una animación poco visible
+   (solo dispara por inactividad) y no se quiso gastar presupuesto de
+   generación ahí sin que el usuario lo pida; si el usuario también la
+   quiere más fluida, es la misma receta (frames intermedios + doblar
+   FPS) aplicada a una carpeta más.
+
 Si el usuario sigue viendo algo "cuadrado" en las paredes de laberinto de
 una ronda anterior,
 probablemente haga falta ver la captura exacta para saber si es una

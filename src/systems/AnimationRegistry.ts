@@ -1,5 +1,5 @@
 import Phaser from "phaser";
-import { LUMI_FPS, LUMI_FRAME_COUNT, frameKey } from "@/config/LumiAnimConfig";
+import { LUMI_ANIM_FPS, LUMI_FPS, LUMI_FRAME_COUNT, frameKey } from "@/config/LumiAnimConfig";
 
 /**
  * Crea una Phaser.Animation por cada carpeta de /assets/characters/lumi/
@@ -17,7 +17,7 @@ export function registerLumiAnimations(scene: Phaser.Scene) {
     scene.anims.create({
       key: folder,
       frames,
-      frameRate: LUMI_FPS,
+      frameRate: LUMI_ANIM_FPS[folder] ?? LUMI_FPS,
       repeat: -1,
     });
   }
