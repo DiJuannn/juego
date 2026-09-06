@@ -1343,6 +1343,29 @@ funciona **hoy**, verificado en el código — no lo que el diseño aspira a ten
     real de navegación, no un fallo, el hueco en sí sigue garantizado por
     construcción (ver arriba). `npx tsc --noEmit` limpio, build de
     producción real exitoso.
+- **Feedback positivo confirmado + 2 pedidos nuevos** — el usuario probó
+  el laberinto garantizado y confirmó: "me gusta, ese tipo de obstáculos
+  son los que quería". Dos ajustes explícitos sobre esa misma base:
+  - "justo después de eso está muy vacío, dejemos medusas cerca de ahí":
+    el hueco entre el final de la banda del laberinto (offset 2150) y el
+    primer cúmulo del Tramo 1 (2950) — 800px de agua sin nada — ahora
+    tiene 2 medusas (offset 2400 y 2750), dentro del hueco, no de
+    ninguna banda.
+  - "haz uno tipo que no sea un obstáculo en sí en solitario... tipo mini
+    laberinto": nueva 6ª plantilla `miniLabyrinth` en `ReefTemplates.ts`
+    — misma idea de `reefLabyrinth` (3 bandas alternando de lado, mismo
+    mecanismo `corridorWall`/`edgeReach`) pero a escala reducida
+    (`MINI_CORRIDOR_REACH_PX=200` vs 400, `MINI_CORRIDOR_BAND_SPACING=350`
+    vs 700) para que la altura total del cúmulo (~1000px) quede en el
+    mismo orden que las otras 5 plantillas, en vez de necesitar hueco
+    scripteado especial como el laberinto grande — pensada para entrar en
+    la ROTACIÓN NORMAL de `REEF_TEMPLATES`, ver también "menos
+    importancia a los obstáculos sueltos" en EN PROGRESO más abajo.
+  - Verificado con `body.position` (20 muestras): hueco mínimo 490px,
+    cero solapamiento entre bandas, zigzag correcto en las 20. `npx tsc
+    --noEmit` limpio, playtest automático sin errores (aparte de muertes
+    normales del bot al no apuntar al hueco a propósito), build de
+    producción real exitoso.
 
 # PENDIENTE
 

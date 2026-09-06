@@ -80,10 +80,17 @@ export interface Zone1LevelEntry {
 
 export const ZONE1_LEVEL_ENTRIES: Zone1LevelEntry[] = [
   // --- Tramo 0: laberinto de bienvenida (pedido explícito) ---
-  // reefLabyrinth — banda ~[250,2150]. Nada más, a propósito: el propio
-  // laberinto ya es "difícil desde el minuto uno" y ya trae su propia
-  // ruta de monedas; amontonarle otro peligro encima solo lo ensuciaría.
+  // reefLabyrinth — banda ~[250,2150]. Nada dentro de la propia banda a
+  // propósito: el laberinto ya es "difícil desde el minuto uno" y ya trae
+  // su propia ruta de monedas, amontonarle otro peligro encima solo lo
+  // ensuciaría.
   { type: "reef", offset: 1200, reefTemplate: 4 },
+  // Pedido explícito: "justo después de eso está muy vacío, dejemos
+  // medusas cerca de ahí" — el hueco entre el final de la banda del
+  // laberinto (2150) y el primer cúmulo del Tramo 1 (2950) se sentía
+  // como agua muerta. 2 medusas dentro de ese hueco, no en la banda misma.
+  { type: "jellyfish", offset: 2400, x: 250 },
+  { type: "jellyfish", offset: 2750, x: 450 },
 
   // --- Tramo 1 (3200-14880) ---
   // Primer combo del nivel "clásico": ya hay algo que esquivar justo al

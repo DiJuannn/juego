@@ -554,10 +554,98 @@ function reefLabyrinth(worldWidth: number, centerY: number): ReefClusterSpec {
   return { pieces, path, yTop: topY - 250, yBottom: bottomY + 250 };
 }
 
+/**
+ * 6) Mini laberinto: pedido explícito del usuario tras ver `reefLabyrinth`
+ * ("me gusta ese tipo de obstáculos son los que quería... ahora puedes
+ * hacer uno tipo que no sea un obstáculo en sí en solitario, sino pasillos
+ * diseñados... tipo mini laberinto") — la misma idea (3 bandas alternando
+ * de lado, penetración profunda, nunca una pieza suelta flotando sola) a
+ * escala reducida, pensada para la ROTACIÓN NORMAL de `REEF_TEMPLATES` en
+ * vez de ser una excepción scripteada como el laberinto grande. Mismo
+ * mecanismo (`corridorWall`/`edgeReach`), solo con menos penetración y
+ * bandas más juntas para que la altura total del cúmulo quede en el mismo
+ * orden que las otras 5 plantillas (~1000px, frente a los ~1900px del
+ * laberinto grande) — pedido explícito de reducir el peso de los
+ * obstáculos "flotando solos": esta plantilla reemplaza parte de esa
+ * rotación con algo que se lee como un pasadizo diseñado, no una roca
+ * suelta.
+ */
+const MINI_CORRIDOR_REACH_PX = 200;
+// Con margen real (mismo criterio que CORRIDOR_BAND_SPACING, recalculado
+// para este reach menor): en el peor caso (reef_boulder_rock, +5% de
+// jitter) la extensión a lo largo de la pared llega a ~269px, así que
+// 350px de separación entre bandas deja de sobra para que dos bandas
+// vecinas nunca se pisen en vertical.
+const MINI_CORRIDOR_BAND_SPACING = 350;
+
+function miniLabyrinth(worldWidth: number, centerY: number): ReefClusterSpec {
+  const bottomY = centerY + MINI_CORRIDOR_BAND_SPACING;
+  const midY = centerY;
+  const topY = centerY - MINI_CORRIDOR_BAND_SPACING;
+
+  const sideBottom: Side = Math.random() < 0.5 ? "left" : "right";
+  const sideMid = otherSide(sideBottom);
+  const sideTop = sideBottom;
+
+  const jitterReach = () => MINI_CORRIDOR_REACH_PX * (1 + Phaser.Math.FloatBetween(-0.05, 0.05));
+  const reachBottom = jitterReach();
+  const reachMid = jitterReach();
+  const reachTop = jitterReach();
+
+  const gapBottom = corridorGapCenterX(worldWidth, sideBottom, reachBottom);
+  const gapMid = corridorGapCenterX(worldWidth, sideMid, reachMid);
+  const gapTop = corridorGapCenterX(worldWidth, sideTop, reachTop);
+
+  const wallTipBottom = sideBottom === "left" ? reachBottom : worldWidth - reachBottom;
+  const wallTipTop = sideTop === "left" ? reachTop : worldWidth - reachTop;
+  const inward = (side: Side) => (side === "left" ? 1 : -1);
+
+  const pieces: ReefPieceSpec[] = [
+    corridorWall(sideBottom, bottomY, reachBottom),
+    corridorWall(sideMid, midY, reachMid),
+    corridorWall(sideTop, topY, reachTop),
+    // Un único acento por punta (vs. 3 en el laberinto grande) — a esta
+    // escala más chica, más decoración se vería apeñuzcada.
+    piece({
+      key: "decor_starfish",
+      x: wallTipBottom + inward(sideBottom) * 30,
+      y: bottomY - 60,
+      scale: 0.2,
+      role: "decoration",
+    }),
+    piece({
+      key: "decor_shell",
+      x: wallTipTop + inward(sideTop) * 30,
+      y: topY + 60,
+      scale: 0.18,
+      role: "decoration",
+    }),
+    bgAccent(
+      "reef_rock_spikes",
+      sideTop === "left" ? worldWidth * 0.1 : worldWidth * 0.9,
+      topY - 100,
+      0.14,
+    ),
+  ];
+
+  const path = [
+    { x: gapBottom, y: bottomY + 130 },
+    { x: gapBottom, y: bottomY },
+    { x: (gapBottom + gapMid) / 2, y: (bottomY + midY) / 2 },
+    { x: gapMid, y: midY },
+    { x: (gapMid + gapTop) / 2, y: (midY + topY) / 2 },
+    { x: gapTop, y: topY },
+    { x: gapTop, y: topY - 130 },
+  ];
+
+  return { pieces, path, yTop: topY - 150, yBottom: bottomY + 150 };
+}
+
 export const REEF_TEMPLATES: ((worldWidth: number, centerY: number) => ReefClusterSpec)[] = [
   diagonalLeft,
   centerTwoPaths,
   sCurveEdges,
   lateralWall,
   reefLabyrinth,
+  miniLabyrinth,
 ];
