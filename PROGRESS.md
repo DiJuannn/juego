@@ -2428,6 +2428,48 @@ funciona **hoy**, verificado en el código — no lo que el diseño aspira a ten
     sin quedarse pegado en "dash"). Capturas confirmando la pose/rotación
     en las 4 direcciones cardinales. `npx tsc --noEmit` y build de
     producción limpios, con los 3 PNG de dash empaquetados.
+- **Pulido de los frames nuevos de idle/swim_up** (pedido explícito: "Vale
+  mucho mejor lumi pero púlelo más porque si se nota mucho cambio entre
+  frame, más que todo los nuevos frames que agregaste"). Investigado a
+  fondo en vez de solo regenerar a ciegas — dos bugs reales distintos,
+  ambos con causa raíz identificada antes de tocar nada:
+  - **Bug real: lienzo de los 3 frames nuevos de `idle` con ancho/alto
+    invertidos.** Las imágenes originales de `idle` miden 1047×1024
+    (ancho×alto); al registrar `idle_02`/`04`/`06` se pasaron los
+    argumentos de tamaño de lienzo AL REVÉS (1024×1047) en la llamada
+    manual de la primera ronda — un sprite de Phaser con origin 0.5/0.5
+    centra su textura según las dimensiones de ESE frame, así que cada
+    vez que el ciclo entraba en uno de los 3 frames nuevos, el personaje
+    saltaba ~11px en X e Y respecto a los frames originales (1047×1024)
+    antes de volver a saltar de vuelta — un "tembleque" real cada dos
+    frames, justo en la animación de reposo (la que más tiempo se ve).
+    `swim_right`/`swim_up`/`swim_diagonal` NO tenían este bug (esas
+    llamadas sí leían el tamaño real del archivo original). Arreglado
+    re-registrando los 3 frames de `idle` sobre un lienzo de 1047×1024
+    (mismo desplazamiento ya calculado, solo cambia el tamaño del lienzo
+    final).
+  - **Bug real: frames "intermedios" no caían a medio camino, se quedaban
+    más cerca del vecino SIGUIENTE que del anterior.** Verificado con una
+    métrica objetiva (diferencia de canal alfa acumulada entre frames
+    consecutivos, sin depender del ojo): en varios ciclos, el salto hacia
+    el frame nuevo era 1.5-6× más grande que el salto desde el frame nuevo
+    al siguiente frame real — un ritmo desigual que se lee como "avance
+    grande, luego casi nada", justo lo que describe el pedido. El peor
+    caso, `swim_up_08` (el frame que cierra el bucle), estaba a un ratio
+    de ~5.8:1 — prácticamente un duplicado del frame 1 en vez de un punto
+    medio real entre el frame 7 (cola muy enroscada) y el frame 1 (cola
+    recta). Regenerado con un prompt mucho más explícito ("EXACTAMENTE a
+    medio camino, ni más cerca de A ni de B") — el ratio bajó a ~1.9:1 y
+    el blend contra ambos vecinos ahora muestra doble-exposición real en
+    los dos lados, no solo en uno. Los desequilibrios menores de
+    idle/swim_right/swim_diagonal (ratios ~1.5-2.4:1) se dejaron tal cual
+    — un reintento de idle no mejoró la métrica, y perseguir un 50/50
+    perfecto en los 30 frames tiene rendimientos decrecientes frente al
+    tembleque real que sí se corrigió.
+  - Verificado: montaje visual de los 6 frames de `idle` y blends 50%
+    de la cadena completa (antes/después) confirmando el mismo silueta
+    limpia; `npx tsc --noEmit` y build de producción limpios con los
+    4 PNG corregidos empaquetados (`idle_02/04/06.png`, `swim_up_08.png`).
 
 # PENDIENTE
 
@@ -2492,7 +2534,20 @@ avanzando)
 
 # PRÓXIMA TAREA
 
-Esperar la reacción del usuario a tres rondas seguidas:
+Esperar la reacción del usuario al pulido de Lumi ("vale mucho mejor
+pero púlelo más") — se corrigieron dos bugs reales con causa raíz
+identificada (lienzo invertido en 3 frames de idle, frame de cierre de
+swim_up muy desequilibrado hacia un lado), pero quedan desequilibrios
+menores sin tocar en swim_right/swim_diagonal (ratios ~1.5-2.4:1, un
+reintento no mejoró la métrica) — si el usuario TODAVÍA nota "saltos"
+después de este arreglo, lo más probable es que apunten a esos, y ahí sí
+tocaría o bien regenerar con más intentos o cambiar de estrategia
+(frame duration por frame en vez de framerate uniforme, ver
+`Phaser.Types.Animations.AnimationFrame.duration`, que permitiría alargar
+la duración de los frames "cerca de un extremo" y acortar la de los que
+están a medio camino sin tocar el arte).
+
+Esperar también la reacción del usuario a las otras rondas recientes:
 
 1. **Dragón marino, TERCERA corrección** (ahora una sola pieza sin
    cortar, longitud fija menor que WORLD_WIDTH para garantizar espacio
