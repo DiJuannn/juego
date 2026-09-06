@@ -78,7 +78,8 @@ export type Zone1LevelEntryType =
   | "crab"
   | "clam"
   | "coraltrap"
-  | "seahorse";
+  | "seahorse"
+  | "barnacle";
 
 export interface Zone1LevelEntry {
   type: Zone1LevelEntryType;
@@ -168,7 +169,17 @@ export const ZONE1_LEVEL_ENTRIES: Zone1LevelEntry[] = [
   { type: "shark", offset: 11040, x: 200, direction: 1 },
   { type: "shark", offset: 11040, x: 480, direction: -1 },
 
-  { type: "reef", offset: 12160, reefTemplate: 0 }, // diagonalLeft — banda ~[11910,12410]
+  // Pedido explícito: "lo del inicio los laberintos la gracia es hacerlo
+  // más veces pero estén más arriba pero estén más difíciles, que hayan
+  // erizos o caballitos de mar etc" — primer "repetido" del laberinto
+  // (antes diagonalLeft aquí), con 1 animal real dentro del hueco (ver
+  // labyrinthAnimalTier en ReefTemplates.ts). Banda ~[11660,12660].
+  { type: "reef", offset: 12160, reefTemplate: 5 }, // miniLabyrinth (tier 1)
+
+  // Décimo enemigo (pedido explícito: "crea más animales si") — hueco
+  // despejado entre el final de la banda del laberinto (12660) y el
+  // combo denso de abajo (13440).
+  { type: "barnacle", offset: 13050, x: 300 },
 
   // Tramo final (13440-14880): combo denso en zigzag, cierra el capítulo.
   { type: "bigfish", offset: 13440, x: 350 },
@@ -178,12 +189,14 @@ export const ZONE1_LEVEL_ENTRIES: Zone1LevelEntry[] = [
   { type: "urchin", offset: 14880, x: 250 },
 
   // --- Tramo 2 (14880-23040): debut del calamar, cierra con la corriente ---
+  { type: "barnacle", offset: 15100, x: 450 },
   // Debut de la almeja gigante (hasta ahora solo aparecía por generación
   // al azar, nunca scripteada) — hueco despejado entre el final del
   // Tramo 1 y el primer cúmulo del Tramo 2.
   { type: "clam", offset: 15500, x: 350 },
 
-  { type: "reef", offset: 16320, reefTemplate: 1 }, // centerTwoPaths — banda ~[16090,16550]
+  // Segundo repetido del laberinto (antes centerTwoPaths aquí), tier 1.
+  { type: "reef", offset: 16320, reefTemplate: 5 }, // miniLabyrinth (tier 1) — banda ~[15820,16820]
   { type: "squid", offset: 17280, x: 300 }, // debut del calamar
   { type: "seahorse", offset: 17800, x: 420 },
 
@@ -197,7 +210,10 @@ export const ZONE1_LEVEL_ENTRIES: Zone1LevelEntry[] = [
   { type: "squid", offset: 20320, x: 420 },
   { type: "crab", offset: 20740, x: 350 },
 
-  { type: "reef", offset: 21440, reefTemplate: 3 }, // lateralWall — banda ~[21140,21740]
+  // Tercer repetido del laberinto (antes lateralWall aquí), tier 2 (2
+  // animales dentro) — el más difícil de los 3, más arriba que los otros
+  // dos, tal como se pidió.
+  { type: "reef", offset: 21440, reefTemplate: 5 }, // miniLabyrinth (tier 2) — banda ~[20940,21940]
   { type: "coraltrap", offset: 22100, x: 250 },
 
   // Gauntlet final antes de la corriente (23040).

@@ -240,6 +240,17 @@ export interface ReefClusterSpec {
    * isWithinAnyClusterBand (mismo propósito que isWithinAnyCoralBand). */
   yTop: number;
   yBottom: number;
+  /** Animales reales (no piezas de `ReefCluster`, que solo dibuja arte
+   * estático) a colocar dentro del hueco seguro de un laberinto — pedido
+   * explícito: "que hayan erizos o caballitos de mar etc" dentro de los
+   * laberintos, para que además de las paredes haya algo que esquivar.
+   * `ReefCluster` no los instancia (no sabe nada de Urchin/Seahorse); los
+   * lee `ReefClusterSpawner` y llama a los spawners reales de cada tipo
+   * (ver reefLabyrinth/miniLabyrinth/grandMaze en ReefTemplates.ts, que
+   * los posicionan descentrados dentro del propio hueco que ya calcularon
+   * para las paredes — nunca en el centro exacto, para que haya que
+   * esquivarlos de verdad y no solo estén "de adorno" en medio del paso). */
+  animalHints?: { type: "urchin" | "seahorse"; x: number; y: number }[];
 }
 
 // Pedido explícito del usuario: "me gustaría que los que algunos tengan

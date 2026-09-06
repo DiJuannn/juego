@@ -1,5 +1,6 @@
 import Phaser from "phaser";
 import type { ReefClusterSpec, ReefPieceSpec } from "@/entities/ReefCluster";
+import { START_Y } from "@/config/GameConfig";
 
 /**
  * Prototipo (pedido explícito): solo 2-3 composiciones DISEÑADAS a mano
@@ -133,18 +134,30 @@ const WALL_PIECE_POOL: WallPieceOption[] = [
   { key: "reef_rock_spikes_c", sizeMul: 1.1 },
 ];
 
+// Pedido explícito: "los objetos laterales como las rocas pincho que
+// cambien de tamaño tmb, algunas más grandes, otras medianas otras así" —
+// antes solo había el jitter sutil de ±6% (JITTER_SCALE); esto añade una
+// variación de verdad entre 3 tamaños con más peso hacia el mediano
+// (lectura "algunas más grandes, otras medianas, otras así" — no un dado
+// uniforme entre 3 extremos). Solo afecta a `wallPiece()` (las 4
+// plantillas simples, sin garantía de hueco exacto) — nunca a
+// `corridorWall()` (los 3 laberintos, que necesitan el hueco EXACTO que
+// calcula `edgeReach`, ver más abajo).
+const WALL_PIECE_SIZE_TIERS = [0.72, 0.72, 1, 1, 1, 1.35];
+
 /** Pieza "de pared" pegada a ras del borde del mundo (ver `edgeFlush` en
  * ReefCluster.ts) — sustituye a los usos fijos de `reef_boulder_rock` en
  * las 4 plantillas, eligiendo al azar entre todo `WALL_PIECE_POOL` cada
  * vez que se llama. */
 function wallPiece(side: Side, y: number, baseScale: number): ReefPieceSpec {
   const option = Phaser.Utils.Array.GetRandom(WALL_PIECE_POOL);
+  const tier = Phaser.Utils.Array.GetRandom(WALL_PIECE_SIZE_TIERS);
   return piece({
     key: option.key,
     x: 0,
     edgeFlush: side,
     y,
-    scale: baseScale * option.sizeMul,
+    scale: baseScale * option.sizeMul * tier,
     rotation: edgeRotation(side),
     role: "obstacle",
   });
@@ -471,6 +484,26 @@ function reefLabyrinth(worldWidth: number, centerY: number): ReefClusterSpec {
  * rotación con algo que se lee como un pasadizo diseñado, no una roca
  * suelta.
  */
+// Pedido explícito: "la gracia es hacerlo más veces pero estén más arriba
+// pero estén más difíciles, que hayan erizos o caballitos de mar etc"
+// dentro de los laberintos. El ancho del hueco de cada banda lo siguen
+// garantizando SOLO las paredes (edgeReach, sin tocar) — estos animales
+// son una capa aparte, real (Urchin/Seahorse de verdad, no arte de
+// ReefCluster), colocada DESCENTRADA dentro del propio hueco ya calculado
+// (nunca en su centro exacto) para obligar a esquivarlos sin arriesgar
+// nunca la garantía de paso. Más difícil cuanto más arriba: para las
+// instancias scripteadas de Zone1Level.ts, `START_Y - centerY` coincide
+// exactamente con el offset de esa entrada, así que subir la altura de
+// aparición sube el tier automáticamente sin tener que pasarlo a mano.
+const LABYRINTH_ANIMAL_OFFSET_PX = 80;
+
+function labyrinthAnimalTier(centerY: number): 0 | 1 | 2 {
+  const climbed = START_Y - centerY;
+  if (climbed < 12000) return 0;
+  if (climbed < 18000) return 1;
+  return 2;
+}
+
 const MINI_CORRIDOR_REACH_PX = 200;
 // Con margen real (mismo criterio que CORRIDOR_BAND_SPACING, recalculado
 // para este reach menor): en el peor caso (reef_boulder_rock, +5% de
@@ -522,7 +555,25 @@ function miniLabyrinth(worldWidth: number, centerY: number): ReefClusterSpec {
     { x: gapTop, y: topY - 130 },
   ];
 
-  return { pieces, path, yTop: topY - 150, yBottom: bottomY + 150 };
+  // Pedido explícito: repetir el laberinto más veces según se sube, con
+  // animales de verdad dentro del hueco para que sea más difícil — ver
+  // labyrinthAnimalTier arriba.
+  const inward = (side: Side) => (side === "left" ? 1 : -1);
+  const tier = labyrinthAnimalTier(centerY);
+  const bands = [
+    { side: sideBottom, gap: gapBottom, y: bottomY },
+    { side: sideMid, gap: gapMid, y: midY },
+    { side: sideTop, gap: gapTop, y: topY },
+  ];
+  const animalHints = Phaser.Utils.Array.Shuffle(bands.slice())
+    .slice(0, tier)
+    .map((band) => ({
+      type: (Math.random() < 0.5 ? "urchin" : "seahorse") as "urchin" | "seahorse",
+      x: band.gap + inward(band.side) * LABYRINTH_ANIMAL_OFFSET_PX,
+      y: band.y,
+    }));
+
+  return { pieces, path, yTop: topY - 150, yBottom: bottomY + 150, animalHints };
 }
 
 /**

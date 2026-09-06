@@ -271,6 +271,14 @@ export const SEAHORSE_MIN_GAP = 2600;
 export const SEAHORSE_MAX_GAP = 4400;
 export const SEAHORSE_SCALE = 0.16;
 
+// Décimo enemigo: balano (reutiliza el arte de barnacle, antes solo una
+// pieza decorativa de fondo en ReefCluster) — pedido explícito: "crea más
+// animales si". Mismo criterio que la almeja/coral trampa: se lee como
+// parte del arrecife hasta que Lumi se acerca de verdad.
+export const BARNACLE_MIN_GAP = 3400;
+export const BARNACLE_MAX_GAP = 5400;
+export const BARNACLE_SCALE = 0.2;
+
 export const BIG_FISH_PATROL_SPEED = 60;
 export const BIG_FISH_PUSH_STRENGTH = 300;
 export const BIG_FISH_PUSH_COOLDOWN_MS = 500;

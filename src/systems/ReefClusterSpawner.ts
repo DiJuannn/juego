@@ -37,6 +37,13 @@ export class ReefClusterSpawner {
     private scene: Phaser.Scene,
     private worldWidth: number,
     startY: number,
+    // Pedido explícito: "que hayan erizos o caballitos de mar etc" dentro
+    // de los laberintos — ReefClusterSpawner no conoce Urchin/Seahorse
+    // (viven en sus propios spawners), así que PondScene le pasa cómo
+    // colocarlos exactamente igual que ya hace con spawnExact() de cada
+    // spawner real.
+    private readonly spawnUrchin?: (y: number, x?: number) => void,
+    private readonly spawnSeahorse?: (y: number, x?: number) => void,
   ) {
     this.group = scene.physics.add.staticGroup();
     this.coinGroup = scene.physics.add.staticGroup();
@@ -98,6 +105,10 @@ export class ReefClusterSpawner {
     for (const sprite of cluster.obstacleSprites) this.group.add(sprite);
     this.clusters.push(cluster);
     this.spawnCoinsAlongPath(spec.path);
+    for (const hint of spec.animalHints ?? []) {
+      if (hint.type === "urchin") this.spawnUrchin?.(hint.y, hint.x);
+      else this.spawnSeahorse?.(hint.y, hint.x);
+    }
     if (cluster.yTop < this.highestY) this.highestY = cluster.yTop;
   }
 

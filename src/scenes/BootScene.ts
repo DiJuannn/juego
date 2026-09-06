@@ -104,6 +104,11 @@ export class BootScene extends Phaser.Scene {
     // ver entities/Seahorse.ts.
     this.load.image("seahorse", assetPath("/objects/enemies/seahorse.png"));
     this.load.image("seahorse_blink", assetPath("/objects/enemies/seahorse_blink.png"));
+    // Pedido explícito: "el caballito de mar... esté animado con Gemini" —
+    // segunda pose real (no un blink, un frame de impulso de nado: cola
+    // estirada en vez de enroscada, cuerpo inclinado) para alternar con la
+    // pose base mientras gira en círculos, ver entities/Seahorse.ts.
+    this.load.image("seahorse_swim", assetPath("/objects/enemies/seahorse_swim.png"));
     // Librería de piezas para ReefCluster (composiciones orgánicas de
     // obstáculos de Zona 1, ver systems/ReefCluster.ts). Tercera tanda,
     // generada directamente a partir de las 3 imágenes de referencia que

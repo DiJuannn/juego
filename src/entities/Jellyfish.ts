@@ -28,6 +28,14 @@ const PULSE_SPEED = 2.4;
 const ROTATION_AMOUNT = 0.05;
 const ROTATION_SPEED = 1.8;
 
+// Pedido explícito: "la medusa que deje partículas de burbujas tmb" —
+// rastro continuo y sutil (no la ráfaga festiva del escudo/boost, ver
+// PondScene.boostBurst), como si burbujeara al nadar. startFollow() la
+// sigue automáticamente en su vaivén sin tener que reposicionar el
+// emisor a mano cada frame.
+const BUBBLE_FREQUENCY_MS = 320;
+const BUBBLE_LIFESPAN_MS = 1300;
+
 /**
  * 4 patrones de deriva distintos (pedido explícito: variedad de
  * movimiento, no todas las medusas iguales) — cada instancia elige uno al
@@ -51,10 +59,27 @@ export class Jellyfish {
   private readonly movementType: JellyfishMovementType;
   private readonly blinkTimer = new BlinkTimer();
   private isBlinking = false;
+  private readonly bubbleEmitter: Phaser.GameObjects.Particles.ParticleEmitter;
 
   constructor(scene: Phaser.Scene, x: number, y: number, scale: number) {
     this.sprite = scene.physics.add.staticImage(x, y, "jellyfish");
     this.sprite.setScale(scale);
+    this.bubbleEmitter = scene.add.particles(x, y, "bubble_small", {
+      // bubble_small.png es un PNG nativo de solo 49x49 — la escala de
+      // boostBurst (0.35-0.05, pensada para una ráfaga vista de cerca al
+      // tocar un power-up) resultaba invisible aquí a esta escala mucho
+      // menor; subida para que se lea de verdad como un rastro, no un
+      // parpadeo de 1-2px.
+      scale: { start: 0.28, end: 0.06 },
+      alpha: { start: 0.65, end: 0 },
+      speedX: { min: -8, max: 8 },
+      speedY: { min: -30, max: -16 },
+      lifespan: BUBBLE_LIFESPAN_MS,
+      frequency: BUBBLE_FREQUENCY_MS,
+      quantity: 1,
+    });
+    this.bubbleEmitter.setDepth(4.9);
+    this.bubbleEmitter.startFollow(this.sprite);
     // Pedido explícito: todos los animales en la misma capa que Lumi, para
     // que se lean claramente como obstáculos y no como decoración de fondo.
     this.sprite.setDepth(5);
@@ -144,5 +169,13 @@ export class Jellyfish {
       this.isBlinking = blinking;
       this.sprite.setTexture(blinking ? "jellyfish_blink" : "jellyfish");
     }
+  }
+
+  /** El emisor de burbujas es un GameObject aparte del sprite — hay que
+   * destruirlo a mano al despawnear, si no las medusas que salen de
+   * pantalla dejan un emisor huérfano vivo para siempre (fuga real en una
+   * partida de escalada infinita). */
+  destroy() {
+    this.bubbleEmitter.destroy();
   }
 }

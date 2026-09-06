@@ -23,6 +23,7 @@ import { BigFish } from "@/entities/BigFish";
 import { Lumi } from "@/entities/Lumi";
 import { AmbientDecorSpawner } from "@/systems/AmbientDecorSpawner";
 import { BackgroundFishField } from "@/systems/BackgroundFishField";
+import { BarnacleSpawner } from "@/systems/BarnacleSpawner";
 import { BigFishSpawner } from "@/systems/BigFishSpawner";
 import { BubbleField } from "@/systems/BubbleField";
 import { CoinSpawner } from "@/systems/CoinSpawner";
@@ -46,7 +47,17 @@ import { UrchinSpawner } from "@/systems/UrchinSpawner";
 import { ZoneManager } from "@/systems/ZoneManager";
 import { pondLayerKey, pondPlantFrameKey } from "./BootScene";
 
-type DeathReason = "atras" | "medusa" | "tiburon" | "calamar" | "erizo" | "cangrejo" | "almeja" | "coral" | "caballito";
+type DeathReason =
+  | "atras"
+  | "medusa"
+  | "tiburon"
+  | "calamar"
+  | "erizo"
+  | "cangrejo"
+  | "almeja"
+  | "coral"
+  | "caballito"
+  | "balano";
 
 /**
  * Escalada infinita: la cámara solo sube (nunca retrocede) siguiendo a
@@ -67,6 +78,7 @@ export class PondScene extends Phaser.Scene {
   private urchinSpawner!: UrchinSpawner;
   private giantClamSpawner!: GiantClamSpawner;
   private coralTrapSpawner!: CoralTrapSpawner;
+  private barnacleSpawner!: BarnacleSpawner;
   private seahorseSpawner!: SeahorseSpawner;
   private reefClusterSpawner!: ReefClusterSpawner;
   private bigFishSpawner!: BigFishSpawner;
@@ -265,7 +277,18 @@ export class PondScene extends Phaser.Scene {
     // Pedido explícito del usuario: el arrecife ya NO hace daño — sigue
     // siendo un obstáculo físico sólido (hay que rodearlo/pasar por el
     // hueco), pero tocarlo solo bloquea el paso, no resta vidas.
-    this.reefClusterSpawner = new ReefClusterSpawner(this, WORLD_WIDTH, START_Y - ZONE1_LEVEL_END_OFFSET);
+    // Los 2 últimos parámetros son callbacks perezosos (arrow functions):
+    // this.urchinSpawner/this.seahorseSpawner todavía no existen en esta
+    // línea (se crean más abajo), pero para cuando de verdad se invoquen
+    // (un laberinto con animalHints, ver ReefTemplates.ts) ya estarán
+    // asignados — mismo patrón que ya usa isWithinAnyClusterBand.
+    this.reefClusterSpawner = new ReefClusterSpawner(
+      this,
+      WORLD_WIDTH,
+      START_Y - ZONE1_LEVEL_END_OFFSET,
+      (y, x) => this.urchinSpawner.spawnExact(y, x),
+      (y, x) => this.seahorseSpawner.spawnExact(y, x),
+    );
     this.physics.add.collider(this.lumi.sprite, this.reefClusterSpawner.group);
     this.physics.add.overlap(this.lumi.sprite, this.reefClusterSpawner.coinGroup, (_lumiObj, coinObj) => {
       this.coinCount += 1;
@@ -325,6 +348,20 @@ export class PondScene extends Phaser.Scene {
     );
     this.physics.add.overlap(this.lumi.sprite, this.coralTrapSpawner.group, (_lumiObj, coralObj) => {
       this.handleHazardHit("coral", coralObj as Phaser.Physics.Arcade.Image);
+    });
+
+    // Balanos: décimo enemigo (pedido explícito: "crea más animales si").
+    // Reutiliza el arte de barnacle, antes solo una pieza decorativa de
+    // fondo en ReefCluster.
+    this.barnacleSpawner = new BarnacleSpawner(
+      this,
+      WORLD_WIDTH,
+      START_Y - ZONE1_LEVEL_END_OFFSET,
+      () => ({ x: this.lumi.sprite.x, y: this.lumi.sprite.y }),
+      (y) => this.reefClusterSpawner.isWithinAnyClusterBand(y),
+    );
+    this.physics.add.overlap(this.lumi.sprite, this.barnacleSpawner.group, (_lumiObj, barnacleObj) => {
+      this.handleHazardHit("balano", barnacleObj as Phaser.Physics.Arcade.Image);
     });
 
     // Tiburones: segundo enemigo, más arriba que la medusa. Patrullan de
@@ -402,6 +439,9 @@ export class PondScene extends Phaser.Scene {
           break;
         case "coraltrap":
           this.coralTrapSpawner.spawnExact(y, entry.x);
+          break;
+        case "barnacle":
+          this.barnacleSpawner.spawnExact(y, entry.x);
           break;
         case "seahorse":
           this.seahorseSpawner.spawnExact(y, entry.x);
@@ -532,6 +572,7 @@ export class PondScene extends Phaser.Scene {
     almeja: "¡Una almeja gigante te ha atrapado!",
     coral: "¡Un coral trampa te ha atrapado!",
     caballito: "Un caballito de mar te ha rozado...",
+    balano: "¡Un balano te ha pellizcado!",
   };
 
   /** Punto de entrada de los 4 peligros (medusa/tiburón/calamar/erizo): si
@@ -845,6 +886,7 @@ export class PondScene extends Phaser.Scene {
     this.urchinSpawner.update(cam.scrollY, cam.scrollY + cam.height, time);
     this.giantClamSpawner.update(cam.scrollY, cam.scrollY + cam.height, time);
     this.coralTrapSpawner.update(cam.scrollY, cam.scrollY + cam.height, time);
+    this.barnacleSpawner.update(cam.scrollY, cam.scrollY + cam.height, time);
     this.sharkSpawner.update(cam.scrollY, cam.scrollY + cam.height, time);
     this.bigFishSpawner.update(cam.scrollY, cam.scrollY + cam.height, time);
     this.squidSpawner.update(cam.scrollY, cam.scrollY + cam.height, time);

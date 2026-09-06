@@ -1813,36 +1813,93 @@ funciona **hoy**, verificado en el código — no lo que el diseño aspira a ten
   tramo scripteado (`ZONE1_LEVEL_END_OFFSET=28160`). Con solo 1 vida
   (cambio de la ronda anterior), es esperable que la mayoría de intentos
   no lleguen tan lejos; ver PENDIENTE.
+- **Piezas laterales con variación real de tamaño** (pedido explícito:
+  "los objetos laterales como las rocas pincho que cambien de tamaño tmb,
+  algunas más grandes, otras medianas otras así"): `wallPiece()` en
+  `ReefTemplates.ts` ahora aplica un tier de tamaño adicional
+  (`WALL_PIECE_SIZE_TIERS = [0.72, 0.72, 1, 1, 1, 1.35]`, con más peso en
+  el mediano) encima del jitter sutil que ya tenía — nunca en
+  `corridorWall()` (los 3 laberintos, que necesitan el hueco EXACTO de
+  `edgeReach`). Reverificado el hueco libre de las 4 plantillas simples
+  con el tier más grande activo en las 40 muestras: mínimo 528-560px,
+  de sobra por encima del margen ya aceptado en el resto del juego.
+- **Laberintos repetidos, más arriba, más difíciles, con animales dentro**
+  (pedido explícito: "la gracia es hacerlo más veces pero estén más
+  arriba pero estén más difíciles, que hayan erizos o caballitos de mar
+  etc"): `ReefClusterSpec` ganó un campo opcional `animalHints` —
+  posiciones de animales REALES (Urchin/Seahorse, no arte de
+  `ReefCluster`) descentradas dentro del propio hueco ya calculado para
+  las paredes, nunca en su centro exacto, para obligar a esquivarlos sin
+  tocar la garantía de paso. `miniLabyrinth()` los genera según
+  `labyrinthAnimalTier(centerY)` (0/1/2 según cuánto se ha subido,
+  derivado de `START_Y - centerY` — coincide con el offset para las
+  instancias scripteadas). `ReefClusterSpawner` recibe 2 callbacks nuevos
+  (`spawnUrchin`/`spawnSeahorse`, perezosos: apuntan a
+  `this.urchinSpawner`/`this.seahorseSpawner` de `PondScene`, que aún no
+  existen en la línea donde se construye `ReefClusterSpawner` pero sí
+  para cuando de verdad se llaman) y los invoca al colocar cada cúmulo.
+  3 de los 8 `reef` scripteados de Zona 1 (antes plantillas simples en
+  offset 12160/16320/21440) pasaron a `miniLabyrinth` (tiers 1/1/2,
+  subiendo en altura) — "más veces, más arriba, más difíciles" tal cual
+  se pidió. Verificado con 15 muestras a distintas alturas: siempre
+  dentro de [0,690], nunca fuera del mundo.
+- **Caballito de mar: giro circular + animación real con Gemini** (pedido
+  explícito): `Seahorse.ts` cambió su "ocho perezoso" por una órbita
+  circular de verdad (`ORBIT_RADIUS`/`ORBIT_SPEED`) con inclinación
+  atada al giro. Segunda pose real generada con Gemini
+  (`seahorse_swim.png`) — dos intentos de un ciclo de 3 frames con
+  variaciones sutiles de aleta/cola salieron casi indistinguibles del
+  original (Gemini sobre-ancla al detalle pedido como "cambio mínimo");
+  la tercera generación, pidiendo una ACCIÓN DE IMPULSO bien distinta
+  (cola estirada en vez de enroscada, cuerpo inclinado), sí dio un
+  resultado claramente diferente. Se quedó como ciclo de 2 poses,
+  alternando según el signo de `cos(angle)` — sincronizado con el propio
+  giro, no un temporizador aparte — con el parpadeo (`seahorse_blink`)
+  con prioridad visual sobre ambas.
+- **Medusa: rastro de burbujas** (pedido explícito: "la medusa que deje
+  partículas de burbujas tmb"): cada `Jellyfish` crea su propio
+  `Phaser.GameObjects.Particles.ParticleEmitter` (reutiliza
+  `bubble_small`, ya cargado) con `startFollow(this.sprite)`, escala
+  0.28→0.06 y alpha 0.65→0 en ~1.3s, cadencia de ~320ms. Verificado a
+  nivel de objeto (posición/alpha/escala de partículas vivas siguiendo al
+  sprite correctamente) — la verificación visual por captura de pantalla
+  con Playwright no mostraba NADA, ni siquiera con una ráfaga exagerada
+  (escala 1.2, alpha 1, depth 100) ni con el `boostBurst` ya existente y
+  confirmado en producción, así que es una limitación conocida del
+  entorno de test headless con el sistema de partículas de Phaser, no un
+  bug de esta ronda. `Jellyfish.destroy()` nuevo, llamado desde
+  `JellyfishSpawner` al despawnear, para no dejar emisores huérfanos en
+  una escalada infinita.
+- **Décimo animal: balano** (pedido explícito: "crea más animales si") —
+  mismo patrón "animal disfrazado de obstáculo" que la almeja/coral
+  trampa, reutilizando el arte ya aprobado de `barnacle` (antes solo
+  decoración de fondo). En vez de un "lunge" suave, hace un doble
+  chasquido rápido y seco (`SNAP_PULSE_MS`×2 con hueco entre medio) al
+  acercarse Lumi, con un rango de disparo más corto que el coral trampa
+  (los balanos no "alcanzan" tan lejos). `DeathReason "balano"` nuevo.
+  2 apariciones scripteadas en huecos vacíos de Zona 1 (offset 13050 y
+  15100).
 
 # PENDIENTE
 
-- **"Crea más animales"** — parcialmente atendido en rondas anteriores (2
-  nuevos: `CoralTrap` y `Seahorse`), pero el pedido explícito fue "MUCHOS
-  MÁS" en mayúsculas, así que sigue abierto. El recuento de animales
-  reales está en 9. Quedan candidatas obvias sin convertir: `sponge`,
-  `barnacle`, `decor_pebble`, `decor_starfish` siguen siendo piezas
-  puramente decorativas/estáticas que podrían seguir el mismo patrón
-  "animal disfrazado de obstáculo" que ya demostraron la almeja y el
-  coral trampa.
 - **"Mejora las animaciones de los animales... vuelvo y te digo"** —
-  pedido explícito de esta ronda, respondido parcialmente en la parte
-  concreta (la almeja: boca muy abierta + secuencia de mordisco de 3
-  fases con Gemini + arte nuevo de Lumi, ver EN PROGRESO). El resto de
-  animales (medusa, tiburón, calamar, erizo, cangrejo, pez grande,
-  caballito, coral trampa) siguen con su animación actual (breathe/sway/
-  patrulla por código, sin frames de sprite nuevos) — el usuario dijo
-  explícitamente que iba a probar esta ronda y volver con más detalle
-  antes de seguir, así que queda esperando esa reacción en vez de generar
-  arte a ciegas para las 8 restantes.
+  pedido explícito de la ronda anterior, atendido ahora para el caballito
+  de mar (giro circular + segunda pose real con Gemini, ver EN PROGRESO).
+  El resto (medusa —aparte del rastro de burbujas—, tiburón, calamar,
+  erizo, cangrejo, pez grande, coral trampa, balano) siguen con su
+  animación actual (breathe/sway/patrulla por código, sin frames de
+  sprite nuevos).
+- **"Crea más animales"** — el recuento de animales reales subió a 10 con
+  el balano esta ronda. Quedan candidatas obvias sin convertir: `sponge`,
+  `decor_pebble`, `decor_starfish` siguen siendo piezas puramente
+  decorativas/estáticas que podrían seguir el mismo patrón.
 - **Zona 1 sigue con `grandMaze` muy al final** (offset 25600 de 28160) —
-  esta ronda se rellenaron 2 huecos vacíos del tramo inicial (ver EN
-  PROGRESO), pero mover el laberinto de hojas a una posición más
-  temprana (para que se vea sin necesitar una carrera muy larga con 1
-  sola vida) sería un cambio de mayor alcance: requiere recalcular todos
-  los offsets posteriores del array, no solo insertar una entrada. No se
-  ha hecho todavía — si el usuario confirma que quiere verlo antes,
-  conviene hacerlo como tarea dedicada en vez de mezclado con otros
-  cambios.
+  mover el laberinto de hojas a una posición más temprana (para que se
+  vea sin necesitar una carrera muy larga con 1 sola vida) sería un
+  cambio de mayor alcance: requiere recalcular todos los offsets
+  posteriores del array, no solo insertar una entrada. No se ha hecho
+  todavía — si el usuario confirma que quiere verlo antes, conviene
+  hacerlo como tarea dedicada en vez de mezclado con otros cambios.
 - "Mejora el movimiento... más elaborado" se aplicó a la almeja
   (balanceo) y se probó en el erizo (giro continuo), pero el usuario pidió
   revertir el del erizo explícitamente ("la gracia de ellos es que
@@ -1875,8 +1932,8 @@ funciona **hoy**, verificado en el código — no lo que el diseño aspira a ten
 # BUGS / PROBLEMAS
 
 (ninguno abierto conocido a fecha de esta ronda — ver EN PROGRESO para los
-que se cerraron, incluido el bug real de esta ronda: la mordida de la
-almeja nunca llegaba a cerrarse porque `PondScene.update()` deja de
+que se cerraron, incluido el bug real de la ronda anterior: la mordida de
+la almeja nunca llegaba a cerrarse porque `PondScene.update()` deja de
 llamarse en cuanto empieza `isDying`, así que cualquier lógica que
 dependiera de update(time) después de ese punto nunca se ejecutaba —
 solucionado moviendo la secuencia a Phaser.Tweens reales, que sí siguen
@@ -1884,30 +1941,28 @@ avanzando)
 
 # PRÓXIMA TAREA
 
-Esperar la reacción del usuario a esta ronda (almeja con boca muy abierta
-+ mordisco real + sprite de Lumi comida, limpieza de obstáculos pequeños
-en las 7 plantillas de arrecife, 2 variaciones nuevas de pinchos de
-piedra, y el relleno de huecos vacíos en Zona 1) antes de seguir. Tres
-líneas abiertas explícitas de esta ronda, en orden de lo que el usuario
-mismo señaló como pendiente:
+Esperar la reacción del usuario a esta ronda (piezas laterales con
+variación de tamaño, laberintos repetidos/más difíciles con animales
+dentro, caballito girando en círculo con pose de nado nueva, medusa con
+rastro de burbujas, balano como décimo animal) antes de seguir. Líneas
+abiertas explícitas:
 
-1. **"Mejora las animaciones de los animales... vuelvo y te digo"** — el
-   usuario dijo explícitamente que iba a probar y volver con feedback más
-   detallado. No generar arte nuevo para el resto de animales (medusa,
-   tiburón, calamar, erizo, cangrejo, pez grande, caballito, coral trampa)
-   hasta tener ese detalle — evita gastar generaciones en la dirección
-   equivocada.
-2. **"Crea más animales"** — sigue abierto ("MUCHOS MÁS"). Candidatas para
-   el patrón "animal disfrazado de obstáculo" (cero arte nuevo): `sponge`,
-   `barnacle`, `decor_pebble`, `decor_starfish`. Para especies genuinamente
-   nuevas, ya hay precedente fresco de generación bajo demanda.
-3. **Mover `grandMaze` a una posición más temprana** — el usuario preguntó
-   dónde estaba porque no lo había visto; con 1 sola vida y el laberinto
-   en offset 25600 (casi al final del tramo scripteado), es esperable que
-   la mayoría de intentos no lleguen. Si el usuario confirma que lo quiere
-   antes, es una tarea de mayor alcance (recalcular offsets posteriores)
-   que merece su propia ronda dedicada.
-
-Confirmar también con el usuario si 1 sola vida se siente bien en la
-práctica (cambio de la ronda anterior) — al ser un cambio de dificultad
-tan directo, vale la pena una confirmación explícita tras probarlo.
+1. **"Mejora las animaciones de los animales"** — atendido para el
+   caballito esta ronda; el resto (medusa aparte del rastro de burbujas,
+   tiburón, calamar, erizo, cangrejo, pez grande, coral trampa, balano)
+   sigue con animación por código, sin frames de sprite nuevos. Pedir cuál
+   en concreto antes de generar arte a ciegas para 7-8 animales más.
+2. **"Crea más animales"** — 10 animales reales ya. Candidatas para seguir
+   con el patrón "animal disfrazado de obstáculo" (cero arte nuevo):
+   `sponge`, `decor_pebble`, `decor_starfish`.
+3. **Mover `grandMaze` a una posición más temprana** — sigue en offset
+   25600 (casi al final del tramo scripteado); es una tarea de mayor
+   alcance (recalcular offsets posteriores) que merece su propia ronda si
+   el usuario confirma que la quiere.
+4. **Verificación visual del rastro de burbujas de la medusa** — el código
+   está verificado a nivel de objeto (posición/alpha/escala correctos),
+   pero no se pudo confirmar por captura de pantalla en este entorno de
+   test (limitación general del headless con partículas de Phaser, no
+   algo específico de esta función — el `boostBurst` ya confirmado en
+   producción tiene el mismo problema de captura). Pedir confirmación
+   visual real al usuario en el próximo turno.
