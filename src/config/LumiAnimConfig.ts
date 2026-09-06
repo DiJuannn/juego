@@ -26,38 +26,29 @@ import { assetPath } from "@/config/assetPath";
 // nuevos (ahora _02 y _04) alternan brazos adelante/atrás en un ciclo de
 // brazada; el antiguo _02 pasó a ser _03.
 //
-// idle/swim_right/swim_up/swim_diagonal DUPLICARON su número de frames
-// (pedido explícito: "tan pocos frames se ve cortado... agrégale muchos más
-// frames para que sea más fluido") insertando un frame INTERMEDIO generado
-// entre cada par de frames consecutivos del ciclo (incluida la vuelta del
-// último al primero, ya que todas estas animaciones hacen loop con
-// repeat:-1) — los frames originales conservan su pose exacta en las
-// posiciones impares, los nuevos van en las pares. Cada frame nuevo se
-// generó con Gemini a partir de sus dos vecinos como referencia y ancla de
-// estilo (ver skill lumi-asset-gen) y se registró sobre un punto focal
-// estable (el ojo — o el punto medio ojo+ceja en las poses de perfil con
-// dos manchas oscuras) para evitar el "fantasma" de cabeza duplicada.
-// LUMI_FPS se dobló en la misma ronda (ver más abajo) para que la duración
-// real del ciclo no cambie, solo su resolución temporal — doblar sólo el
-// número de frames sin doblar también el framerate habría dejado el mismo
-// ciclo reproduciéndose el doble de lento. sleep se deja para una ronda
-// aparte (animación poco visible, disparada solo por inactividad).
+// idle/swim_right/swim_up/swim_diagonal llegaron a duplicar su número de
+// frames en una ronda posterior (interpolación con Gemini para un
+// movimiento más fluido), pero el usuario pidió revertirlo explícitamente
+// ("El de estado base déjalo igual que estaba antes... Los frames de
+// LUMI. ASÍ ESTABAN PERFECTOS DÉJALO TODO COMO ANTES") — así que estas 4
+// animaciones están de vuelta en su número de frames original.
 //
 // dash: pedido explícito ("si haces dos veces una misma dirección hace un
 // Dash... hay que agregarle como un Sprite animado de él haciendo el
-// Dash"). Pose nueva (no interpolada de ninguna existente): Lumi estirada
-// como una flecha/torpedo, brazos pegados al cuerpo, cola recta y rígida,
-// con líneas de velocidad — vista diagonal desde atrás, mismo ángulo de
-// cámara que swim_up para que la rotación por código (ver Lumi.ts) quede
-// coherente en las 8 direcciones. 3 frames (vibración sutil de cola/estela
-// por la velocidad, no una brazada completa) a un framerate más vivo que
-// el resto, ver LUMI_ANIM_FPS.
+// Dash"), y el único añadido de esa ronda que SÍ se queda ("el Dash si me
+// gustó déjalo"). Pose nueva (no interpolada de ninguna existente): Lumi
+// estirada como una flecha/torpedo, brazos pegados al cuerpo, cola recta y
+// rígida, con líneas de velocidad — vista diagonal desde atrás, mismo
+// ángulo de cámara que swim_up para que la rotación por código (ver
+// Lumi.ts) quede coherente en las 8 direcciones. 3 frames (vibración sutil
+// de cola/estela por la velocidad, no una brazada completa) a un
+// framerate más vivo que el resto, ver LUMI_ANIM_FPS.
 export const LUMI_FRAME_COUNT: Record<string, number> = {
-  idle: 6,
+  idle: 3,
   sleep: 3,
-  swim_right: 8,
-  swim_up: 8,
-  swim_diagonal: 8,
+  swim_right: 4,
+  swim_up: 4,
+  swim_diagonal: 4,
   dash: 3,
   // Un solo frame: la pose de muerte (ojos en X, generada con Gemini, ver
   // lumi-asset-gen) no es una animación en bucle — se pone como textura
@@ -74,16 +65,10 @@ export const LUMI_FRAME_COUNT: Record<string, number> = {
 
 export const LUMI_FPS = 8; // pedido en el ejemplo de STYLE_GUIDE.md
 
-// Excepción por animación al LUMI_FPS por defecto: idle/swim_* doblaron su
-// número de frames en esta ronda (ver comentario de LUMI_FRAME_COUNT) y por
-// eso también doblan aquí su framerate — así el ciclo dura lo mismo en
-// tiempo real, solo con el doble de resolución temporal. sleep se queda
-// fuera a propósito (mismos 3 frames de siempre, sin tocar).
+// Excepción por animación al LUMI_FPS por defecto — solo "dash" la usa
+// (ver comentario de LUMI_FRAME_COUNT); idle/swim_* volvieron a LUMI_FPS
+// sin excepción tras revertir el intento de duplicar sus frames.
 export const LUMI_ANIM_FPS: Partial<Record<string, number>> = {
-  idle: 16,
-  swim_right: 16,
-  swim_up: 16,
-  swim_diagonal: 16,
   dash: 20,
 };
 

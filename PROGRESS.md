@@ -2470,6 +2470,29 @@ funciona **hoy**, verificado en el código — no lo que el diseño aspira a ten
     de la cadena completa (antes/después) confirmando el mismo silueta
     limpia; `npx tsc --noEmit` y build de producción limpios con los
     4 PNG corregidos empaquetados (`idle_02/04/06.png`, `swim_up_08.png`).
+- **Revertidas las dos rondas anteriores de idle/swim_right/swim_up/
+  swim_diagonal — vuelven a su versión original de antes de esta sesión**
+  (pedido explícito e inequívoco: "El de estado base déjalo igual que
+  estaba antes, ese no hay necesidad de tocarlo... Los frames de LUMI.
+  ASÍ ESTABAN PERFECTOS DÉJALO TODO COMO ANTES. Menos el Dash el Dash si
+  me gustó déjalo"). Tanto la duplicación de frames (3→6 y 4→8) como el
+  pulido posterior (arreglo del lienzo invertido, reequilibrado de
+  `swim_up_08`) quedan descartados para estas 4 animaciones — el usuario
+  prefiere la versión original, pese a que ambos cambios eran técnicamente
+  correcciones reales. Restaurados `idle_01/02/03.png`,
+  `swim_right_01-04.png`, `swim_up_01-04.png` y
+  `swim_diagonal_01-04.png` byte a byte desde el commit anterior a la
+  ronda de duplicación (`bb3afad`), borrados los frames 05-08/04-06
+  añadidos después, y `LUMI_FRAME_COUNT`/`LUMI_ANIM_FPS` en
+  `LumiAnimConfig.ts` de vuelta a sus valores originales (3/4 frames,
+  8 FPS uniforme) para estas 4 entradas. El Dash (mecánica +
+  `dash_01/02/03.png` + su entrada en `LUMI_FRAME_COUNT`/`LUMI_ANIM_FPS`)
+  se queda intacto, tal cual — es lo único de esa tanda de rondas que el
+  usuario confirmó que le gustó.
+  - Verificado en juego: `game.anims.get()` confirma 3 frames/8 FPS para
+    `idle`, 4 frames/8 FPS para `swim_right`/`swim_up`/`swim_diagonal`, y
+    `dash` sin cambios (3 frames/20 FPS); `npx tsc --noEmit` y build de
+    producción limpios con el recuento de archivos correcto por carpeta.
 
 # PENDIENTE
 
@@ -2534,20 +2557,18 @@ avanzando)
 
 # PRÓXIMA TAREA
 
-Esperar la reacción del usuario al pulido de Lumi ("vale mucho mejor
-pero púlelo más") — se corrigieron dos bugs reales con causa raíz
-identificada (lienzo invertido en 3 frames de idle, frame de cierre de
-swim_up muy desequilibrado hacia un lado), pero quedan desequilibrios
-menores sin tocar en swim_right/swim_diagonal (ratios ~1.5-2.4:1, un
-reintento no mejoró la métrica) — si el usuario TODAVÍA nota "saltos"
-después de este arreglo, lo más probable es que apunten a esos, y ahí sí
-tocaría o bien regenerar con más intentos o cambiar de estrategia
-(frame duration por frame en vez de framerate uniforme, ver
-`Phaser.Types.Animations.AnimationFrame.duration`, que permitiría alargar
-la duración de los frames "cerca de un extremo" y acortar la de los que
-están a medio camino sin tocar el arte).
+**Los frames de idle/swim_right/swim_up/swim_diagonal están, por pedido
+explícito del usuario, en su versión ORIGINAL de siempre (3/4 frames a
+8 FPS) — NO tocarlos de nuevo sin que el usuario lo pida otra vez.** Dos
+rondas seguidas de esta sesión (duplicar frames para más fluidez, luego
+pulir esos frames nuevos) fueron ambas revertidas explícitamente: "Los
+frames de LUMI. ASÍ ESTABAN PERFECTOS DÉJALO TODO COMO ANTES." Si en el
+futuro se vuelve a pedir "más fluidez" en estas animaciones, tener en
+cuenta este historial antes de repetir el mismo enfoque (interpolación
+con Gemini) sin más — puede que el usuario prefiera otra estrategia, o
+directamente no quiera tocarlas.
 
-Esperar también la reacción del usuario a las otras rondas recientes:
+Esperar la reacción del usuario a las otras rondas recientes:
 
 1. **Dragón marino, TERCERA corrección** (ahora una sola pieza sin
    cortar, longitud fija menor que WORLD_WIDTH para garantizar espacio
@@ -2558,13 +2579,9 @@ Esperar también la reacción del usuario a las otras rondas recientes:
    ningún corte y que la animación/colisión funcionan, pero dado el
    historial de esta función concreta, prestar especial atención a la
    próxima reacción del usuario antes de dar esto por cerrado.
-2. **Lumi: idle/swim_right/swim_up/swim_diagonal con el doble de frames**
-   (3→6 y 4→8, ronda anterior a esta). Verificado programáticamente que
-   las 4 animaciones reproducen el número de frames correcto a 16 FPS y
-   sin fantasma de cabeza duplicada — pero "se siente más fluido de
-   verdad" es inherentemente subjetivo. `sleep` se dejó fuera a propósito.
-3. **Dash nuevo (doble pulsación de dirección)**. Mecánica verificada a
-   fondo por Playwright (velocidad/duración/rotación exactas, cooldown,
+2. **Dash nuevo (doble pulsación de dirección)** — confirmado
+   explícitamente que le gustó ("el Dash si me gustó déjalo"). Mecánica
+   verificada a fondo por Playwright (velocidad/duración/rotación exactas, cooldown,
    rechazo correcto de toques simples/direcciones distintas/dobles toques
    lentos, vuelta limpia al estado normal) y sprite nuevo de 3 frames
    verificado sin fantasma — pero quedan dos cosas que solo el usuario
