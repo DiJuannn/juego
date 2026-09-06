@@ -1443,26 +1443,77 @@ funciona **hoy**, verificado en el código — no lo que el diseño aspira a ten
     mostrando la anémona+rama y el coral_fan+rama ya agrupados en la misma
     composición visible. `npx tsc --noEmit` limpio, build de producción
     real exitoso.
+- **Corrección del usuario tras la ronda anterior + varios pedidos
+  nuevos en el mismo mensaje**: "yo me refiero a los obstáculos en sí, se
+  ven feos esos dos [anémona y coral_fan]... que no parezcan dos pngs ahí
+  pegados quietos" — el problema NO era la separación/composición (ya
+  arreglada), sino que se sentían estáticos a pesar de ya respirar
+  (±4%, demasiado sutil para leerse como "vivo" en piezas con formas tan
+  reconocibles). Además: más animales, mejor movimiento en los que ya
+  hay, y más animales que obstáculos en el mapa. Todo sin tocar arte:
+  - `BREATHE_AMPLITUDE_OVERRIDE` nuevo en `ReefCluster.ts`: anémona
+    ±11% (antes ±4%) y coral_fan ±9% — el resto de piezas que respiran
+    se quedan en la amplitud genérica. Verificado en el motor: rango de
+    escala real de 0.89x-1.11x y 0.91x-1.09x respectivamente, coincide
+    exacto con lo configurado.
+  - `REEF_CLUSTER_MIN_GAP`/`MAX_GAP` en `GameConfig.ts`: se revierte del
+    todo el ×0.6 de una ronda anterior ("crea más [obstáculos]") ya que
+    el pedido ahora es el contrario — vuelve al valor base (~6400-10240px
+    de hueco, antes ~3840-6144px), menos arrecife por el mismo tramo de
+    mundo.
+  - "Puedes poner más animales juntos": `JellyfishSpawner`/`UrchinSpawner`
+    ganan un 30% de probabilidad de colocar una segunda medusa/erizo
+    cerca de la primera en su cadencia al azar (nunca en el nivel
+    scripteado de Zone1Level, que ya compone sus propios grupos a mano) —
+    offset en Y pequeño + separación en X generosa para que sigan dejando
+    hueco de sobra. Verificado con 60 llamadas de prueba: 30%/25% de
+    tasa de "buddy" real, dentro de lo esperado por azar.
+  - "Mejora el movimiento que sea más elaborado de los que ya tenemos":
+    erizo y almeja eran los más pasivos (solo bamboleo+respiración en el
+    mismo sitio). Erizo: giro lento y continuo (0.35 rad/s, dirección
+    aleatoria por instancia) — su silueta es casi circular así que rotar
+    no desincroniza su hitbox rectangular fija de forma perceptible.
+    Almeja: balanceo angular sutil (±0.05 rad) además del bob/respiración
+    que ya tenía — su hitbox está casi centrada en el sprite, así que un
+    ángulo pequeño tampoco la desincroniza. Verificado en el motor:
+    rotación del erizo avanzando linealmente en el tiempo, rotación de la
+    almeja oscilando en seno entre los límites esperados.
+  - "El laberinto que te dije sigues sin hacerlo": revisados los 33
+    despliegues de GitHub Actions de esta rama — todos exitosos,
+    incluyendo el que garantizó `reefLabyrinth` al principio (Tramo 0) y
+    el que añadió `miniLabyrinth`. No hay ninguna señal de que el código
+    en producción sea distinto del verificado en el motor (que sí lo
+    muestra como lo primero que aparece en una partida nueva). Causa más
+    probable: caché del navegador sirviendo un bundle viejo — se le pide
+    al usuario un refresco forzado (Ctrl+Shift+R o pestaña privada) antes
+    de investigar más a fondo, y se le pregunta si con "laberinto" se
+    refiere a otra cosa (p.ej. una formación de animales, no de rocas).
+  - Playtest automático de 20s sin errores ni cuelgues (zigzag aleatorio),
+    `npx tsc --noEmit` limpio, build de producción real exitoso.
 
 # PENDIENTE
 
-- **"Crea más animales para que sea mejor, más animales y menos
-  obstáculos"** (pedido explícito, mismo mensaje que la almeja) — no
-  arrancado todavía. La almeja ya sube el recuento de animales reales de
-  6 a 7; falta decidir con el usuario qué otras piezas hoy decorativas de
+- **"Crea más animales"** (repetido en dos mensajes seguidos) — sigue sin
+  arrancar. La almeja ya subió el recuento de animales reales de 6 a 7;
+  falta decidir con el usuario qué otras piezas hoy decorativas de
   `ReefTemplates.ts` (anémona, percebe, esponja...) tienen sentido como
-  animal activo en vez de obstáculo estático, siguiendo el mismo patrón
-  Entity+Spawner+overlap ya usado 7 veces.
-- **"Los obstáculos tengan menos importancia, es que se ven muy feos
-  algunos ahí flotando solos"** (mismo mensaje) — la lectura (a) de este
-  pedido (piezas concretas mal compuestas/sueltas dentro de una
-  plantilla) ya se resolvió con la captura real del usuario, ver EN
-  PROGRESO ("estas cosas ahí flotando me parecen feas"). Sigue sin tocar
-  la lectura (b)/(c): reducir el protagonismo visual de los obstáculos de
-  arrecife EN GENERAL (escala/opacidad/frecuencia frente a animales), si
-  es que el usuario seguía pidiendo eso además del problema puntual ya
-  arreglado — pendiente de su reacción a la ronda actual antes de tocar
-  nada más aquí.
+  animal activo en vez de obstáculo estático, o diseñar especies
+  totalmente nuevas — siguiendo el mismo patrón Entity+Spawner+overlap ya
+  usado 7 veces. Requiere generación de arte nueva (Gemini), así que es
+  la tarea más grande que queda pendiente de este hilo de peticiones.
+- "Mejora el movimiento... más elaborado" ya se aplicó a erizo (giro
+  continuo) y almeja (balanceo), los dos animales más pasivos — el resto
+  (medusa, tiburón, calamar, cangrejo, pez grande) ya tenían varios
+  patrones de movimiento de rondas anteriores y no se tocaron esta vez.
+  Si el usuario sigue viendo alguno "muy pacífico" tras esta ronda, pedir
+  cuál en concreto en vez de retocar los 5 a ciegas.
+- El protagonismo visual de los obstáculos de arrecife frente a los
+  animales ya se atendió por dos vías: la anémona/coral_fan ahora animan
+  mucho más (lectura "se ven quietos") y el hueco entre cúmulos de
+  arrecife volvió a su valor base, ~el doble de separado que antes
+  (lectura "menos obstáculos que animales") — ver EN PROGRESO. Pendiente
+  de la reacción del usuario para saber si esto ya cierra el pedido o si
+  quería algo más (p.ej. bajar también su escala/opacidad).
 - Una vez el Tramo 1+2 esté aprobado y estable: variaciones del mismo
   esqueleto para que no sea idéntico entre intentos (pedido explícito,
   para después).
@@ -1483,17 +1534,23 @@ que se cerraron)
 
 # PRÓXIMA TAREA
 
-La almeja gigante ya es animal real (verificada de punta a punta) y la
-composición "flotando solo" que el usuario mostró con una captura real ya
-se corrigió (anémona/coral_fan reagrupados junto a su pieza vecina más
-próxima, margen animal-vs-cúmulo subido de 60 a 170px) — ver EN PROGRESO
-para el detalle de ambos. Esperar la reacción del usuario a esta ronda:
-si la composición ya se siente resuelta, queda un pedido explícito sin
-empezar del mismo mensaje original — "crea más animales para que sea
-mejor, más animales y menos obstáculos" (ver PENDIENTE): decidir con el
-usuario qué piezas hoy decorativas (anémona, percebe, esponja...) tienen
-sentido como animal activo, siguiendo el mismo patrón Entity+Spawner+
-overlap ya usado 7 veces (medusa/tiburón/calamar/erizo/cangrejo/pez
-grande/almeja). Si en cambio la queja de composición persiste con otro
-ejemplo, pedir ese ejemplo concreto (altura/plantilla) antes de re-tunear
-más a ciegas.
+Ronda grande de 5 pedidos en un solo mensaje, todos atendidos salvo uno
+(ver EN PROGRESO para el detalle completo de cada arreglo): anémona/
+coral_fan ya animan mucho más (no "pngs quietos"), erizo y almeja tienen
+movimiento más elaborado, medusa/erizo a veces aparecen en pareja, y el
+mapa ya pesa más hacia animales que hacia obstáculos (hueco de arrecife
+de vuelta a su valor base). El "laberinto que sigues sin hacer" se
+investigó a fondo (33 despliegues de GitHub Actions, todos exitosos, el
+código en producción coincide con lo verificado en el motor) sin
+encontrar ninguna causa real del lado del código — se le pidió al usuario
+un refresco forzado del navegador y una aclaración de si por "laberinto"
+sigue refiriéndose al pasillo de rocas ya construido o a otra cosa.
+
+Queda sin empezar: "crea más animales" (pedido dos veces seguidas) — la
+única tarea de esta ronda que necesita arte nuevo (Gemini), así que es la
+más grande. Al retomarla, decidir con el usuario qué piezas hoy
+decorativas (anémona, percebe, esponja...) tienen sentido como animal
+activo, o diseñar una especie nueva desde cero, siguiendo el mismo patrón
+Entity+Spawner+overlap ya usado 7 veces. Antes de eso, esperar su
+respuesta sobre el laberinto (para no seguir dando vueltas sobre el mismo
+malentendido) y su reacción a las animaciones/densidad de esta ronda.

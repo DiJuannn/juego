@@ -250,9 +250,22 @@ const BREATHE_AMPLITUDE = 0.04;
 const BREATHE_PERIOD_MIN = 2600;
 const BREATHE_PERIOD_MAX = 4200;
 
+// Pedido explícito con captura real: "se ven feos esos dos [anémona y
+// coral_fan]... que no parezcan dos pngs ahí pegados quietos" — ya
+// respiraban (no estaban en NO_BREATHE_KEYS), pero ±4% es demasiado sutil
+// para leerse como "vivo" en piezas con formas orgánicas tan reconocibles
+// (tentáculos/lóbulos). Amplitud propia, más del doble, solo para estas
+// dos — el resto de piezas que respiran (ramas, esponja, balano...) se
+// quedan con la amplitud genérica de siempre.
+const BREATHE_AMPLITUDE_OVERRIDE: Record<string, number> = {
+  anemone: 0.11,
+  coral_fan: 0.09,
+};
+
 interface BreathingObstacle {
   sprite: Phaser.Physics.Arcade.Image;
   baseScale: number;
+  amplitude: number;
   periodMs: number;
   phase: number;
   // Tamaño/offset de body "base" (al pulso=1, ver rotatedFractionalBody) —
@@ -329,6 +342,7 @@ export class ReefCluster {
           this.breathingObstacles.push({
             sprite,
             baseScale: scale,
+            amplitude: BREATHE_AMPLITUDE_OVERRIDE[piece.key] ?? BREATHE_AMPLITUDE,
             periodMs: Phaser.Math.FloatBetween(BREATHE_PERIOD_MIN, BREATHE_PERIOD_MAX),
             phase: Phaser.Math.FloatBetween(0, Math.PI * 2),
             body: baseBody,
@@ -348,7 +362,7 @@ export class ReefCluster {
 
   update(time: number) {
     for (const obstacle of this.breathingObstacles) {
-      const pulse = 1 + BREATHE_AMPLITUDE * Math.sin((time / obstacle.periodMs) * Math.PI * 2 + obstacle.phase);
+      const pulse = 1 + obstacle.amplitude * Math.sin((time / obstacle.periodMs) * Math.PI * 2 + obstacle.phase);
       obstacle.sprite.setScale(obstacle.baseScale * pulse);
       if (obstacle.body) {
         const { w, h, offsetX, offsetY } = obstacle.body;

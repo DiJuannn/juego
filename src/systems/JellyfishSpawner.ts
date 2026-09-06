@@ -6,6 +6,18 @@ import { isHazardAllowed } from "@/config/Zone1Segments";
 const SPAWN_LOOKAHEAD = 900;
 const DESPAWN_MARGIN = 1200;
 const MARGIN_X = 140;
+// Pedido explícito: "más animales... puedes poner más animales juntos" —
+// en la cadencia al azar (nunca en el nivel scripteado de Zone1Level, que
+// ya compone sus propios grupos a mano), a veces aparece una segunda
+// medusa cerca de la primera en vez de siempre una sola y sola. Offset en
+// Y pequeño (no exactamente la misma altura, para que no se lean como un
+// "sprite duplicado") y separación en X generosa para que sigan dejando
+// hueco de sobra para pasar entre las dos.
+const BUDDY_CHANCE = 0.3;
+const BUDDY_Y_OFFSET_MIN = 60;
+const BUDDY_Y_OFFSET_MAX = 140;
+const BUDDY_X_OFFSET_MIN = 180;
+const BUDDY_X_OFFSET_MAX = 320;
 
 /**
  * Primer enemigo del juego: medusas que hay que esquivar (tocarlas es game
@@ -35,7 +47,21 @@ export class JellyfishSpawner {
     // Progresión de Zona 1 en tramos (ver Zone1Segments): la medusa no
     // aparece en los tramos de descanso ni antes de su propia introducción.
     if (!isHazardAllowed(START_Y - y)) return;
-    this.place(y);
+    const x = Phaser.Math.Between(MARGIN_X, this.worldWidth - MARGIN_X);
+    this.place(y, x);
+
+    if (Phaser.Math.FloatBetween(0, 1) < BUDDY_CHANCE) {
+      const buddyY = y - Phaser.Math.Between(BUDDY_Y_OFFSET_MIN, BUDDY_Y_OFFSET_MAX);
+      const xOffset = Phaser.Math.Between(BUDDY_X_OFFSET_MIN, BUDDY_X_OFFSET_MAX);
+      const buddyX = Phaser.Math.Clamp(
+        x + (Math.random() < 0.5 ? -xOffset : xOffset),
+        MARGIN_X,
+        this.worldWidth - MARGIN_X,
+      );
+      if (!this.isWithinCoralBand?.(buddyY) && isHazardAllowed(START_Y - buddyY)) {
+        this.place(buddyY, buddyX);
+      }
+    }
   }
 
   /** Colocación exacta desde el nivel scripteado del Tramo 1 (ver

@@ -5,6 +5,14 @@ import { isHazardAllowed } from "@/config/Zone1Segments";
 
 const SPAWN_LOOKAHEAD = 900;
 const DESPAWN_MARGIN = 1200;
+// Pedido explícito: "más animales... puedes poner más animales juntos" —
+// mismo mecanismo que JellyfishSpawner (ver ahí el razonamiento completo):
+// a veces un segundo erizo cerca del primero en la cadencia al azar.
+const BUDDY_CHANCE = 0.3;
+const BUDDY_Y_OFFSET_MIN = 50;
+const BUDDY_Y_OFFSET_MAX = 110;
+const BUDDY_X_OFFSET_MIN = 150;
+const BUDDY_X_OFFSET_MAX = 280;
 
 /** Cuarto enemigo: erizos, casi inmóviles. Mismo patrón de reciclado que
  * JellyfishSpawner. */
@@ -30,7 +38,17 @@ export class UrchinSpawner {
     if (this.isWithinCoralBand?.(y)) return;
     // Progresión de Zona 1 en tramos (ver Zone1Segments).
     if (!isHazardAllowed(START_Y - y)) return;
-    this.place(y);
+    const x = Phaser.Math.Between(120, this.worldWidth - 120);
+    this.place(y, x);
+
+    if (Phaser.Math.FloatBetween(0, 1) < BUDDY_CHANCE) {
+      const buddyY = y - Phaser.Math.Between(BUDDY_Y_OFFSET_MIN, BUDDY_Y_OFFSET_MAX);
+      const xOffset = Phaser.Math.Between(BUDDY_X_OFFSET_MIN, BUDDY_X_OFFSET_MAX);
+      const buddyX = Phaser.Math.Clamp(x + (Math.random() < 0.5 ? -xOffset : xOffset), 120, this.worldWidth - 120);
+      if (!this.isWithinCoralBand?.(buddyY) && isHazardAllowed(START_Y - buddyY)) {
+        this.place(buddyY, buddyX);
+      }
+    }
   }
 
   /** Colocación exacta desde el nivel scripteado del Tramo 1 (ver

@@ -4,6 +4,15 @@ const BOB_AMPLITUDE = 6;
 const BOB_SPEED = 0.3;
 const BREATHE_AMPLITUDE = 0.05;
 const BREATHE_SPEED = 1.3;
+// Pedido explícito: "mejora el movimiento que sea más elaborado de los
+// que ya tenemos" — un balanceo angular sutil (como una concha asentada
+// meciéndose un poco con la corriente), además del bob/respiración que ya
+// tenía. Ángulo pequeño a propósito: el hitbox de la almeja es un
+// rectángulo fijo centrado casi exactamente en el sprite (ver el ajuste
+// de tamaño/offset más abajo), así que un balanceo de pocos grados no lo
+// desincroniza de forma perceptible.
+const ROCK_AMPLITUDE = 0.05; // rad
+const ROCK_SPEED = 0.4;
 
 /**
  * Séptimo enemigo (pedido explícito: "crea más animales... la almeja
@@ -52,6 +61,7 @@ export class GiantClam {
     const y = this.baseY + Math.sin(t * BOB_SPEED + this.phase) * BOB_AMPLITUDE;
     const pulse = 1 + Math.sin(t * BREATHE_SPEED + this.phase) * BREATHE_AMPLITUDE;
     this.sprite.setScale(this.baseScale * pulse);
+    this.sprite.setRotation(Math.sin(t * ROCK_SPEED + this.phase) * ROCK_AMPLITUDE);
 
     const body = this.sprite.body as Phaser.Physics.Arcade.StaticBody;
     body

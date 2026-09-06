@@ -281,13 +281,14 @@ export const CORAL_CHUNK_SCALE = 0.32;
 // revertir. Sus primeras apariciones (Tramo 1) las decide el nivel
 // scripteado (ver Zone1Level.ts); estos valores solo rigen su cadencia
 // aleatoria a partir de ahí.
-// Pedido explícito: "los objetos del lateral... crea más" — más
-// presencia de cúmulos de arrecife que el resto de peligros, así que su
-// hueco baja un 40% respecto al valor ×3.2 de la ronda anterior (en vez
-// de deshacer del todo esa separación, que sí aplicaba al resto de
-// peligros).
-export const REEF_CLUSTER_MIN_GAP = 2000 * 1.6 * 2 * 0.6;
-export const REEF_CLUSTER_MAX_GAP = 3200 * 1.6 * 2 * 0.6;
+// Pedido explícito (ronda anterior): "los objetos del lateral... crea
+// más" — el hueco bajó un 40% (×0.6) para que hubiera más presencia de
+// arrecife que de animales. Pedido explícito opuesto ahora: "más animales
+// y menos obstáculos" — se revierte esa reducción del todo (×1, el valor
+// base sin el boost) en vez de solo suavizarla, ya que el pedido nuevo es
+// exactamente lo contrario del que motivó el ×0.6.
+export const REEF_CLUSTER_MIN_GAP = 2000 * 1.6 * 2;
+export const REEF_CLUSTER_MAX_GAP = 3200 * 1.6 * 2;
 export const REEF_COIN_SPACING = 90; // separación entre monedas a lo largo de la ruta guía
 
 // Corriente de agua: no es una criatura, es una franja de mundo que empuja
