@@ -10,11 +10,14 @@ const HEART_SIZE = "22px";
 const HEART_GAP = 26;
 
 /**
- * Sistema de vidas: 3 corazones discretos en el HUD (mismo estilo que
- * Altura/zona). Cada golpe peligroso resta una vida; al llegar a 0 el
- * juego termina de verdad (ver PondScene.takeDamage). Entre golpes hay una
- * breve invulnerabilidad para no perder las 3 de golpe por un único
- * solapamiento con el mismo peligro.
+ * Sistema de vidas: corazones discretos en el HUD (mismo estilo que
+ * Altura/zona), tantos como `maxLives` (ver `LUMI_LIVES_START` en
+ * GameConfig.ts — pedido explícito: "que sea solo 1 vida no 3"). Cada
+ * golpe peligroso resta una vida; al llegar a 0 el juego termina de
+ * verdad (ver PondScene.takeDamage). Entre golpes hay una breve
+ * invulnerabilidad para no perder varias vidas de golpe por un único
+ * solapamiento con el mismo peligro (con 1 sola vida, ya no aplica: el
+ * primer golpe letal es game over).
  */
 export class LivesSystem {
   private lives: number;

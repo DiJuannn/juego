@@ -67,7 +67,18 @@
 // GameConfig.ts, que se deriva de este valor).
 export const ZONE1_LEVEL_END_OFFSET = 27360 + 800;
 
-export type Zone1LevelEntryType = "jellyfish" | "urchin" | "shark" | "squid" | "bigfish" | "reef" | "lilypad" | "crab";
+export type Zone1LevelEntryType =
+  | "jellyfish"
+  | "urchin"
+  | "shark"
+  | "squid"
+  | "bigfish"
+  | "reef"
+  | "lilypad"
+  | "crab"
+  | "clam"
+  | "coraltrap"
+  | "seahorse";
 
 export interface Zone1LevelEntry {
   type: Zone1LevelEntryType;
@@ -78,7 +89,8 @@ export interface Zone1LevelEntry {
    * plantilla decide sus propias posiciones). */
   x?: number;
   /** Solo para "reef": índice en REEF_TEMPLATES (0=diagonalLeft,
-   * 1=centerTwoPaths, 2=sCurveEdges, 3=lateralWall, 4=reefLabyrinth). */
+   * 1=centerTwoPaths, 2=sCurveEdges, 3=lateralWall, 4=reefLabyrinth,
+   * 5=miniLabyrinth, 6=grandMaze). */
   reefTemplate?: number;
   /** Solo para "shark": fuerza el sentido de patrulla en vez de tirarlo al
    * azar — pedido explícito: dos tiburones seguidos patrullando en
@@ -105,6 +117,15 @@ export const ZONE1_LEVEL_ENTRIES: Zone1LevelEntry[] = [
   // salir del laberinto.
   { type: "reef", offset: 3200, reefTemplate: 0 }, // diagonalLeft — banda ~[2950,3450]
   { type: "jellyfish", offset: 4320, x: 250 }, // justo tras salir del cúmulo 1
+  // Pedido explícito ("GENÉRAME MUCHOS MÁS ANIMALES... rellenar el mapa
+  // más con animales, hacer combinaciones"): caballito de mar en el mismo
+  // punto, al otro lado — primera "combinación" de dos animales distintos
+  // en el mismo respiro entre cúmulos.
+  { type: "seahorse", offset: 3700, x: 430 },
+  // Coral trampa (animal disfrazado de obstáculo) en el hueco despejado
+  // antes del siguiente cúmulo — se lee como parte del paisaje hasta que
+  // Lumi se acerca.
+  { type: "coraltrap", offset: 4800, x: 350 },
 
   { type: "reef", offset: 5440, reefTemplate: 3 }, // lateralWall — banda ~[5140,5740]
   // Pedido explícito: "una zona donde haya dos erizos o tres en línea y
@@ -122,7 +143,11 @@ export const ZONE1_LEVEL_ENTRIES: Zone1LevelEntry[] = [
   { type: "lilypad", offset: 6470, x: 200 },
 
   { type: "reef", offset: 7680, reefTemplate: 1 }, // centerTwoPaths — banda ~[7450,7910]
+  // Hueco despejado (7910-9620) que antes solo tenía una medusa — pedido
+  // explícito de rellenar más con animales.
+  { type: "seahorse", offset: 8300, x: 300 },
   { type: "jellyfish", offset: 8800, x: 250 },
+  { type: "coraltrap", offset: 9260, x: 450 },
 
   { type: "reef", offset: 9920, reefTemplate: 2 }, // sCurveEdges — banda ~[9620,10220]
   // Pedido explícito: "podemos poner dos tiburones seguidos en una zona con
@@ -137,12 +162,19 @@ export const ZONE1_LEVEL_ENTRIES: Zone1LevelEntry[] = [
   // Tramo final (13440-14880): combo denso en zigzag, cierra el capítulo.
   { type: "bigfish", offset: 13440, x: 350 },
   { type: "urchin", offset: 13920, x: 150 },
+  { type: "seahorse", offset: 14160, x: 400 },
   { type: "jellyfish", offset: 14400, x: 450 },
   { type: "urchin", offset: 14880, x: 250 },
 
   // --- Tramo 2 (14880-23040): debut del calamar, cierra con la corriente ---
+  // Debut de la almeja gigante (hasta ahora solo aparecía por generación
+  // al azar, nunca scripteada) — hueco despejado entre el final del
+  // Tramo 1 y el primer cúmulo del Tramo 2.
+  { type: "clam", offset: 15500, x: 350 },
+
   { type: "reef", offset: 16320, reefTemplate: 1 }, // centerTwoPaths — banda ~[16090,16550]
   { type: "squid", offset: 17280, x: 300 }, // debut del calamar
+  { type: "seahorse", offset: 17800, x: 420 },
 
   { type: "reef", offset: 18560, reefTemplate: 2 }, // sCurveEdges — banda ~[18260,18860]
   // Misma idea que el combo de 3 erizos de más arriba, pero con 2 —
@@ -155,10 +187,17 @@ export const ZONE1_LEVEL_ENTRIES: Zone1LevelEntry[] = [
   { type: "crab", offset: 20740, x: 350 }, // debut del cangrejo
 
   { type: "reef", offset: 21440, reefTemplate: 3 }, // lateralWall — banda ~[21140,21740]
+  { type: "coraltrap", offset: 22100, x: 250 },
 
   // Gauntlet final antes de la corriente (23040).
   { type: "jellyfish", offset: 22560, x: 300 },
   { type: "bigfish", offset: 23040, x: 450 },
+  // Combo final antes del segundo laberinto (pedido explícito: "rellenar
+  // el mapa más con animales... hacer combinaciones") — el hueco entre el
+  // gauntlet y la banda de entrada de grandMaze (23840) antes se dejaba
+  // vacío del todo.
+  { type: "seahorse", offset: 23300, x: 200 },
+  { type: "clam", offset: 23300, x: 470 },
 
   // --- Tramo 3: segundo laberinto, más grande y distinto (pedido
   // explícito: "el que ya tenemos está súper [no se toca]... el que digo

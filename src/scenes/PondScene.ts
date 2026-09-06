@@ -26,6 +26,7 @@ import { BackgroundFishField } from "@/systems/BackgroundFishField";
 import { BigFishSpawner } from "@/systems/BigFishSpawner";
 import { BubbleField } from "@/systems/BubbleField";
 import { CoinSpawner } from "@/systems/CoinSpawner";
+import { CoralTrapSpawner } from "@/systems/CoralTrapSpawner";
 import { CrabSpawner } from "@/systems/CrabSpawner";
 import { CrossfadePlant } from "@/systems/CrossfadePlant";
 import { CurrentZoneSpawner } from "@/systems/CurrentZoneSpawner";
@@ -36,6 +37,7 @@ import { LilyPadSpawner } from "@/systems/LilyPadSpawner";
 import { LivesSystem } from "@/systems/LivesSystem";
 import { ParallaxLayer } from "@/systems/ParallaxLayer";
 import { ReefClusterSpawner } from "@/systems/ReefClusterSpawner";
+import { SeahorseSpawner } from "@/systems/SeahorseSpawner";
 import { SharkSpawner } from "@/systems/SharkSpawner";
 import { ShieldPickupSpawner } from "@/systems/ShieldPickupSpawner";
 import { SquidSpawner } from "@/systems/SquidSpawner";
@@ -43,7 +45,7 @@ import { UrchinSpawner } from "@/systems/UrchinSpawner";
 import { ZoneManager } from "@/systems/ZoneManager";
 import { pondLayerKey, pondPlantFrameKey } from "./BootScene";
 
-type DeathReason = "atras" | "medusa" | "tiburon" | "calamar" | "erizo" | "cangrejo" | "almeja";
+type DeathReason = "atras" | "medusa" | "tiburon" | "calamar" | "erizo" | "cangrejo" | "almeja" | "coral" | "caballito";
 
 /**
  * Escalada infinita: la cámara solo sube (nunca retrocede) siguiendo a
@@ -63,6 +65,8 @@ export class PondScene extends Phaser.Scene {
   private crabSpawner!: CrabSpawner;
   private urchinSpawner!: UrchinSpawner;
   private giantClamSpawner!: GiantClamSpawner;
+  private coralTrapSpawner!: CoralTrapSpawner;
+  private seahorseSpawner!: SeahorseSpawner;
   private reefClusterSpawner!: ReefClusterSpawner;
   private bigFishSpawner!: BigFishSpawner;
   private currentZoneSpawner!: CurrentZoneSpawner;
@@ -278,6 +282,16 @@ export class PondScene extends Phaser.Scene {
       this.handleHazardHit("medusa", jellyObj as Phaser.Physics.Arcade.Image);
     });
 
+    // Caballitos de mar: noveno enemigo (pedido explícito: "GENÉRAME
+    // MUCHOS MÁS ANIMALES"). Deriva propia en forma de "8", ni vaivén de
+    // medusa ni casi-quieto de erizo.
+    this.seahorseSpawner = new SeahorseSpawner(this, WORLD_WIDTH, START_Y - ZONE1_LEVEL_END_OFFSET, (y) =>
+      this.reefClusterSpawner.isWithinAnyClusterBand(y),
+    );
+    this.physics.add.overlap(this.lumi.sprite, this.seahorseSpawner.group, (_lumiObj, seahorseObj) => {
+      this.handleHazardHit("caballito", seahorseObj as Phaser.Physics.Arcade.Image);
+    });
+
     // Erizos: cuarto enemigo, entre la medusa y el tiburón. Casi no se
     // mueven, son un obstáculo a esquivar, no una criatura que persigue.
     this.urchinSpawner = new UrchinSpawner(this, WORLD_WIDTH, START_Y - ZONE1_LEVEL_END_OFFSET, (y) =>
@@ -296,6 +310,20 @@ export class PondScene extends Phaser.Scene {
     );
     this.physics.add.overlap(this.lumi.sprite, this.giantClamSpawner.group, (_lumiObj, clamObj) => {
       this.handleHazardHit("almeja", clamObj as Phaser.Physics.Arcade.Image);
+    });
+
+    // Corales trampa: octavo enemigo (pedido explícito: "animales que
+    // parezcan obstáculos como la concha etc."). Reutiliza el arte de
+    // coral_fan, antes una pieza decorativa estática de ReefCluster.
+    this.coralTrapSpawner = new CoralTrapSpawner(
+      this,
+      WORLD_WIDTH,
+      START_Y - ZONE1_LEVEL_END_OFFSET,
+      () => ({ x: this.lumi.sprite.x, y: this.lumi.sprite.y }),
+      (y) => this.reefClusterSpawner.isWithinAnyClusterBand(y),
+    );
+    this.physics.add.overlap(this.lumi.sprite, this.coralTrapSpawner.group, (_lumiObj, coralObj) => {
+      this.handleHazardHit("coral", coralObj as Phaser.Physics.Arcade.Image);
     });
 
     // Tiburones: segundo enemigo, más arriba que la medusa. Patrullan de
@@ -367,6 +395,15 @@ export class PondScene extends Phaser.Scene {
           break;
         case "crab":
           this.crabSpawner.spawnExact(y, entry.x);
+          break;
+        case "clam":
+          this.giantClamSpawner.spawnExact(y, entry.x);
+          break;
+        case "coraltrap":
+          this.coralTrapSpawner.spawnExact(y, entry.x);
+          break;
+        case "seahorse":
+          this.seahorseSpawner.spawnExact(y, entry.x);
           break;
         case "reef":
           this.reefClusterSpawner.spawnExact(y, entry.reefTemplate ?? 0);
@@ -492,6 +529,8 @@ export class PondScene extends Phaser.Scene {
     erizo: "Te has pinchado con un erizo...",
     cangrejo: "Un cangrejo te ha pellizcado...",
     almeja: "¡Una almeja gigante te ha atrapado!",
+    coral: "¡Un coral trampa te ha atrapado!",
+    caballito: "Un caballito de mar te ha rozado...",
   };
 
   /** Punto de entrada de los 4 peligros (medusa/tiburón/calamar/erizo): si
@@ -791,8 +830,10 @@ export class PondScene extends Phaser.Scene {
     this.reefClusterSpawner.update(cam.scrollY, cam.scrollY + cam.height, time);
     this.coinSpawner.update(cam.scrollY, cam.scrollY + cam.height, time);
     this.jellyfishSpawner.update(cam.scrollY, cam.scrollY + cam.height, time);
+    this.seahorseSpawner.update(cam.scrollY, cam.scrollY + cam.height, time);
     this.urchinSpawner.update(cam.scrollY, cam.scrollY + cam.height, time);
     this.giantClamSpawner.update(cam.scrollY, cam.scrollY + cam.height, time);
+    this.coralTrapSpawner.update(cam.scrollY, cam.scrollY + cam.height, time);
     this.sharkSpawner.update(cam.scrollY, cam.scrollY + cam.height, time);
     this.bigFishSpawner.update(cam.scrollY, cam.scrollY + cam.height, time);
     this.squidSpawner.update(cam.scrollY, cam.scrollY + cam.height, time);

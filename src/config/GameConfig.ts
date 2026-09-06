@@ -254,6 +254,23 @@ export const BIG_FISH_SCALE = 0.5 * 0.8; // -20%, ver SHARK_SCALE
 export const GIANT_CLAM_MIN_GAP = 3800;
 export const GIANT_CLAM_MAX_GAP = 6000;
 export const GIANT_CLAM_SCALE = 0.24;
+
+// Octavo enemigo: coral trampa (reutiliza el arte de coral_fan, retirado
+// como pieza decorativa estática — pedido explícito: "animales que
+// parezcan obstáculos como la concha etc."). Mismo criterio de cadencia
+// que la almeja: un encuentro puntual, no un peligro constante.
+export const CORAL_TRAP_MIN_GAP = 3600;
+export const CORAL_TRAP_MAX_GAP = 5800;
+export const CORAL_TRAP_SCALE = 0.22;
+
+// Noveno enemigo: caballito de mar, deriva propia en forma de "8" — un
+// peligro genuino más que esquivar (no un obstáculo disfrazado, a
+// diferencia de la almeja/coral trampa), mismo criterio de cadencia que
+// medusa/erizo (aparición frecuente, parte del "paisaje" habitual).
+export const SEAHORSE_MIN_GAP = 2600;
+export const SEAHORSE_MAX_GAP = 4400;
+export const SEAHORSE_SCALE = 0.16;
+
 export const BIG_FISH_PATROL_SPEED = 60;
 export const BIG_FISH_PUSH_STRENGTH = 300;
 export const BIG_FISH_PUSH_COOLDOWN_MS = 500;
@@ -306,10 +323,12 @@ export const CURRENT_ZONE_MAX_GAP = 2600;
 export const CURRENT_ZONE_HEIGHT = 260;
 export const CURRENT_ZONE_STRENGTH = 85; // px/seg de empuje lateral
 
-// Sistema de vidas: 3 golpes peligrosos antes del game over de verdad (ver
-// PondScene.takeDamage), con una invulnerabilidad breve tras cada golpe no
-// letal para no perder varias vidas de golpe por el mismo peligro.
-export const LUMI_LIVES_START = 3;
+// Sistema de vidas: pedido explícito "cambiemos que sea solo 1 vida no
+// 3" (antes 3 golpes peligrosos antes del game over de verdad, ver
+// PondScene.takeDamage) — con 1 sola vida, cualquier golpe letal es game
+// over inmediato; la invulnerabilidad breve tras un golpe sigue existiendo
+// mientras haya escudo activo, pero ya no hay "colchón" de vidas extra.
+export const LUMI_LIVES_START = 1;
 export const LUMI_INVULNERABILITY_MS = 1400;
 export const LUMI_HIT_KNOCKBACK_STRENGTH = 220;
 

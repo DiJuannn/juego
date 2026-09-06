@@ -1634,19 +1634,93 @@ funciona **hoy**, verificado en el código — no lo que el diseño aspira a ten
     fondo pero del mismo lenguaje visual del juego. Playtest automático
     sin errores/cuelgues, `npx tsc --noEmit` limpio, build de producción
     real exitoso con el PNG nuevo bundleado.
+- **Limpieza de obstáculos + 2 animales nuevos + 1 vida + rediseño de
+  Zona 1** (pedido explícito, mensaje con 2 capturas de `reef_coral_branch`
+  y `coral_fan`: "quita tmb todos los caracoles... vamos a hacer limpieza
+  de obstáculos que no quedan bien solos... GENÉRAME MUCHOS MÁS ANIMALES...
+  animales que parezcan obstáculos como la concha... cambiemos que sea
+  solo 1 vida... genérame el mapa de nuevo de la fase 1"):
+  - **Limpieza de obstáculos estáticos.** Se retiraron de todo uso activo
+    en `ReefTemplates.ts` tres piezas señaladas como "que no quedan bien
+    solos": `decor_shell` (el "caracol", usado como obstáculo en
+    `centerTwoPaths()`), `reef_coral_branch` (usado en `BRANCH_VARIANTS`,
+    `WALL_PIECE_POOL` y `diagonalLeft()` — reemplazado por
+    `reef_boulder_rock`) y `coral_fan` (usado como obstáculo en
+    `lateralWall()`). Ninguna se borró del disco ni de `BootScene.ts`
+    (mismo criterio que `anemone`/`reef_branch_hook` de la ronda
+    anterior, "por si hay que revertir"). Las decoraciones ambientales que
+    usaban estas claves dentro de `reefLabyrinth()`, `miniLabyrinth()` y
+    `grandMaze()` (que NO se tocan en su mecánica, solo en qué pieza
+    decorativa dibujan) se sustituyeron por `sponge`/`barnacle`/
+    `decor_pebble`, ya aprobadas y sin usar ahí antes.
+  - **`CoralTrap` (8º animal, "animal que parezca obstáculo como la
+    concha").** En vez de descartar el arte de `coral_fan` al quitarlo
+    como obstáculo estático, se reutilizó tal cual (cero arte nuevo) para
+    un animal nuevo: se queda quieto leyéndose como parte del arrecife
+    (mismo "breathe" sutil que ya tenían los obstáculos de coral) hasta
+    que Lumi se acerca a menos de 220px, momento en que "se estira" hacia
+    ella con un pulso de escala extra (`lunge`, 350ms + 1.2s de cooldown,
+    puramente una transformación de escala sobre el mismo sprite, sin
+    tween nuevo ni arte nuevo) y tocarla es golpe letal. Nuevo
+    `DeathReason "coral"` → "¡Un coral trampa te ha atrapado!". Mismo
+    patrón Entity+Spawner+overlap que los 7 animales anteriores
+    (`CoralTrap.ts` + `CoralTrapSpawner.ts`, hitbox medido por numpy sobre
+    `coral_fan.png`: bbox `749x610` offset `(139,191)` a escala 1).
+  - **`Seahorse` (9º animal, arte nuevo de verdad).** Primer animal de
+    esta ronda con arte generado desde cero vía Gemini (caballito de mar
+    pastel melocotón/crema, cola enroscada, contorno lavanda — anclado en
+    el estilo ya aprobado del resto de enemigos). Salió con checkerboard
+    horneado cubriendo todo el canvas (mismo caso límite ya documentado
+    con `reef_maze_wall`); se limpió con el modo "solo borde" de
+    `fix_transparency.py` para no perder el punto de brillo del ojo
+    (122px, se habría confundido con un hueco interior a detectar). Se
+    generó también `seahorse_blink.png` (mismo parpadeo que el resto de
+    criaturas) partiendo del `seahorse.png` ya limpio como única
+    referencia, verificado por alineación de centro de bounding box
+    (<0.5px de diferencia). Patrón de movimiento deliberadamente distinto
+    a todos los anteriores: deriva en "ocho perezoso" con proporción de
+    frecuencias 1:2 entre ejes (`dx = sin(t·0.9+fase)·36`,
+    `dy = sin(t·1.8+fase)·22`) más un balanceo de rotación atado al eje
+    horizontal — no es un círculo ni comparte ritmo con los patrones ya
+    usados por la medusa. Nuevo `DeathReason "caballito"` → "Un caballito
+    de mar te ha rozado...".
+  - **1 sola vida (antes 3).** `LUMI_LIVES_START` cambiado de `3` a `1` en
+    `GameConfig.ts`. `LivesSystem.ts` ya estaba escrito de forma genérica
+    (recibe `maxLives` por constructor y crea esa cantidad de corazones),
+    así que no hizo falta tocar ninguna lógica, solo la constante y su
+    comentario.
+  - **Rediseño de `Zone1Level.ts` ("que no se vea tan vacío").** Con
+    libertad creativa del usuario, se añadieron 12 entradas nuevas
+    rellenando huecos que antes estaban completamente vacíos entre los
+    tramos ya scripteados, verificando uno por uno que ninguna coincide
+    con el rango de ninguna banda de `ReefCluster` ya documentada:
+    2 pares medusa+caballito y 3 corales trampa sueltos en los primeros
+    tramos, un caballito dentro del zigzag final ya existente, el
+    **debut scripteado de la almeja** (`clam`, hasta ahora solo aparecía
+    por generación aleatoria — nunca en un punto fijo del nivel), y una
+    combinación caballito+almeja justo en el hueco de ~800px que quedaba
+    totalmente vacío antes de la entrada al segundo laberinto (`grandMaze`,
+    banda desde offset 23840). `Zone1LevelEntryType` ampliado con
+    `"clam" | "coraltrap" | "seahorse"`, con su `case` correspondiente en
+    el switch de `PondScene.ts`.
+  - **Verificación:** playtest automático (bot en zigzag) sin errores ni
+    cuelgues con las 12 entradas nuevas activas, conteo de entidades
+    scripteadas vs. `grep` de `Zone1Level.ts` coincidente para los 6
+    tipos nuevos/existentes, `npx tsc --noEmit` limpio, build de
+    producción real con `seahorse.png`/`seahorse_blink.png` bundleados
+    confirmado.
 
 # PENDIENTE
 
-- **"Crea más animales"** (repetido varias veces) — sigue sin arrancar.
-  La almeja ya subió el recuento de animales reales de 6 a 7; falta
-  decidir con el usuario qué piezas hoy decorativas de `ReefTemplates.ts`
-  (percebe, esponja...) tienen sentido como animal activo en vez de
-  obstáculo estático, o diseñar especies totalmente nuevas — siguiendo el
-  mismo patrón Entity+Spawner+overlap ya usado 7 veces. Requiere
-  generación de arte nueva (Gemini, ya con precedente fresco tras
-  `reef_maze_wall`), así que sigue siendo la tarea más grande pendiente
-  de este hilo. La anémona (una de las candidatas obvias) ya no existe
-  como pieza — se retiró del todo, ver EN PROGRESO.
+- **"Crea más animales"** — parcialmente atendido esta ronda (2 nuevos:
+  `CoralTrap` y `Seahorse`, ver EN PROGRESO), pero el pedido explícito
+  fue "MUCHOS MÁS" en mayúsculas, así que sigue abierto. El recuento de
+  animales reales pasó de 7 a 9. Quedan candidatas obvias sin convertir:
+  `sponge`, `barnacle`, `decor_pebble`, `decor_starfish` siguen siendo
+  piezas puramente decorativas/estáticas que podrían seguir el mismo
+  patrón "animal disfrazado de obstáculo" que ya demostraron la almeja y
+  el coral trampa. Preguntar al usuario si quiere continuar en esa línea
+  antes de generar más arte a ciegas.
 - "Mejora el movimiento... más elaborado" se aplicó a la almeja
   (balanceo) y se probó en el erizo (giro continuo), pero el usuario pidió
   revertir el del erizo explícitamente ("la gracia de ellos es que
@@ -1683,24 +1757,18 @@ que se cerraron)
 
 # PRÓXIMA TAREA
 
-`grandMaze` ya tiene su segunda versión de arte (`reef_maze_wall`, un
-seto denso de hojas/algas, "que no sean rocas... laberinto real de hojas
-pero acuático" pedido explícito) tras rechazar la primera ("cúmulo de
-rocas cozy"). También se identificó y resolvió la queja de la captura
-real (anémona + `reef_branch_hook` fusionadas, ambas retiradas del todo)
-y se revirtió el giro del erizo. Ver EN PROGRESO para el detalle completo
-de las tres cosas. Esperar la reacción del usuario a esta ronda antes de
-seguir tocando el segundo laberinto — si el seto de hojas tampoco
-convence, pedir qué cambiaría en concreto (¿otro tipo de planta? ¿otro
-color? ¿más "pared recortada" y menos "matorral denso"?) en vez de
-generar más variantes a ciegas. Tener en cuenta el principio que dejó
-claro esta ronda para cualquier arte nuevo futuro: sumar variedad al
-pool, nunca sustituir una pieza ya aceptada por una sola nueva.
+Esperar la reacción del usuario a esta ronda (limpieza de obstáculos,
+`CoralTrap`, `Seahorse`, 1 vida, y el Zone1Level.ts repoblado) antes de
+seguir sumando animales a ciegas. Si quiere continuar con "muchos más
+animales", las candidatas más obvias para el patrón "animal disfrazado de
+obstáculo" (cero arte nuevo, mismo patrón Entity+Spawner+overlap que ya
+demostraron la almeja y el coral trampa) son `sponge`, `barnacle` y
+`decor_pebble`/`decor_starfish`. Si en cambio pide especies genuinamente
+nuevas, ya hay precedente fresco de generación de arte bajo demanda
+(`seahorse.png` + `seahorse_blink.png` esta misma ronda) para seguir el
+mismo flujo.
 
-Sigue sin empezar, y sigue siendo lo más grande que queda de todo este
-hilo: "crea más animales" (pedido varias veces). Al retomarla, decidir
-con el usuario qué piezas hoy decorativas (percebe, esponja...) tienen
-sentido como animal activo, o diseñar una especie nueva desde cero,
-siguiendo el mismo patrón Entity+Spawner+overlap ya usado 7 veces — y ya
-hay precedente fresco de generar arte nuevo bajo demanda (`reef_maze_wall`,
-dos veces esta ronda) si hace falta una criatura sin ancla existente.
+Confirmar también con el usuario si 1 sola vida se siente bien en la
+práctica (antes de esta ronda había 3, con colchón de golpes) — al ser un
+cambio de dificultad tan directo, es el tipo de ajuste donde vale la pena
+una confirmación explícita tras probarlo, no asumir que ya quedó cerrado.

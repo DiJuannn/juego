@@ -75,11 +75,14 @@ function bgAccent(key: string, x: number, y: number, scale: number): ReefPieceSp
  * `reef_branch_hook` retirada del pool (pedido explícito, con captura
  * real: "esto mejor quitarlo no me convence estos diseños, elimina esos
  * dos obstáculos" — el diseño "coral cerebro" de rayas onduladas no
- * convenció). Sigue cargada en BootScene.ts y con su bbox en
- * ReefCluster.ts por si hay que revertir, pero ya no se elige en ningún
- * lado (ni aquí ni en WALL_PIECE_POOL).
+ * convenció). `reef_coral_branch` retirada en la misma limpieza de una
+ * ronda posterior ("quita tmb... este tmb", con captura real del cúmulo
+ * de coral rosa redondo — "vamos a hacer limpieza de obstáculos que no
+ * quedan bien solos"). Ambas siguen cargadas en BootScene.ts y con su
+ * bbox en ReefCluster.ts por si hay que revertir, pero ya no se eligen en
+ * ningún lado (ni aquí ni en WALL_PIECE_POOL).
  */
-const BRANCH_VARIANTS = ["reef_coral_branch", "reef_branch_straight", "reef_branch_short"];
+const BRANCH_VARIANTS = ["reef_branch_straight", "reef_branch_short"];
 
 function pickBranch(): string {
   return Phaser.Utils.Array.GetRandom(BRANCH_VARIANTS);
@@ -158,10 +161,9 @@ const WALL_PIECE_POOL: WallPieceOption[] = [
   { key: "reef_rock_smooth", sizeMul: 1.15 },
   { key: "reef_rock_slab", sizeMul: 0.6 },
   { key: "reef_rock_spikes", sizeMul: 1 },
-  { key: "reef_coral_branch", sizeMul: 1 },
   { key: "reef_branch_straight", sizeMul: 0.85 },
-  // reef_branch_hook retirada (pedido explícito, "no me convence este
-  // diseño" — ver comentario junto a BRANCH_VARIANTS).
+  // reef_branch_hook y reef_coral_branch retiradas (pedido explícito,
+  // "no me convence este diseño" — ver comentario junto a BRANCH_VARIANTS).
   { key: "reef_branch_short", sizeMul: 1 },
 ];
 
@@ -230,7 +232,7 @@ function diagonalLeft(worldWidth: number, centerY: number): ReefClusterSpec {
     // convenció). Sigue cargada en BootScene.ts por si hay que revertir.
     // Acento de fondo: lejos del lado abierto (derecha), sugiere que el
     // arrecife sigue más allá sin invadir el carril libre.
-    bgAccent("reef_coral_branch", worldWidth * 0.93, centerY + 60, 0.16),
+    bgAccent("reef_boulder_rock", worldWidth * 0.93, centerY + 60, 0.16),
   ];
 
   const path = [
@@ -271,9 +273,8 @@ function centerTwoPaths(worldWidth: number, centerY: number): ReefClusterSpec {
     // demás piezas de esta lista, deliberadamente NO está pegada a un
     // lateral: el hueco libre a su alrededor sigue siendo amplio de sobra.
     piece({ key: "decor_pebble", x: worldWidth * 0.5, y: centerY + 200, scale: 0.3, role: "obstacle" }),
-    // Pieza nueva: concha bien arriba de la roca (y+50), lejos de la ruta
-    // guía (serpentea por 0.3-0.68W) y sin pegarse al cúmulo de abajo.
-    piece({ key: "decor_shell", x: fromEdge(worldWidth, "left", 0.06), y: centerY - 190, scale: 0.24, role: "obstacle" }),
+    // La concha (decor_shell) que iba aquí se retiró (pedido explícito:
+    // "quita tmb todos los caracoles, no me gustan").
     // Acento de fondo: esquina inferior derecha, la más despejada de esta
     // composición (la roca queda a la izquierda, la rama arriba a la
     // derecha).
@@ -383,14 +384,10 @@ function lateralWall(worldWidth: number, centerY: number): ReefClusterSpec {
       flipX: branchFlipX(wallBranchKey, side === "right"),
       role: "obstacle",
     }),
-    // Mismo criterio de reparto: abanico de coral (arriba) y estrella
-    // (abajo) — únicas en esta plantilla. Antes a ±260px de la rama
-    // (centerY-60): demasiado lejos para una cámara de ~640-720px de alto,
-    // podían quedar solas en pantalla sin el resto del cúmulo a la vista
-    // (captura real del usuario: "estas cosas ahí flotando me parecen
-    // feas"). Acercadas a ±150px de la rama — siguen sin tocarse entre
-    // ellas, pero ahora leen como parte de la misma composición.
-    piece({ key: "coral_fan", x: fromEdge(worldWidth, side, 0.16), y: centerY - 210, scale: 0.22, role: "obstacle" }),
+    // El abanico de coral (coral_fan) que iba aquí se retiró como pieza
+    // estática: ahora es un animal real (ver entities/CoralTrap.ts,
+    // pedido explícito de "animales que parezcan obstáculos como la
+    // concha" — el mismo criterio que ya se usó con la almeja gigante).
     piece({ key: "decor_starfish", x: fromEdge(worldWidth, side, 0.13), y: centerY + 210, scale: 0.28, role: "obstacle" }),
     // Acento de fondo: en el lado abierto (el contrario a la pared), lejos
     // de la ruta guía que serpentea por `openCenterX` — sugiere más
@@ -521,15 +518,20 @@ function reefLabyrinth(worldWidth: number, centerY: number): ReefClusterSpec {
       scale: 0.22,
       role: "decoration",
     }),
+    // coral_fan y decor_shell (junto a las bandas media/superior) se
+    // retiraron en la limpieza de obstáculos sueltos (pedido explícito:
+    // "quita tmb todos los caracoles... este tmb") — sustituidas por
+    // esponja/balano, ya aprobados, sin tocar el mecanismo del laberinto
+    // en sí (el usuario pidió explícitamente no tocar este diseño).
     piece({
-      key: "coral_fan",
+      key: "sponge",
       x: wallTipMid + inward(sideMid) * 35,
       y: midY + 70,
       scale: 0.2,
       role: "decoration",
     }),
     piece({
-      key: "decor_shell",
+      key: "barnacle",
       x: wallTipTop + inward(sideTop) * 35,
       y: topY + 70,
       scale: 0.2,
@@ -622,7 +624,7 @@ function miniLabyrinth(worldWidth: number, centerY: number): ReefClusterSpec {
       role: "decoration",
     }),
     piece({
-      key: "decor_shell",
+      key: "barnacle",
       x: wallTipTop + inward(sideTop) * 30,
       y: topY + 60,
       scale: 0.18,
@@ -764,14 +766,16 @@ function grandMaze(worldWidth: number, centerY: number): ReefClusterSpec {
     }),
 
     ...gate.pieces,
-    // reef_coral_branch en vez de reef_rock_spikes: todo el laberinto es
-    // ahora de un único lenguaje visual (hojas/orgánico, sin roca).
-    piece({ key: "reef_coral_branch", x: nookX, y: yGate + 60, scale: 0.16, alpha: 0.55, role: "background" }),
-    piece({ key: "sponge", x: nookX, y: yGate - 40, scale: 0.14, alpha: 0.55, role: "background" }),
+    // reef_coral_branch y coral_fan/decor_shell (más abajo) retirados en
+    // la limpieza de obstáculos sueltos (pedido explícito: "quita
+    // tmb... este tmb") — sustituidos por esponja/balano/guijarro, ya
+    // aprobados, sin tocar el mecanismo del laberinto en sí.
+    piece({ key: "sponge", x: nookX, y: yGate + 60, scale: 0.16, alpha: 0.55, role: "background" }),
+    piece({ key: "barnacle", x: nookX, y: yGate - 40, scale: 0.14, alpha: 0.55, role: "background" }),
 
     corridorWall(sideCorridor, yCorridor, reachCorridor, GRAND_MAZE_WALL_POOL),
     piece({
-      key: "coral_fan",
+      key: "barnacle",
       x: wallTipCorridor + inward(sideCorridor) * 35,
       y: yCorridor + 80,
       scale: 0.22,
@@ -780,7 +784,7 @@ function grandMaze(worldWidth: number, centerY: number): ReefClusterSpec {
 
     corridorWall(sideExit, yExit, reachExit, GRAND_MAZE_WALL_POOL),
     piece({
-      key: "decor_shell",
+      key: "decor_pebble",
       x: wallTipExit + inward(sideExit) * 35,
       y: yExit + 80,
       scale: 0.22,

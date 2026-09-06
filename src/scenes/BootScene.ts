@@ -100,6 +100,10 @@ export class BootScene extends Phaser.Scene {
     // podrías crearle una animación y que te coma"), ver entities/GiantClam.ts.
     this.load.image("giant_clam", assetPath("/objects/enemies/giant_clam.png"));
     this.load.image("giant_clam_closed", assetPath("/objects/enemies/giant_clam_closed.png"));
+    // Noveno enemigo (pedido explícito: "GENÉRAME MUCHOS MÁS ANIMALES"),
+    // ver entities/Seahorse.ts.
+    this.load.image("seahorse", assetPath("/objects/enemies/seahorse.png"));
+    this.load.image("seahorse_blink", assetPath("/objects/enemies/seahorse_blink.png"));
     // Librería de piezas para ReefCluster (composiciones orgánicas de
     // obstáculos de Zona 1, ver systems/ReefCluster.ts). Tercera tanda,
     // generada directamente a partir de las 3 imágenes de referencia que
