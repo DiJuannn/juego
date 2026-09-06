@@ -16,7 +16,17 @@ import { FISH_KEYS } from "@/systems/BackgroundFishField";
 // ajusten los bordes (ver PROGRESS.md, ronda del "empalme"). Los tres
 // nuevos son manchas de acuarela sin foco de luz ni horizonte (ver
 // ParallaxLayer, que hace crossfade entre ellos según la altura).
-const POND_LAYERS = ["background_shallow", "background_mid", "background_deep", "rocks_back"];
+// background_abyss: 4ª variante para las alturas nuevas (pedido explícito
+// "hazas fondos para más arriba" tras extender mucho el recorrido
+// escalable) — mismo estilo, más oscura, se cruza justo antes de la Zona 4
+// "Aguas profundas" del tinte de ZoneConfig.
+const POND_LAYERS = [
+  "background_shallow",
+  "background_mid",
+  "background_deep",
+  "background_abyss",
+  "rocks_back",
+];
 const MISSING_POND_LAYERS = ["water_overlay"];
 
 // Algas con balanceo real: varios frames que muestran cada hoja moviéndose

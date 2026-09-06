@@ -32,6 +32,14 @@ export class CrossfadePlant {
     this.scheduleNext();
   }
 
+  /** Pedido explícito ("baja las algas para que no se note el corte") —
+   * agrandar la decoración le da más margen de cobertura antes de que su
+   * propio borde superior (fijo, sin tilear) quede al descubierto dentro
+   * de la ventana visible. */
+  setScale(scale: number) {
+    for (const img of this.images) img.setScale(scale);
+  }
+
   private scheduleNext() {
     this.scene.time.delayedCall(this.holdMs, () => {
       const next = (this.currentIndex + 1) % this.images.length;

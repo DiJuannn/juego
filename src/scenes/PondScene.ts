@@ -146,12 +146,16 @@ export class PondScene extends Phaser.Scene {
     // más profundo/frío según se sube — mismos umbrales que ZoneConfig
     // (Zona 2 "Arrecife" a Altura 750, Zona 3 "Océano abierto" a 2000; ver
     // altitudeFromWorldY, Altura = offset de mundo / 10).
+    // background_abyss (pedido explícito "hazas fondos para más arriba"):
+    // entra a 30000, justo antes de que empiece el tinte de la Zona 4
+    // "Aguas profundas" (offset 37500) y del tramo del laberinto de esponjas.
     this.skyLayer = new ParallaxLayer(
       this,
       [
         { textureKey: pondLayerKey("background_shallow"), startOffset: 0 },
         { textureKey: pondLayerKey("background_mid"), startOffset: 7500 },
         { textureKey: pondLayerKey("background_deep"), startOffset: 20000 },
+        { textureKey: pondLayerKey("background_abyss"), startOffset: 30000 },
       ],
       0.15,
       0,
@@ -186,10 +190,17 @@ export class PondScene extends Phaser.Scene {
     // frames (generados con Gemini a partir del mismo dibujo), fundiendo
     // muy lento de uno a otro — nada de saltar de golpe entre poses, que
     // se veía artificial y brusco.
-    new CrossfadePlant(
+    // Pedido explícito (con captura real): "estas algas se ven el corte,
+    // baja las algas para que no se note eso" — el borde superior de esta
+    // imagen (fija en el mundo, sin tilear) podía quedar al descubierto
+    // dentro de la ventana visible antes de que la cámara terminara de
+    // dejarla atrás del todo, sobre todo en pantallas altas. Escalada un
+    // 40% y bajada más (0.38→0.55) para que quede fuera de la ventana
+    // visible mucho más tiempo mientras la cámara sube.
+    const distantPlants = new CrossfadePlant(
       this,
       WORLD_WIDTH / 2,
-      START_Y + cam.height * 0.38,
+      START_Y + cam.height * 0.55,
       [pondPlantFrameKey("distant_plants", 1), pondPlantFrameKey("distant_plants", 2)],
       { x: 0.5, y: 1 },
       0.55,
@@ -197,6 +208,7 @@ export class PondScene extends Phaser.Scene {
       4000,
       4500,
     );
+    distantPlants.setScale(1.4);
 
     this.lumi = new Lumi(this, WORLD_WIDTH / 2, START_Y);
     this.lumi.setDepth(5);
@@ -497,10 +509,15 @@ export class PondScene extends Phaser.Scene {
     // sintieran "decoración" en vez de obstáculos reales. Se deja justo
     // por debajo de los nenúfares, no por delante de todo. Mismo balanceo
     // por fundido que distant_plants.
-    new CrossfadePlant(
+    // Pedido explícito (con captura real): "estas algas se ven el corte,
+    // baja las algas para que no se note eso" — misma corrección que
+    // distant_plants (ver comentario ahí): más grande y más abajo, para
+    // que su propio borde superior quede fuera de la ventana visible
+    // mucho más tiempo mientras la cámara sube.
+    const foregroundPlants = new CrossfadePlant(
       this,
       WORLD_WIDTH / 2,
-      START_Y + cam.height * 0.42,
+      START_Y + cam.height * 0.7,
       [
         pondPlantFrameKey("foreground_plants", 1),
         pondPlantFrameKey("foreground_plants", 2),
@@ -512,6 +529,7 @@ export class PondScene extends Phaser.Scene {
       3500,
       4000,
     );
+    foregroundPlants.setScale(1.5);
 
     new BubbleField(this, cam.width, cam.height, 4.5, this.lumi.sprite);
 

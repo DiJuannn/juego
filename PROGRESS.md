@@ -54,6 +54,39 @@ funciona **hoy**, verificado en el código — no lo que el diseño aspira a ten
   llamadas. Verificado con un probe numérico (hitbox ≈ 45-65% del sprite en
   los 5 casos, antes 200-350%) y un playtest automatizado (zigzag simple
   sin esquiva real, sobrevive sin un golpe hasta altura 516).
+- **Corte visible en las algas de decoración** (reportado con captura real
+  por el usuario): `distant_plants`/`foreground_plants` (`CrossfadePlant`)
+  se anclan a una posición fija del mundo sin tilear, así que su propio
+  borde superior podía quedar al descubierto dentro de la ventana visible
+  antes de que la cámara terminara de dejarlas atrás. No se pudo aislar la
+  causa exacta pixel a pixel (varias hipótesis descartadas: recorte duro
+  en el PNG — los bordes superiores son transparentes; solape entre
+  `reef_maze_wall` de un mismo cluster — reproducido solo como artefacto
+  de test, no en juego real), así que se aplicó el arreglo que el propio
+  usuario pidió explícitamente ("baja las algas para que no se note eso"):
+  `CrossfadePlant` ahora soporta `setScale()`, y ambas capas se agrandaron
+  (1.4x/1.5x) y se bajaron más dentro del mundo (0.55/0.7 de la altura de
+  cámara en vez de 0.38/0.55). Verificado sin hueco visible al inicio de
+  partida y a lo largo de todo un barrido de `scrollY` congelado.
+- **4ª variante de fondo de cielo/agua: `background_abyss`** (pedido
+  explícito "hazas fondos para más arriba" — el recorrido escalable ya
+  llega a offset ~38060 pero el fondo tope anterior, `background_deep`,
+  entraba a los 20000 y no cambiaba más allá). Generado con Gemini con las
+  mismas referencias y técnica que `background_shallow/mid/deep` (manchas
+  de acuarela difusas, sin foco de luz ni horizonte, sin ningún trazo/
+  línea dibujada encima — la primera generación sí traía líneas finas tipo
+  grieta y se rechazó), en una paleta más oscura (índigo/morado casi
+  negro, ~18% más oscura que `background_deep`). Se descubrió que los 3
+  fondos existentes tienen el borde superior e inferior con el MISMO color
+  exacto (diff 0.0 por canal) — una técnica de tileado sin costura ya
+  usada pero no documentada — y se replicó aplicando un degradado lineal
+  por fila (`fila/alto * diferencia`) que fuerza esa misma igualdad sin
+  alterar visualmente el resto de la imagen (diff bajó de ~30 a <1 por
+  canal). Verificado con un composite apilado (misma técnica que el
+  arreglo histórico de `background_far.png`) sin salto visible, y en el
+  propio juego, forzando la cámara a distintas altitudes: crossfade limpio
+  `background_deep` → `background_abyss` entrando a offset 30000 (justo
+  antes del tinte de la Zona 4 "Aguas profundas", a 37500).
 
 # EN PROGRESO
 
@@ -2156,9 +2189,13 @@ avanzando)
 
 # PRÓXIMA TAREA
 
-Esperar la reacción del usuario a esta ronda (erizos ya nunca mezclan
-tipos, 2 estilos nuevos de laberinto con arte de Gemini — conchas y
-esponjas) antes de seguir. Líneas abiertas explícitas:
+Esperar la reacción del usuario a esta ronda (arreglo del corte en las
+algas + 4ª variante de fondo `background_abyss` para las alturas nuevas)
+antes de seguir. En concreto, confirmar si el arreglo de las algas
+(agrandadas y bajadas) resuelve de verdad lo que vio en su captura — al no
+haberse podido aislar la causa exacta pixel a pixel, conviene una
+confirmación visual explícita antes de dar el bug por cerrado del todo.
+Líneas abiertas explícitas (rondas anteriores, sin resolver todavía):
 
 0. **Confirmar que la "zona en paralelo" de erizos se lee bien en el
    móvil** — el pasillo libre entre las 2 columnas (offset 18950-19350)
