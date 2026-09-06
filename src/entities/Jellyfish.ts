@@ -6,12 +6,27 @@ import { BlinkTimer } from "@/systems/BlinkTimer";
 // de un escalado uniforme que se siente más como un simple latido. Igual
 // en los 4 tipos de movimiento — lo que cambia entre ellos es solo el
 // desplazamiento (deriva), no el "aliento" de la campana.
+//
+// Pedido explícito: "la medusa tiene animación pero se ve quieta, parece un
+// bug" — no era un bug de verdad (confirmado midiendo sprite.x/y/rotation
+// en el motor: cambian frame a frame tal como debían), sino un problema de
+// PERCEPCIÓN: con LUMI_SWIM_SPEED≈403px/s y una cámara de ~720px de alto,
+// una medusa solo está en pantalla ~1.5-2s (menos aún si Lumi usa el
+// impulso) — mucho menos que el periodo original de estas ondas (con
+// PULSE_SPEED=1.1 el ciclo completo tardaba ~5.7s, con ROTATION_SPEED=0.4
+// ~15.7s). Si a la medusa le toca una fase inicial cerca de un pico/valle
+// del seno (donde la derivada es casi 0), esa ventana tan corta de
+// visibilidad cae justo en el tramo más plano de la curva y se percibe
+// completamente quieta, aunque el código sí la esté moviendo. Solución:
+// subir la velocidad angular (nunca la amplitud, que ya se veía bien) para
+// que el ciclo dure 2.5-4s — corto de sobra para que se note un tramo real
+// de movimiento pase lo que pase con la fase de spawn.
 const PULSE_AMOUNT = 0.09;
-const PULSE_SPEED = 1.1;
+const PULSE_SPEED = 2.4;
 // Balanceo de rotación leve: da sensación de ir a la deriva, no clavada en
 // el sitio. Igual en los 4 tipos.
 const ROTATION_AMOUNT = 0.05;
-const ROTATION_SPEED = 0.4;
+const ROTATION_SPEED = 1.8;
 
 /**
  * 4 patrones de deriva distintos (pedido explícito: variedad de
@@ -69,31 +84,34 @@ export class Jellyfish {
   private computeOffset(t: number): { dx: number; dy: number } {
     switch (this.movementType) {
       case "deriva_calma":
-        // El original: vaivén suave, más horizontal que vertical.
+        // El original: vaivén suave, más horizontal que vertical. Misma
+        // amplitud de siempre, velocidad angular subida (ver comentario de
+        // PULSE_SPEED) para que el vaivén se note dentro de los ~1.5-2s
+        // que la medusa pasa en pantalla.
         return {
-          dx: Math.sin(t * 0.35 + this.phase) * 35,
-          dy: Math.sin(t * 0.55 + this.phase) * 10,
+          dx: Math.sin(t * 1.8 + this.phase) * 35,
+          dy: Math.sin(t * 2.2 + this.phase) * 10,
         };
       case "deriva_amplia":
-        // Recorrido lateral mucho más amplio y lento, como una patrulla de
-        // lado a lado en vez de un simple balanceo en el sitio.
+        // Recorrido lateral mucho más amplio, como una patrulla de lado a
+        // lado en vez de un simple balanceo en el sitio.
         return {
-          dx: Math.sin(t * 0.2 + this.phase) * 95,
-          dy: Math.sin(t * 0.4 + this.phase) * 8,
+          dx: Math.sin(t * 1.4 + this.phase) * 95,
+          dy: Math.sin(t * 1.8 + this.phase) * 8,
         };
       case "pulso_vertical":
         // Sube y baja marcado, casi sin desviarse de lado — se "respira"
         // verticalmente en vez de derivar.
         return {
-          dx: Math.sin(t * 0.3 + this.phase) * 12,
-          dy: Math.sin(t * 0.5 + this.phase) * 48,
+          dx: Math.sin(t * 1.6 + this.phase) * 12,
+          dy: Math.sin(t * 2 + this.phase) * 48,
         };
       case "orbita_lenta":
         // Único patrón realmente circular: x e y comparten fase (seno y
-        // coseno), trazando una órbita perezosa en vez de un vaivén recto.
+        // coseno), trazando una órbita en vez de un vaivén recto.
         return {
-          dx: Math.cos(t * 0.28 + this.phase) * 42,
-          dy: Math.sin(t * 0.28 + this.phase) * 24,
+          dx: Math.cos(t * 1.6 + this.phase) * 42,
+          dy: Math.sin(t * 1.6 + this.phase) * 24,
         };
     }
   }

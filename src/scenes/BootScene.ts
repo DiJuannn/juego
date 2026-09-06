@@ -129,6 +129,10 @@ export class BootScene extends Phaser.Scene {
     // para mantener la paleta piedra gris-lavanda + musgo + acento de coral.
     this.load.image("reef_rock_slab", assetPath("/objects/reef/rock_slab.png"));
     this.load.image("reef_rock_smooth", assetPath("/objects/reef/rock_boulder_smooth.png"));
+    // Pedido explícito: "crea más rocas o pinchos en forma de obstáculo" —
+    // cúmulo de rocas puntiagudas, silueta bien distinta de las otras 3
+    // (redondeadas/planas) para que se note como una pieza nueva de verdad.
+    this.load.image("reef_rock_spikes", assetPath("/objects/reef/rock_spikes.png"));
     // Parpadeo: arte de verdad (ojos cerrados) generado con Gemini a partir
     // de cada sprite base, ver systems/BlinkTimer — nunca un Graphics
     // dibujado por código.

@@ -72,6 +72,10 @@ const HITBOX_FRACTION: Record<string, [number, number, number, number]> = {
   // medido programáticamente sobre alpha del PNG (no a ojo).
   reef_rock_slab: [0.098, 0.374, 0.909, 0.706],
   reef_rock_smooth: [0.297, 0.302, 0.679, 0.791],
+  // Pedido explícito: "más rocas o pinchos en forma de obstáculo" — cúmulo
+  // de rocas puntiagudas, bbox medido programáticamente igual que las
+  // otras dos rocas nuevas.
+  reef_rock_spikes: [0.198, 0.222, 0.794, 0.793],
 };
 
 /**
@@ -199,6 +203,15 @@ export interface ReefPieceSpec {
    * `edgeFlushX`. Solo tiene efecto en piezas `role:"obstacle"` (necesita
    * la textura real cargada). */
   edgeFlush?: "left" | "right";
+  /** Complemento de `edgeFlush` (pedido explícito: un obstáculo "que ocupe
+   * casi todo el mapa" con un hueco justo para pasar) — en vez de fijar la
+   * escala e IGNORAR cuánto invade el carril libre, esto IGNORA `scale` y
+   * calcula la escala exacta para que la pieza penetre `reachPx` desde el
+   * borde `side`, sea cual sea la textura/proporción real que le toque
+   * (pensado para usarse con un pool de piezas de tamaño variable, ver
+   * `WALL_PIECE_POOL`/`GAUNTLET_POOL` en ReefTemplates.ts). `side` debe
+   * coincidir con el de `edgeFlush` en la misma pieza. */
+  edgeReach?: { side: "left" | "right"; reachPx: number };
 }
 
 export interface ReefClusterSpec {
@@ -218,7 +231,13 @@ export interface ReefClusterSpec {
 // el guijarro, que se leen como objeto inerte) quedan fuera; el resto
 // (ramas de coral, anémona, abanico, esponja, balano, almeja, estrella,
 // concha) respira con un pulso de escala muy sutil.
-const NO_BREATHE_KEYS = new Set(["reef_boulder_rock", "decor_pebble", "reef_rock_slab", "reef_rock_smooth"]);
+const NO_BREATHE_KEYS = new Set([
+  "reef_boulder_rock",
+  "decor_pebble",
+  "reef_rock_slab",
+  "reef_rock_smooth",
+  "reef_rock_spikes",
+]);
 
 // Amplitud/periodo pensados para que se note como un detalle vivo, no como
 // un parpadeo — ±4% de escala, ciclo de 2.6-4.2s, con fase aleatoria por
@@ -258,14 +277,29 @@ export class ReefCluster {
       if (piece.role === "obstacle") {
         const frac = HITBOX_FRACTION[piece.key];
 
+        // `edgeReach` IGNORA piece.scale y lo recalcula: se busca la escala
+        // que hace que la pieza, YA ROTADA, penetre exactamente `reachPx`
+        // desde su borde — igual que `edgeFlushX` calcula X a partir de un
+        // scale dado, esto calcula el scale a partir de un reach dado.
+        // Como rotatedAABB es lineal en `scale` (confirmado: dW/dH y sus
+        // rotaciones son proporcionales, sin término constante), basta con
+        // medir el ancho de penetración a escala 1 y dividir.
+        let scale = piece.scale;
         let x = piece.x;
-        if (piece.edgeFlush && frac) {
+        if (frac) {
           const tex = scene.textures.get(piece.key).getSourceImage() as HTMLImageElement;
-          x = edgeFlushX(tex, frac, piece.rotation ?? 0, piece.scale, worldWidth, piece.edgeFlush);
+          if (piece.edgeReach) {
+            const aabbAt1 = rotatedAABB(tex, frac, piece.rotation ?? 0, 1);
+            const reachAt1 = aabbAt1.xmax - aabbAt1.xmin;
+            scale = piece.edgeReach.reachPx / reachAt1;
+          }
+          if (piece.edgeFlush) {
+            x = edgeFlushX(tex, frac, piece.rotation ?? 0, scale, worldWidth, piece.edgeFlush);
+          }
         }
 
         const sprite = scene.physics.add.staticImage(x, piece.y, piece.key);
-        sprite.setScale(piece.scale);
+        sprite.setScale(scale);
         sprite.setDepth(DEPTH_BY_ROLE.obstacle);
         if (piece.rotation) sprite.setRotation(piece.rotation);
         if (piece.flipX) sprite.setFlipX(true);
@@ -276,13 +310,13 @@ export class ReefCluster {
           // Phaser NO escala el tamaño/offset del body con el scale del
           // sprite (confirmado con un probe en juego: un body creado con
           // valores en píxeles nativos se queda en esos píxeles tal cual,
-          // sin multiplicar por setScale) — hay que aplicar piece.scale a
-          // mano aquí, si no la hitbox queda mucho más grande que el
-          // dibujo visible (mismo bug que tenían Jellyfish/Urchin/Shark/
-          // Squid/BigFish, arreglado en el mismo cambio). Tampoco rota el
-          // body con sprite.rotation, ver rotatedFractionalBody arriba.
+          // sin multiplicar por setScale) — hay que aplicar `scale` a mano
+          // aquí, si no la hitbox queda mucho más grande que el dibujo
+          // visible (mismo bug que tenían Jellyfish/Urchin/Shark/Squid/
+          // BigFish, arreglado en el mismo cambio). Tampoco rota el body
+          // con sprite.rotation, ver rotatedFractionalBody arriba.
           const tex = scene.textures.get(piece.key).getSourceImage() as HTMLImageElement;
-          const { w, h, offsetX, offsetY } = rotatedFractionalBody(tex, frac, piece.rotation ?? 0, piece.scale);
+          const { w, h, offsetX, offsetY } = rotatedFractionalBody(tex, frac, piece.rotation ?? 0, scale);
           (sprite.body as Phaser.Physics.Arcade.StaticBody).setSize(w, h).setOffset(offsetX, offsetY);
           baseBody = { w, h, offsetX, offsetY };
         }
@@ -292,7 +326,7 @@ export class ReefCluster {
         if (!NO_BREATHE_KEYS.has(piece.key)) {
           this.breathingObstacles.push({
             sprite,
-            baseScale: piece.scale,
+            baseScale: scale,
             periodMs: Phaser.Math.FloatBetween(BREATHE_PERIOD_MIN, BREATHE_PERIOD_MAX),
             phase: Phaser.Math.FloatBetween(0, Math.PI * 2),
             body: baseBody,

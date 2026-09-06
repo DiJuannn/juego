@@ -1218,6 +1218,61 @@ funciona **hoy**, verificado en el código — no lo que el diseño aspira a ten
   - Verificado: `npx tsc --noEmit` limpio, playtest automático completa el
     recorrido sin errores, build de producción real
     (`GITHUB_PAGES=true vite build`) incluye los 2 PNGs de roca nuevos.
+- **Medusa "quieta" — diagnóstico real, no era un bug de verdad** — pedido
+  explícito: "la medusa tiene animación pero se ve quieta, parece un bug".
+  Medido en el motor (sprite.x/y/rotation/scale frame a frame): la
+  animación SÍ corre — el problema es de percepción. Con
+  `LUMI_SWIM_SPEED≈403px/s` y una cámara de ~720px de alto, una medusa
+  pasa solo ~1.5-2s en pantalla (menos con impulso), mucho menos que el
+  periodo original de sus ondas (`PULSE_SPEED=1.1` → ciclo de ~5.7s,
+  `ROTATION_SPEED=0.4` → ~15.7s, patrones de deriva con periodos de
+  11-18s). Si a una medusa le toca una fase inicial cerca de un pico/valle
+  del seno (derivada ≈0), esa ventana tan corta de visibilidad cae en el
+  tramo más plano de la curva y se percibe completamente quieta aunque el
+  código sí la mueva. Arreglado subiendo la velocidad angular de las 4
+  ondas (pulso, rotación, las 4 derivas) a periodos de 2.5-4s — nunca la
+  amplitud, que ya se veía bien — para que el ciclo se note dentro de la
+  ventana real de visibilidad pase lo que pase con la fase de spawn.
+  Verificado: `sprite.x` de una medusa cambia ~84px en 1.5s tras el
+  cambio (antes ~10px en el mismo intervalo).
+- **Obstáculo "gauntlet" que ocupa casi todo el mapa** — pedido explícito:
+  "uno que ocupe casi todo el mapa también y ese se coloque solito, que dé
+  el espacio justo para que lumi tenga que recorrer un camino... como un
+  pequeño recorrido al entrar al obstáculo". Nueva (5ª) plantilla de
+  `ReefTemplates.ts`, `grandGauntlet`, deliberadamente distinta a las otras
+  4 (que siempre dejan la mayor parte del ancho libre): 2 bloques enormes,
+  uno entrando por la izquierda y otro por la derecha en una banda
+  distinta, cada uno penetrando ~450px hacia el carril — cruzarla obliga a
+  un recorrido diagonal real de un hueco al otro, no un simple esquive.
+  - Nuevo mecanismo genérico en `ReefCluster.ts`: `edgeReach` — el
+    complemento natural de `edgeFlush` (que calcula la X exacta a partir
+    de un `scale` dado). `edgeReach` calcula el `scale` exacto a partir de
+    una penetración (`reachPx`) deseada, midiendo `rotatedAABB` a escala 1
+    y despejando — así el hueco libre siempre mide lo mismo sin importar
+    qué textura le toque a cada banda.
+  - Solo piezas de roca en el pool de esta plantilla
+    (`reef_boulder_rock`/`reef_rock_smooth`/`reef_rock_spikes`) — nunca
+    corales/ramas, que respiran con un pulso de escala en vivo: con un
+    hueco ya de por sí ajustado, una hitbox que cambia de tamaño podría en
+    el peor caso cerrar el paso. Con solo piezas sin animación de escala,
+    el hueco es SIEMPRE exactamente el calculado, sin ninguna variable en
+    vivo de por medio.
+  - Verificado con `body.position` (nunca capturas, que en esta sesión ya
+    dieron falsos resultados varias veces): 20 muestras dan un hueco
+    mínimo de 227.6px (Lumi mide ~58px de hitbox, casi 4× de margen) y
+    CERO solapamiento vertical entre las 2 bandas en todas las muestras —
+    o sea, siempre existe un camino real. `edgeFlush` sigue exacto (0
+    solape más allá de los 10px a propósito) en las 2 bandas.
+- **Pieza nueva: `reef_rock_spikes`** — pedido explícito: "crea más rocas
+  o pinchos en forma de obstáculo". Cúmulo de rocas puntiagudas (silueta
+  claramente distinta de las otras 3 rocas, redondeadas/planas), generado
+  con Gemini con las mismas anclas de estilo, añadido tanto al
+  `WALL_PIECE_POOL` general como al pool exclusivo de `grandGauntlet`. Se
+  generó también una variante de coral con puntas, pero se descartó por
+  quedar demasiado parecida a `reef_coral_branch` ya existente — no
+  aportaba variedad real.
+  - Verificado: `npx tsc --noEmit` limpio, playtest automático sin
+    errores, build de producción real incluye el PNG nuevo.
 
 # PENDIENTE
 
@@ -1241,12 +1296,15 @@ que se cerraron)
 
 # PRÓXIMA TAREA
 
-Esperar la reacción del usuario a esta ronda (variedad de rocas/corales en
-la pared lateral, dos tiburones a la inversa, animación del erizo,
-erizos en línea más separados) probada en su móvil real. Ojo especial a si
-la medusa "sin tocar" (ver EN PROGRESO) era realmente lo que pedía o se
-refería a otra cosa — no se tocó porque ya tenía animación real de fábrica.
-Según lo que diga:
+Esperar la reacción del usuario a esta ronda (medusa ahora con movimiento
+claramente visible, obstáculo "gauntlet" nuevo que ocupa casi todo el
+mapa, roca de pinchos nueva) probada en su móvil real. El gauntlet
+(`grandGauntlet`, 5ª plantilla) solo entra en juego en la generación
+aleatoria de después de `ZONE1_LEVEL_END_OFFSET` — no se scripteó ninguna
+aparición garantizada en el Tramo 1/2 de `Zone1Level.ts`, así que el
+usuario puede tardar en topárselo si no juega lo bastante lejos; si
+pregunta por él y no lo ha visto, ofrecer añadirlo también al nivel
+scripteado. Según lo que diga:
 - Si el arrecife ya "se siente terminado": retomar el roadmap normal —
   Tramo 2 en adelante, variaciones de esqueleto, Zona 2.
 - Si sigue faltando algo puntual: pedir que describa el momento exacto
