@@ -496,6 +496,12 @@ function reefLabyrinth(worldWidth: number, centerY: number): ReefClusterSpec {
 // exactamente con el offset de esa entrada, así que subir la altura de
 // aparición sube el tier automáticamente sin tener que pasarlo a mano.
 const LABYRINTH_ANIMAL_OFFSET_PX = 80;
+// El caballito de mar ahora patrulla el mapa entero por defecto (pedido
+// explícito: "que se mueva en el mapa"), así que aquí hay que confinarlo
+// (ver Seahorse.patrolRadius) para que no se salga del hueco del
+// laberinto — un vaivén corto, no un giro en el sitio ni un recorrido
+// libre.
+const LABYRINTH_SEAHORSE_PATROL_RADIUS = 45;
 
 function labyrinthAnimalTier(centerY: number): 0 | 1 | 2 {
   const climbed = START_Y - centerY;
@@ -567,11 +573,15 @@ function miniLabyrinth(worldWidth: number, centerY: number): ReefClusterSpec {
   ];
   const animalHints = Phaser.Utils.Array.Shuffle(bands.slice())
     .slice(0, tier)
-    .map((band) => ({
-      type: (Math.random() < 0.5 ? "urchin" : "seahorse") as "urchin" | "seahorse",
-      x: band.gap + inward(band.side) * LABYRINTH_ANIMAL_OFFSET_PX,
-      y: band.y,
-    }));
+    .map((band) => {
+      const type = (Math.random() < 0.5 ? "urchin" : "seahorse") as "urchin" | "seahorse";
+      return {
+        type,
+        x: band.gap + inward(band.side) * LABYRINTH_ANIMAL_OFFSET_PX,
+        y: band.y,
+        patrolRadius: type === "seahorse" ? LABYRINTH_SEAHORSE_PATROL_RADIUS : undefined,
+      };
+    });
 
   return { pieces, path, yTop: topY - 150, yBottom: bottomY + 150, animalHints };
 }

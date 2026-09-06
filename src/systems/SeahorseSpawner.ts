@@ -7,9 +7,9 @@ const SPAWN_LOOKAHEAD = 900;
 const DESPAWN_MARGIN = 1200;
 const MARGIN_X = 140;
 
-/** Noveno enemigo: caballitos de mar, con una deriva en forma de "8" propia
- * (ver entities/Seahorse.ts). Mismo patrón de reciclado que
- * JellyfishSpawner. */
+/** Noveno enemigo: caballitos de mar, que patrullan de un lado a otro del
+ * mapa dando vueltas en bucle (ver entities/Seahorse.ts). Mismo patrón de
+ * reciclado que JellyfishSpawner. */
 export class SeahorseSpawner {
   readonly group: Phaser.Physics.Arcade.StaticGroup;
   private seahorses: Seahorse[] = [];
@@ -37,10 +37,18 @@ export class SeahorseSpawner {
     this.place(y, x);
   }
 
-  private place(y: number, x?: number) {
+  /** Colocación dentro del hueco seguro de un laberinto (ver
+   * `animalHints` en ReefTemplates.ts) — confinado a un vaivén corto
+   * alrededor de `x` en vez de patrullar el mundo entero, si no se saldría
+   * del hueco casi al instante. */
+  spawnConfined(y: number, x: number, patrolRadius: number) {
+    this.place(y, x, patrolRadius);
+  }
+
+  private place(y: number, x?: number, patrolRadius?: number) {
     const finalX = x ?? Phaser.Math.Between(MARGIN_X, this.worldWidth - MARGIN_X);
     const scale = SEAHORSE_SCALE * Phaser.Math.FloatBetween(0.9, 1.1);
-    const seahorse = new Seahorse(this.scene, finalX, y, scale);
+    const seahorse = new Seahorse(this.scene, finalX, y, scale, this.worldWidth, patrolRadius);
     this.group.add(seahorse.sprite);
     this.seahorses.push(seahorse);
     if (y < this.highestY) this.highestY = y;

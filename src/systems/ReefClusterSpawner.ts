@@ -43,7 +43,10 @@ export class ReefClusterSpawner {
     // colocarlos exactamente igual que ya hace con spawnExact() de cada
     // spawner real.
     private readonly spawnUrchin?: (y: number, x?: number) => void,
-    private readonly spawnSeahorse?: (y: number, x?: number) => void,
+    // El caballito ahora patrulla el mapa por defecto (ver Seahorse.ts) —
+    // dentro de un laberinto hay que confinarlo con un radio, si no se
+    // saldría del hueco casi al instante (ver ReefTemplates.ts).
+    private readonly spawnSeahorseConfined?: (y: number, x: number, patrolRadius: number) => void,
   ) {
     this.group = scene.physics.add.staticGroup();
     this.coinGroup = scene.physics.add.staticGroup();
@@ -107,7 +110,7 @@ export class ReefClusterSpawner {
     this.spawnCoinsAlongPath(spec.path);
     for (const hint of spec.animalHints ?? []) {
       if (hint.type === "urchin") this.spawnUrchin?.(hint.y, hint.x);
-      else this.spawnSeahorse?.(hint.y, hint.x);
+      else this.spawnSeahorseConfined?.(hint.y, hint.x, hint.patrolRadius ?? 45);
     }
     if (cluster.yTop < this.highestY) this.highestY = cluster.yTop;
   }

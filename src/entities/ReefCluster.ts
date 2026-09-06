@@ -250,7 +250,16 @@ export interface ReefClusterSpec {
    * los posicionan descentrados dentro del propio hueco que ya calcularon
    * para las paredes — nunca en el centro exacto, para que haya que
    * esquivarlos de verdad y no solo estén "de adorno" en medio del paso). */
-  animalHints?: { type: "urchin" | "seahorse"; x: number; y: number }[];
+  animalHints?: {
+    type: "urchin" | "seahorse";
+    x: number;
+    y: number;
+    /** Solo para `"seahorse"` (el caballito ahora patrulla el mapa entero
+     * por defecto, ver entities/Seahorse.ts) — confina su vaivén a este
+     * radio alrededor de `x` para que no se salga del hueco del
+     * laberinto. Ignorado para `"urchin"` (no se mueve). */
+    patrolRadius?: number;
+  }[];
 }
 
 // Pedido explícito del usuario: "me gustaría que los que algunos tengan

@@ -109,6 +109,11 @@ export class BootScene extends Phaser.Scene {
     // estirada en vez de enroscada, cuerpo inclinado) para alternar con la
     // pose base mientras gira en círculos, ver entities/Seahorse.ts.
     this.load.image("seahorse_swim", assetPath("/objects/enemies/seahorse_swim.png"));
+    // Undécimo enemigo (pedido explícito: "CREA MÁS ANIMALES MÁS MÁS...con
+    // animación de que muevan por el mapa"), ver entities/MantaRay.ts.
+    this.load.image("mantaray", assetPath("/objects/enemies/mantaray.png"));
+    // Duodécimo enemigo, mismo pedido — ver entities/FlyingFish.ts.
+    this.load.image("flyingfish", assetPath("/objects/enemies/flyingfish.png"));
     // Librería de piezas para ReefCluster (composiciones orgánicas de
     // obstáculos de Zona 1, ver systems/ReefCluster.ts). Tercera tanda,
     // generada directamente a partir de las 3 imágenes de referencia que

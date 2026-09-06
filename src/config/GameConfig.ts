@@ -279,6 +279,22 @@ export const BARNACLE_MIN_GAP = 3400;
 export const BARNACLE_MAX_GAP = 5400;
 export const BARNACLE_SCALE = 0.2;
 
+// Undécimo enemigo: mantarraya, recorre el mapa en diagonal de verdad
+// (barrido Lissajous en X e Y, ver entities/MantaRay.ts) — pedido
+// explícito: "CREA MÁS ANIMALES MÁS MÁS...con animación de que muevan por
+// el mapa". Más espaciada que el resto: es grande y su rango de barrido
+// ya cubre mucho terreno por sí sola.
+export const MANTA_RAY_MIN_GAP = 4400;
+export const MANTA_RAY_MAX_GAP = 6600;
+export const MANTA_RAY_SCALE = 0.19;
+
+// Duodécimo enemigo: pez volador, único con ritmo de reposo+salto en vez
+// de movimiento continuo (ver entities/FlyingFish.ts) — segundo de la
+// misma tanda ("dinámicas distintas").
+export const FLYING_FISH_MIN_GAP = 3600;
+export const FLYING_FISH_MAX_GAP = 5600;
+export const FLYING_FISH_SCALE = 0.16;
+
 export const BIG_FISH_PATROL_SPEED = 60;
 export const BIG_FISH_PUSH_STRENGTH = 300;
 export const BIG_FISH_PUSH_COOLDOWN_MS = 500;

@@ -1879,6 +1879,70 @@ funciona **hoy**, verificado en el código — no lo que el diseño aspira a ten
   (los balanos no "alcanzan" tan lejos). `DeathReason "balano"` nuevo.
   2 apariciones scripteadas en huecos vacíos de Zona 1 (offset 13050 y
   15100).
+- **Caballito de mar: patrulla el mapa de verdad** (corrección explícita
+  de la ronda anterior: "el caballito de mar que se mueva en el mapa me
+  refería tmb" — el giro en círculo sobre el punto de aparición no era lo
+  pedido). El CENTRO de la órbita circular ahora barre el ancho del mundo
+  con un seno suave (`PATROL_SPEED`), conservando el propio giro en bucle
+  como capa extra encima — se lee como un nado en bucles que además
+  atraviesa el mapa, no un vaivén recto ni un giro fijo. Nuevo parámetro
+  `patrolRadius` (opcional): cuando un caballito se coloca como
+  `animalHint` dentro del hueco seguro de un mini laberinto (ver
+  `ReefTemplates.ts`), se confina a un vaivén corto alrededor de su punto
+  de aparición en vez de patrullar el mundo entero — si no, se saldría del
+  hueco casi al instante y el "esquívalo dentro del pasillo" dejaría de
+  tener sentido. `SeahorseSpawner.spawnConfined()` nuevo para ese caso;
+  `spawnExact()` (nivel scripteado) y la generación al azar siguen con
+  patrulla completa.
+- **Más densidad en Zona 1** (pedido explícito: "al principio puedes poner
+  incluso más medusas que sean 3 o 4 y ya entre más arriba más animales en
+  combo colocados estratégicamente"): el grupo de medusas de apertura subió
+  de 2 a 4 (offsets 2350/2500/2650/2850, escalonadas en X e Y); 3 combos ya
+  existentes ganaron un animal más (medusa añadida en offset 17550 junto al
+  debut del calamar; medusa añadida en offset 20500 junto al segundo combo
+  de calamar/cangrejo; coral trampa añadido en offset 23300 al combo final
+  antes del segundo laberinto).
+- **Dos animales nuevos, ambos con dinámica de movimiento real y
+  genuinamente distinta a los 10 anteriores** (pedido explícito, con
+  mucho énfasis: "CREA MÁS ANIMALES MÁS MÁS...con animación de que muevan
+  por el mapa tmb o que tengan dinámicas distintas"). Arte generado con
+  Gemini a partir de `jellyfish.png` + `squid.png`/`fish_01.png` como
+  anclas de estilo; limpieza de transparencia con el bypass manual ya
+  habitual (salida cruda 100% opaca con checkerboard horneado en todo el
+  lienzo) — el modo automático de `fix_transparency.py` además se comió
+  detalle real (aletas/vientre) en el pez volador la primera vez, así que
+  ese asset se limpió solo con la máscara de borde, sin el filtro de
+  huecos interiores.
+  - **Undécimo: mantarraya** (`entities/MantaRay.ts`). Ningún animal
+    anterior recorre distancia real en dos ejes a la vez (el tiburón solo
+    patrulla en X con un bob de Y fijo; el caballito gira mientras su
+    centro barre en X). La mantarraya usa dos senos independientes con
+    periodos distintos para X e Y (patrón tipo Lissajous, amplitud
+    vertical ±360px) — cruza el mapa en ángulos que cambian con el
+    tiempo, nunca el mismo trayecto dos veces. Se inclina (banking) según
+    la componente vertical de su movimiento y aletea (pulso de escala
+    suave) para leerse como un planeo real. `DeathReason "mantarraya"`
+    nuevo. 2 apariciones scripteadas (offset 10850 junto al coral trampa
+    de esa zona, y offset 18050 uniéndose al combo de calamar/medusa/
+    caballito).
+  - **Duodécimo: pez volador** (`entities/FlyingFish.ts`). Primer animal
+    con ritmo de reposo+salto en vez de movimiento continuo: se queda
+    quieto un rato (con un balanceo leve) y luego hace un salto rápido en
+    arco parabólico (sube y vuelve a bajar) hasta un nuevo punto antes de
+    volver a reposar — imitando el salto real de un pez volador. El morro
+    se inclina arriba al despegar y abajo al aterrizar, siguiendo la
+    derivada del propio arco. Hitbox casi a lienzo completo (las alas
+    gigantes SON el cuerpo real, no margen vacío). `DeathReason
+    "pezvolador"` nuevo. 2 apariciones scripteadas (offset 4200, muy
+    pronto en el Tramo 1 para que se note el contraste de ritmo frente al
+    resto; offset 23550 en el combo final antes del segundo laberinto).
+  - Ambos verificados: `npx tsc --noEmit` limpio, muestreo de posición/
+    rotación/flip por Playwright a lo largo de ~12s confirmando el barrido
+    diagonal real de la mantarraya y el ciclo reposo/salto del pez
+    volador, captura de pantalla in-game confirmando arte correcto sin
+    residuo de checkerboard ni artefactos, y build de producción
+    (`GITHUB_PAGES=true vite build`) confirmando que ambos PNG se
+    empaquetan.
 
 # PENDIENTE
 
@@ -1889,10 +1953,12 @@ funciona **hoy**, verificado en el código — no lo que el diseño aspira a ten
   erizo, cangrejo, pez grande, coral trampa, balano) siguen con su
   animación actual (breathe/sway/patrulla por código, sin frames de
   sprite nuevos).
-- **"Crea más animales"** — el recuento de animales reales subió a 10 con
-  el balano esta ronda. Quedan candidatas obvias sin convertir: `sponge`,
+- **"Crea más animales"** — el recuento de animales reales subió a 12 esta
+  ronda (mantarraya y pez volador, ambos con arte nuevo y dinámica de
+  movimiento propia). Quedan candidatas obvias sin convertir con el
+  patrón "animal disfrazado de obstáculo" (cero arte nuevo): `sponge`,
   `decor_pebble`, `decor_starfish` siguen siendo piezas puramente
-  decorativas/estáticas que podrían seguir el mismo patrón.
+  decorativas/estáticas.
 - **Zona 1 sigue con `grandMaze` muy al final** (offset 25600 de 28160) —
   mover el laberinto de hojas a una posición más temprana (para que se
   vea sin necesitar una carrera muy larga con 1 sola vida) sería un
@@ -1941,20 +2007,22 @@ avanzando)
 
 # PRÓXIMA TAREA
 
-Esperar la reacción del usuario a esta ronda (piezas laterales con
-variación de tamaño, laberintos repetidos/más difíciles con animales
-dentro, caballito girando en círculo con pose de nado nueva, medusa con
-rastro de burbujas, balano como décimo animal) antes de seguir. Líneas
-abiertas explícitas:
+Esperar la reacción del usuario a esta ronda (caballito patrullando el
+mapa de verdad, más densidad de medusas/combos, mantarraya y pez volador
+como animales 11 y 12) antes de seguir. Líneas abiertas explícitas:
 
 1. **"Mejora las animaciones de los animales"** — atendido para el
-   caballito esta ronda; el resto (medusa aparte del rastro de burbujas,
-   tiburón, calamar, erizo, cangrejo, pez grande, coral trampa, balano)
-   sigue con animación por código, sin frames de sprite nuevos. Pedir cuál
-   en concreto antes de generar arte a ciegas para 7-8 animales más.
-2. **"Crea más animales"** — 10 animales reales ya. Candidatas para seguir
-   con el patrón "animal disfrazado de obstáculo" (cero arte nuevo):
-   `sponge`, `decor_pebble`, `decor_starfish`.
+   caballito en la ronda anterior; el resto (medusa aparte del rastro de
+   burbujas, tiburón, calamar, erizo, cangrejo, pez grande, coral trampa,
+   balano, mantarraya, pez volador) sigue con animación por código, sin
+   frames de sprite nuevos. Pedir cuál en concreto antes de generar arte a
+   ciegas para tantos animales.
+2. **"Crea más animales"** — 12 animales reales ya, con las dos últimas
+   incorporaciones cubriendo dinámicas de movimiento que no existían
+   (barrido diagonal real por el mapa, reposo+salto en arco). Si el
+   usuario sigue pidiendo más, las candidatas para el patrón "animal
+   disfrazado de obstáculo" (cero arte nuevo) son `sponge`,
+   `decor_pebble`, `decor_starfish`.
 3. **Mover `grandMaze` a una posición más temprana** — sigue en offset
    25600 (casi al final del tramo scripteado); es una tarea de mayor
    alcance (recalcular offsets posteriores) que merece su propia ronda si

@@ -79,7 +79,9 @@ export type Zone1LevelEntryType =
   | "clam"
   | "coraltrap"
   | "seahorse"
-  | "barnacle";
+  | "barnacle"
+  | "mantaray"
+  | "flyingfish";
 
 export interface Zone1LevelEntry {
   type: Zone1LevelEntryType;
@@ -109,9 +111,15 @@ export const ZONE1_LEVEL_ENTRIES: Zone1LevelEntry[] = [
   // Pedido explícito: "justo después de eso está muy vacío, dejemos
   // medusas cerca de ahí" — el hueco entre el final de la banda del
   // laberinto (2150) y el primer cúmulo del Tramo 1 (2950) se sentía
-  // como agua muerta. 2 medusas dentro de ese hueco, no en la banda misma.
-  { type: "jellyfish", offset: 2400, x: 250 },
-  { type: "jellyfish", offset: 2750, x: 450 },
+  // como agua muerta. Pedido explícito de una ronda posterior: "al
+  // principio puedes poner incluso más medusas que sean 3 o 4" — subido
+  // de 2 a 4, escalonadas en Y y separadas en X para que se lean como un
+  // grupo de verdad, no un muro (todas dentro del mismo hueco, nunca en
+  // la banda del laberinto).
+  { type: "jellyfish", offset: 2350, x: 150 },
+  { type: "jellyfish", offset: 2500, x: 350 },
+  { type: "jellyfish", offset: 2650, x: 550 },
+  { type: "jellyfish", offset: 2850, x: 250 },
 
   // --- Tramo 1 (3200-14880) ---
   // Primer combo del nivel "clásico": ya hay algo que esquivar justo al
@@ -123,6 +131,12 @@ export const ZONE1_LEVEL_ENTRIES: Zone1LevelEntry[] = [
   // punto, al otro lado — primera "combinación" de dos animales distintos
   // en el mismo respiro entre cúmulos.
   { type: "seahorse", offset: 3700, x: 430 },
+  // Debut del pez volador (pedido explícito: "CREA MÁS ANIMALES MÁS
+  // MÁS...con animación de que muevan por el mapa tmb o que tengan
+  // dinámicas distintas") — primer animal con ritmo de reposo+salto en
+  // vez de movimiento continuo, introducido pronto para que se note la
+  // diferencia frente al resto.
+  { type: "flyingfish", offset: 4200, x: 480 },
   // Coral trampa (animal disfrazado de obstáculo) en el hueco despejado
   // antes del siguiente cúmulo — se lee como parte del paisaje hasta que
   // Lumi se acerca.
@@ -162,6 +176,11 @@ export const ZONE1_LEVEL_ENTRIES: Zone1LevelEntry[] = [
   // Otro hueco vacío (10220-11040, entre este cúmulo y los tiburones) —
   // misma limpieza de "muy suave".
   { type: "coraltrap", offset: 10600, x: 250 },
+  // Debut de la mantarraya (misma tanda que el pez volador) — cruza el
+  // mapa en diagonal de verdad, primer animal que también recorre
+  // distancia real en Y (no solo un bob local), combinado aquí con el
+  // coral trampa de arriba.
+  { type: "mantaray", offset: 10850, x: 450 },
   // Pedido explícito: "podemos poner dos tiburones seguidos en una zona con
   // pocos obstáculos y que los dos patrullen pero vayan a la inversa" —
   // este tramo (entre los cúmulos de 9920 y 12160) ya tenía un único
@@ -198,7 +217,12 @@ export const ZONE1_LEVEL_ENTRIES: Zone1LevelEntry[] = [
   // Segundo repetido del laberinto (antes centerTwoPaths aquí), tier 1.
   { type: "reef", offset: 16320, reefTemplate: 5 }, // miniLabyrinth (tier 1) — banda ~[15820,16820]
   { type: "squid", offset: 17280, x: 300 }, // debut del calamar
+  // Pedido explícito: "entre más arriba más animales en combo colocados
+  // estratégicamente" — este combo tenía 2 animales, ahora 4 (mantarraya
+  // añadida en esta misma tanda de "MÁS MÁS animales").
+  { type: "jellyfish", offset: 17550, x: 150 },
   { type: "seahorse", offset: 17800, x: 420 },
+  { type: "mantaray", offset: 18050, x: 300 },
 
   { type: "reef", offset: 18560, reefTemplate: 2 }, // sCurveEdges — banda ~[18260,18860]
   // Misma idea que el combo de 3 erizos de más arriba, pero con 2 —
@@ -208,6 +232,8 @@ export const ZONE1_LEVEL_ENTRIES: Zone1LevelEntry[] = [
   { type: "urchin", offset: 19680, x: 490 },
   { type: "lilypad", offset: 19590, x: 345 },
   { type: "squid", offset: 20320, x: 420 },
+  // Mismo criterio: más arriba, más animales por combo.
+  { type: "jellyfish", offset: 20500, x: 200 },
   { type: "crab", offset: 20740, x: 350 },
 
   // Tercer repetido del laberinto (antes lateralWall aquí), tier 2 (2
@@ -224,7 +250,9 @@ export const ZONE1_LEVEL_ENTRIES: Zone1LevelEntry[] = [
   // gauntlet y la banda de entrada de grandMaze (23840) antes se dejaba
   // vacío del todo.
   { type: "seahorse", offset: 23300, x: 200 },
+  { type: "coraltrap", offset: 23300, x: 350 },
   { type: "clam", offset: 23300, x: 470 },
+  { type: "flyingfish", offset: 23550, x: 300 },
 
   // --- Tramo 3: segundo laberinto, más grande y distinto (pedido
   // explícito: "el que ya tenemos está súper [no se toca]... el que digo
