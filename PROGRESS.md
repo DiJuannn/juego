@@ -1538,6 +1538,50 @@ funciona **hoy**, verificado en el código — no lo que el diseño aspira a ten
     último con el rango de banda exacto esperado del `grandMaze`).
     Playtest automático sin errores, `npx tsc --noEmit` limpio, build de
     producción real exitoso.
+- **Revertido: giro continuo del erizo**. Pedido explícito del usuario
+  tras probarlo: "los erizos déjalos como estaban, la gracia de ellos es
+  que siempre están quietos" — el `SPIN_SPEED` añadido en la ronda
+  anterior (ver EN PROGRESO más arriba) era un error de lectura: "el
+  animal más pasivo" no era un problema a arreglar en este caso concreto,
+  es parte de su diseño. Quitado del todo (`Urchin.ts` vuelve a solo
+  bamboleo+respiración) y documentado en el docblock de la clase para que
+  no se reintroduzca sin querer en una futura pasada de "más movimiento".
+  El resto de esa ronda (almeja con balanceo, medusa/erizo en pareja,
+  animación de anémona/coral_fan, densidad de arrecife) no se tocó — el
+  usuario solo señaló el erizo como excepción.
+- **Arte nuevo generado con Gemini para el segundo laberinto**: pedido
+  explícito — "el laberinto me imagino un diseño totalmente nuevo.
+  Pídeselo a la api que te lo haga, que si sea estilo laberinto grande
+  cozy". Nueva pieza `reef_maze_wall` (`assets/objects/reef/maze_wall.png`),
+  un cúmulo de 9 rocas mucho más grande y compuesto que las piezas
+  sueltas del pool clásico, generado con las mismas anclas de estilo que
+  `boulder_rock` (rocas redondeadas gris-lavanda, musgo, acentos de
+  coral) — mismo lenguaje visual, pero "grande y cozy" tal como se pidió.
+  - Limpieza de transparencia: la salida cruda de Gemini venía 100%
+    opaca (checkerboard horneado cubriendo todo el lienzo, el contenido
+    real solo ocupa ~32% del canvas) — caso ya documentado en el propio
+    script como "normal y esperado" para un borrado grande;
+    `border_connected_mask` solo (sin `interior_hole_mask`, mismo
+    criterio que rondas anteriores) y confirmado limpio con el composite
+    sobre magenta antes de integrar.
+  - Exclusiva del segundo laberinto (`grandMaze`): nuevo
+    `GRAND_MAZE_WALL_POOL` en `ReefTemplates.ts` (la pieza nueva con el
+    doble de peso + las 3 rocas clásicas), NUNCA mezclada en
+    `CORRIDOR_WALL_POOL` — ese es el que usan `reefLabyrinth`/
+    `miniLabyrinth`, que el usuario confirmó que "no se tocan".
+    `corridorWall()` ahora acepta un pool opcional para esto sin afectar
+    a los otros dos laberintos.
+  - `HITBOX_FRACTION`/`NO_BREATHE_KEYS` en `ReefCluster.ts` actualizados
+    (bbox medido programáticamente sobre el PNG, sin animación de escala
+    en vivo — mismo criterio de seguridad que el resto del pool).
+  - Verificado con `body.position` (40 muestras, la pieza nueva salió 76
+    veces de las ~160 posibles ≈ 40%, coincide con su peso en el pool):
+    sigue habiendo siempre 4 bandas, cero solapamiento vertical, y el
+    hueco mínimo se mantiene en 249px incluso con la pieza nueva
+    presente — no hizo falta re-ajustar `GRAND_MAZE_BAND_SPACING`.
+    Confirmado visualmente en el motor real que se ve claramente más
+    grande y elaborada que las rocas clásicas al lado. `npx tsc --noEmit`
+    limpio, build de producción real exitoso con el nuevo PNG bundleado.
 
 # PENDIENTE
 
@@ -1582,19 +1626,22 @@ que se cerraron)
 
 # PRÓXIMA TAREA
 
-El usuario aclaró lo del laberinto: no se refería al que ya existe
-("está súper, no se toca") sino a pedir uno SEGUNDO y distinto, más
-grande y "de verdad" — ya construido como `grandMaze` (ver EN PROGRESO),
-con un mecanismo de paso nuevo (la "puerta" de doble pared) que ningún
-otro laberinto tenía, garantizado en un nuevo Tramo 3 al final del nivel
-scripteado. Esperar su reacción a este segundo laberinto antes de tocar
-nada más sobre el tema — si tampoco es exactamente lo que pedía, pedir
-que describa qué le falta en concreto (¿más bandas? ¿un tipo de paso
-distinto? ¿otra ubicación?) en vez de adivinar una tercera vez.
+`grandMaze` ya tiene arte propio (`reef_maze_wall`, generado con Gemini,
+"estilo laberinto grande cozy" pedido explícito) en vez de reciclar las
+rocas clásicas — ver EN PROGRESO para el detalle completo (generación,
+limpieza de transparencia, pool exclusivo, verificación de seguridad con
+la pieza nueva incluida). También revertido el giro del erizo por pedido
+explícito ("la gracia de ellos es que siempre están quietos"). Esperar la
+reacción del usuario a ambos antes de seguir tocando el segundo
+laberinto — si el estilo del `reef_maze_wall` no es exactamente lo que
+imaginaba, pedir qué cambiaría en concreto (¿otro color? ¿otra forma,
+menos "montón de piedras" y más "muro"?) en vez de generar más variantes
+a ciegas.
 
-Sigue sin empezar, y sigue siendo lo más grande que queda: "crea más
-animales" (pedido varias veces) — la única tarea de todo este hilo que
-necesita arte nuevo (Gemini). Al retomarla, decidir con el usuario qué
-piezas hoy decorativas (anémona, percebe, esponja...) tienen sentido como
-animal activo, o diseñar una especie nueva desde cero, siguiendo el mismo
-patrón Entity+Spawner+overlap ya usado 7 veces.
+Sigue sin empezar, y sigue siendo lo más grande que queda de todo este
+hilo: "crea más animales" (pedido varias veces). Al retomarla, decidir
+con el usuario qué piezas hoy decorativas (anémona, percebe, esponja...)
+tienen sentido como animal activo, o diseñar una especie nueva desde
+cero, siguiendo el mismo patrón Entity+Spawner+overlap ya usado 7 veces
+— y ahora ya hay precedente fresco de generar arte nuevo bajo demanda
+(`reef_maze_wall`) si hace falta una criatura sin ancla existente.

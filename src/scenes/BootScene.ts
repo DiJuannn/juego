@@ -132,6 +132,12 @@ export class BootScene extends Phaser.Scene {
     // para mantener la paleta piedra gris-lavanda + musgo + acento de coral.
     this.load.image("reef_rock_slab", assetPath("/objects/reef/rock_slab.png"));
     this.load.image("reef_rock_smooth", assetPath("/objects/reef/rock_boulder_smooth.png"));
+    // Pieza exclusiva del segundo laberinto (grandMaze, ver
+    // ReefTemplates.ts): pedido explícito "un diseño totalmente nuevo...
+    // estilo laberinto grande cozy", generada con Gemini a partir de las
+    // mismas anclas de estilo que boulder_rock — un cúmulo de 9 rocas
+    // mucho más grande y compuesto.
+    this.load.image("reef_maze_wall", assetPath("/objects/reef/maze_wall.png"));
     // Pedido explícito: "crea más rocas o pinchos en forma de obstáculo" —
     // cúmulo de rocas puntiagudas, silueta bien distinta de las otras 3
     // (redondeadas/planas) para que se note como una pieza nueva de verdad.

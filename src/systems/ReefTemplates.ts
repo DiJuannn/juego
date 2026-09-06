@@ -458,8 +458,8 @@ const CORRIDOR_REACH_PX = 400;
 // entre cada cambio de lado.
 const CORRIDOR_BAND_SPACING = 700;
 
-function corridorWall(side: Side, y: number, reachPx: number): ReefPieceSpec {
-  const key = Phaser.Utils.Array.GetRandom(CORRIDOR_WALL_POOL);
+function corridorWall(side: Side, y: number, reachPx: number, pool: string[] = CORRIDOR_WALL_POOL): ReefPieceSpec {
+  const key = Phaser.Utils.Array.GetRandom(pool);
   return piece({
     key,
     x: 0,
@@ -670,10 +670,28 @@ function miniLabyrinth(worldWidth: number, centerY: number): ReefClusterSpec {
  * colisiona.
  *
  * Misma garantía de seguridad que los otros dos laberintos: solo piezas
- * de roca (CORRIDOR_WALL_POOL, sin animación de escala en vivo) en las
- * 4 bandas y en la puerta, así que cada hueco es siempre exactamente el
- * calculado aquí, nunca varía en vivo.
+ * de roca (sin animación de escala en vivo) en las 4 bandas y en la
+ * puerta, así que cada hueco es siempre exactamente el calculado aquí,
+ * nunca varía en vivo.
+ *
+ * Pedido explícito de una ronda posterior: "el laberinto me imagino un
+ * diseño totalmente nuevo. Pídeselo a la api que te lo haga, que si sea
+ * estilo laberinto grande cozy" — arte nuevo generado con Gemini
+ * (`reef_maze_wall`, un cúmulo de 9 rocas mucho más grande y compuesto
+ * que las piezas sueltas del pool clásico, misma ancla de estilo que
+ * `boulder_rock`), EXCLUSIVO de este laberinto (nunca se mezcla en
+ * `CORRIDOR_WALL_POOL`, que es el que usan `reefLabyrinth`/
+ * `miniLabyrinth` — esos "no se tocan", pedido explícito). Se combina con
+ * las 3 rocas clásicas en `GRAND_MAZE_WALL_POOL` con el doble de peso
+ * (repetida en el array) para que predomine sin ser la única silueta.
  */
+const GRAND_MAZE_WALL_POOL = [
+  "reef_maze_wall",
+  "reef_maze_wall",
+  "reef_boulder_rock",
+  "reef_rock_smooth",
+  "reef_rock_spikes",
+];
 const GRAND_MAZE_REACH_PX = 430;
 const GRAND_MAZE_EXIT_REACH_PX = 380;
 // Hueco centrado de la "puerta" (pared a ambos lados) — igual de holgado
@@ -692,7 +710,10 @@ const GRAND_MAZE_BAND_SPACING = 820;
 function mazeGate(y: number, gapPx: number, worldWidth: number): { pieces: ReefPieceSpec[]; reachEach: number } {
   const reachEach = (worldWidth - gapPx) / 2;
   return {
-    pieces: [corridorWall("left", y, reachEach), corridorWall("right", y, reachEach)],
+    pieces: [
+      corridorWall("left", y, reachEach, GRAND_MAZE_WALL_POOL),
+      corridorWall("right", y, reachEach, GRAND_MAZE_WALL_POOL),
+    ],
     reachEach,
   };
 }
@@ -730,7 +751,7 @@ function grandMaze(worldWidth: number, centerY: number): ReefClusterSpec {
   const nookX = nookSide === "left" ? worldWidth * 0.1 : worldWidth * 0.9;
 
   const pieces: ReefPieceSpec[] = [
-    corridorWall(sideEntrance, yEntrance, reachEntrance),
+    corridorWall(sideEntrance, yEntrance, reachEntrance, GRAND_MAZE_WALL_POOL),
     piece({
       key: "decor_starfish",
       x: wallTipEntrance + inward(sideEntrance) * 35,
@@ -743,7 +764,7 @@ function grandMaze(worldWidth: number, centerY: number): ReefClusterSpec {
     piece({ key: "reef_rock_spikes", x: nookX, y: yGate + 60, scale: 0.16, alpha: 0.55, role: "background" }),
     piece({ key: "sponge", x: nookX, y: yGate - 40, scale: 0.14, alpha: 0.55, role: "background" }),
 
-    corridorWall(sideCorridor, yCorridor, reachCorridor),
+    corridorWall(sideCorridor, yCorridor, reachCorridor, GRAND_MAZE_WALL_POOL),
     piece({
       key: "coral_fan",
       x: wallTipCorridor + inward(sideCorridor) * 35,
@@ -752,7 +773,7 @@ function grandMaze(worldWidth: number, centerY: number): ReefClusterSpec {
       role: "decoration",
     }),
 
-    corridorWall(sideExit, yExit, reachExit),
+    corridorWall(sideExit, yExit, reachExit, GRAND_MAZE_WALL_POOL),
     piece({
       key: "decor_shell",
       x: wallTipExit + inward(sideExit) * 35,
@@ -762,10 +783,10 @@ function grandMaze(worldWidth: number, centerY: number): ReefClusterSpec {
     }),
 
     bgAccent(
-      "reef_boulder_rock",
+      "reef_maze_wall",
       sideExit === "left" ? worldWidth * 0.92 : worldWidth * 0.08,
       yExit - 160,
-      0.17,
+      0.14,
     ),
   ];
 

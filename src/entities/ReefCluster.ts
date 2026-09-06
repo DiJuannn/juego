@@ -78,6 +78,11 @@ const HITBOX_FRACTION: Record<string, [number, number, number, number]> = {
   // de rocas puntiagudas, bbox medido programáticamente igual que las
   // otras dos rocas nuevas.
   reef_rock_spikes: [0.198, 0.222, 0.794, 0.793],
+  // Pieza exclusiva del segundo laberinto (grandMaze, pedido explícito:
+  // "diseño totalmente nuevo... estilo laberinto grande cozy", generada
+  // con Gemini) — bbox medido programáticamente igual que las rocas de
+  // arriba.
+  reef_maze_wall: [0.071, 0.159, 0.951, 0.825],
 };
 
 /**
@@ -239,6 +244,10 @@ const NO_BREATHE_KEYS = new Set([
   "reef_rock_slab",
   "reef_rock_smooth",
   "reef_rock_spikes",
+  // Usada como pared del segundo laberinto (grandMaze) — mismo motivo que
+  // el resto de rocas: una hitbox que cambia de tamaño en vivo podría, en
+  // el peor caso, cerrar el paso.
+  "reef_maze_wall",
 ]);
 
 // Amplitud/periodo pensados para que se note como un detalle vivo, no como

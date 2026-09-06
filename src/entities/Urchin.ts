@@ -9,27 +9,24 @@ const BOB_SPEED = 0.35;
 // los corales: nunca mover el dibujo sin mover la hitbox con él.
 const BREATHE_AMPLITUDE = 0.06;
 const BREATHE_SPEED = 1.1;
-// Pedido explícito: "mejora el movimiento que sea más elaborado de los
-// que ya tenemos" — el erizo era el más pasivo (solo bamboleo+respiración
-// en el mismo sitio). Un giro lento y continuo (como una bola de púas
-// rodando muy despacio en el sitio) añade vida sin inventar un
-// comportamiento nuevo — el contorno del erizo es casi circular, así que
-// puede rotar sin que su hitbox rectangular (fija, nunca rota con el
-// sprite — ver comentario de más abajo) deje de cubrirlo bien.
-const SPIN_SPEED = 0.35; // rad/s, dirección aleatoria por instancia
 
 /**
  * Cuarto enemigo: un erizo de mar. A diferencia de la medusa (deriva) o el
  * tiburón (patrulla), el erizo casi no se mueve — es un obstáculo
  * "plantado" que hay que esquivar, no una criatura que persigue. Cuerpo
  * estático, igual que la medusa.
+ *
+ * Pedido explícito del usuario tras probar un giro continuo añadido en
+ * una ronda anterior: "los erizos déjalos como estaban, la gracia de
+ * ellos es que siempre están quietos" — NO añadir rotación ni ningún otro
+ * movimiento más allá del bamboleo/respiración de aquí abajo, aunque siga
+ * pareciendo el animal "más pasivo" del juego. Es un rasgo, no un bug.
  */
 export class Urchin {
   readonly sprite: Phaser.Physics.Arcade.Image;
   private baseY: number;
   private baseScale: number;
   private phase: number;
-  private readonly spinDirection: 1 | -1;
   private readonly blinkTimer = new BlinkTimer();
   private isBlinking = false;
 
@@ -52,7 +49,6 @@ export class Urchin {
     this.baseY = y;
     this.baseScale = scale;
     this.phase = Phaser.Math.FloatBetween(0, Math.PI * 2);
-    this.spinDirection = Math.random() < 0.5 ? 1 : -1;
   }
 
   /** Mismo motivo que Jellyfish.update(): un StaticBody no sigue sprite.x/y
@@ -66,7 +62,6 @@ export class Urchin {
     const y = this.baseY + Math.sin(t * BOB_SPEED + this.phase) * BOB_AMPLITUDE;
     const pulse = 1 + Math.sin(t * BREATHE_SPEED + this.phase) * BREATHE_AMPLITUDE;
     this.sprite.setScale(this.baseScale * pulse);
-    this.sprite.setRotation(t * SPIN_SPEED * this.spinDirection + this.phase);
 
     const body = this.sprite.body as Phaser.Physics.Arcade.StaticBody;
     body.setSize(406 * this.baseScale * pulse, 355 * this.baseScale * pulse).setOffset(
