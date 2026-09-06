@@ -66,6 +66,12 @@ const HITBOX_FRACTION: Record<string, [number, number, number, number]> = {
   sponge: [0.17, 0.22, 0.84, 0.79],
   barnacle: [0.2, 0.22, 0.81, 0.79],
   giant_clam: [0.13, 0.21, 0.87, 0.8],
+  // Pedido explícito: "crea diferentes estilos de rocas... de distintos
+  // tamaños, más largas tmb pueden ser" — 2 estilos nuevos para variar la
+  // pieza de pared lateral (ver WALL_PIECE_POOL en ReefTemplates.ts), bbox
+  // medido programáticamente sobre alpha del PNG (no a ojo).
+  reef_rock_slab: [0.098, 0.374, 0.909, 0.706],
+  reef_rock_smooth: [0.297, 0.302, 0.679, 0.791],
 };
 
 /**
@@ -212,7 +218,7 @@ export interface ReefClusterSpec {
 // el guijarro, que se leen como objeto inerte) quedan fuera; el resto
 // (ramas de coral, anémona, abanico, esponja, balano, almeja, estrella,
 // concha) respira con un pulso de escala muy sutil.
-const NO_BREATHE_KEYS = new Set(["reef_boulder_rock", "decor_pebble"]);
+const NO_BREATHE_KEYS = new Set(["reef_boulder_rock", "decor_pebble", "reef_rock_slab", "reef_rock_smooth"]);
 
 // Amplitud/periodo pensados para que se note como un detalle vivo, no como
 // un parpadeo — ±4% de escala, ciclo de 2.6-4.2s, con fase aleatoria por

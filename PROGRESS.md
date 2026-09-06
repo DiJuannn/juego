@@ -1156,6 +1156,68 @@ funciona **hoy**, verificado en el código — no lo que el diseño aspira a ten
   - Verificado: `npx tsc --noEmit` limpio, playtest automático completa el
     recorrido sin errores, build de producción real
     (`GITHUB_PAGES=true vite build`) exitoso.
+- **Variedad de rocas/corales en la pieza de pared lateral** — pedido
+  explícito: "haz lo mismo con los corales... crea diferentes estilos de
+  rocas... de distintos tamaños, más largas tmb pueden ser". Hasta ahora
+  la pieza pegada al borde (`edgeFlush`) de las 4 plantillas era SIEMPRE
+  `reef_boulder_rock`.
+  - 2 estilos de roca nuevos generados con Gemini (mismas anclas de estilo:
+    `boulder_rock.png` + `rocks_back.png`): `rock_slab` (repisa larga y
+    plana, cresta de roca sumergida) y `rock_smooth` (un único bulto
+    ovalado y liso, más simple que el cúmulo original) — bbox de
+    `HITBOX_FRACTION` medido programáticamente sobre el alpha del PNG (no
+    a ojo, para evitar el error de raspado que dejó pasar la textura del
+    musgo transparente en `rock_slab` en el primer intento: `--report` de
+    `fix_transparency.py` marcaba decenas de puntos sueltos del musgo como
+    "agujero interior" — se aplicó solo `border_connected_mask`, sin el
+    paso de agujeros interiores, tras confirmar con el composite en
+    magenta que el musgo se veía perforado con el modo por defecto).
+  - Nuevo `WALL_PIECE_POOL` en `ReefTemplates.ts`: cada uso de la antigua
+    pieza fija ahora es `wallPiece(side, y, baseScale)`, que elige al azar
+    entre las 2 rocas nuevas + `reef_boulder_rock` + los 4 corales rama
+    (mismo criterio de "la base es la de abajo" que ya tenía la roca —
+    `edgeRotation` gira la pieza entera, así que la base de fábrica de
+    cualquier textura del pool queda contra el lateral sin necesitar
+    flipX). `sizeMul` por pieza normaliza el tamaño visible entre texturas
+    de proporción muy distinta (p.ej. `rock_slab` recorta a 1090×255px,
+    casi el doble de ancho que el resto — bajado a `sizeMul: 0.6` para que
+    no domine la banda vertical del cúmulo, quedando aun así claramente
+    más larga y baja que las demás).
+  - Verificado con el mismo método de esta sesión para el hueco lateral
+    (nunca capturas): 60 muestras (`body.position`) repartidas en las 4
+    plantillas y las 2 orientaciones, con las 7 piezas del pool
+    representadas, dan siempre el solape de 10px exacto — cero huecos con
+    ninguna combinación.
+- **Dos tiburones patrullando en sentidos opuestos** — pedido explícito:
+  "podemos poner dos tiburones seguidos en una zona con pocos obstáculos y
+  que los dos patrullen pero vayan a la inversa". `Shark`/`SharkSpawner`
+  aceptan ahora una `direction` opcional (antes siempre al azar 50/50);
+  `Zone1LevelEntry` la expone para el nivel scripteado. El tramo entre los
+  cúmulos de offset 7680 y 9920 (el más despejado del Tramo 1, ya tenía un
+  único tiburón sin ningún otro peligro cerca) pasa a tener dos, uno con
+  `direction: 1` y otro `direction: -1`. Verificado leyendo
+  `body.velocity.x` tras un tick: signos opuestos, tal como se pidió.
+- **Animación más visible en el erizo** — pedido explícito: "el erizo que
+  tenga animación tmb". El bamboleo vertical que ya tenía (`BOB_AMPLITUDE`
+  de solo 5px) era casi imperceptible a su escala; se añadió un pulso de
+  escala leve (±6%, mismo criterio que la respiración de los corales) que
+  reescala el `StaticBody` en la misma proporción cada frame para que la
+  hitbox nunca se desincronice del dibujo (el bug que ya se arregló una
+  vez para medusa/erizo, #57). La medusa (`Jellyfish.ts`) ya tenía bastante
+  animación de fábrica (4 patrones de deriva + pulso de campana + balanceo
+  + parpadeo) — no se tocó, se lo señalo al usuario por si se refería a
+  otra cosa. Verificado midiendo `body.width`/`scaleX` en dos instantes:
+  el ratio coincide exactamente, la hitbox sigue el pulso.
+- **Erizos en línea más separados** — pedido explícito: "ponerlo un poco
+  más separado del otro cuando están en línea que siguen muy juntos". El
+  combo de 3 erizos (offset 4320, antes x=120/290/460, gap de 170px) dejaba
+  solo ~26px de borde visible libre entre uno y el siguiente a
+  `URCHIN_SCALE=0.17`; ahora x=100/300/500 (gap 200px) sube ese margen a
+  ~56px. Mismo ensanche proporcional en el combo de 2 erizos (offset
+  17440): x=220/470 → x=200/490.
+  - Verificado: `npx tsc --noEmit` limpio, playtest automático completa el
+    recorrido sin errores, build de producción real
+    (`GITHUB_PAGES=true vite build`) incluye los 2 PNGs de roca nuevos.
 
 # PENDIENTE
 
@@ -1179,10 +1241,12 @@ que se cerraron)
 
 # PRÓXIMA TAREA
 
-Esperar la reacción del usuario a esta ronda (hueco lateral arreglado de
-raíz con `edgeFlush`, respiración leve en las piezas de coral, acentos de
-fondo nuevos en las 4 plantillas) probada en su móvil real. Según lo que
-diga:
+Esperar la reacción del usuario a esta ronda (variedad de rocas/corales en
+la pared lateral, dos tiburones a la inversa, animación del erizo,
+erizos en línea más separados) probada en su móvil real. Ojo especial a si
+la medusa "sin tocar" (ver EN PROGRESO) era realmente lo que pedía o se
+refería a otra cosa — no se tocó porque ya tenía animación real de fábrica.
+Según lo que diga:
 - Si el arrecife ya "se siente terminado": retomar el roadmap normal —
   Tramo 2 en adelante, variaciones de esqueleto, Zona 2.
 - Si sigue faltando algo puntual: pedir que describa el momento exacto

@@ -124,6 +124,55 @@ function edgeRotation(side: Side): number {
   return side === "left" ? Math.PI / 2 : -Math.PI / 2;
 }
 
+// Pedido explícito: "crea diferentes estilos de rocas... de distintos
+// tamaños, más largas tmb pueden ser y haz lo mismo con los corales" — la
+// pieza pegada al borde ya no es SIEMPRE reef_boulder_rock: cada uso de
+// `wallPiece()` elige al azar entre rocas (2 estilos nuevos, ver
+// docs/style_anchors.md) y los 4 corales rama (mismo criterio de "base es
+// la de abajo" que ya tenía la roca — edgeRotation gira el sprite entero,
+// así que la base de fábrica de cualquier pieza queda contra el lateral,
+// sin necesidad de flipX).
+interface WallPieceOption {
+  key: string;
+  /** Multiplicador sobre el `scale` que pide cada plantilla — no todas las
+   * texturas tienen la misma proporción nativa (medido en el PNG real), así
+   * que un `scale` crudo compartido las dejaría de tamaños muy distintos.
+   * `reef_rock_slab` es la excepción a propósito: su recorte real mide casi
+   * el doble de ancho que el resto (1090px vs ~650-700px) — bajarlo del
+   * todo a 1 la haría ocupar casi toda la banda vertical del cúmulo, así
+   * que se reduce a 0.6 y aun así queda claramente más larga y baja que las
+   * demás, la variedad "más larga" que pidió el usuario sin dominar la
+   * composición. */
+  sizeMul: number;
+}
+
+const WALL_PIECE_POOL: WallPieceOption[] = [
+  { key: "reef_boulder_rock", sizeMul: 1 },
+  { key: "reef_rock_smooth", sizeMul: 1.15 },
+  { key: "reef_rock_slab", sizeMul: 0.6 },
+  { key: "reef_coral_branch", sizeMul: 1 },
+  { key: "reef_branch_straight", sizeMul: 0.85 },
+  { key: "reef_branch_hook", sizeMul: 0.85 },
+  { key: "reef_branch_short", sizeMul: 1 },
+];
+
+/** Pieza "de pared" pegada a ras del borde del mundo (ver `edgeFlush` en
+ * ReefCluster.ts) — sustituye a los usos fijos de `reef_boulder_rock` en
+ * las 4 plantillas, eligiendo al azar entre todo `WALL_PIECE_POOL` cada
+ * vez que se llama. */
+function wallPiece(side: Side, y: number, baseScale: number): ReefPieceSpec {
+  const option = Phaser.Utils.Array.GetRandom(WALL_PIECE_POOL);
+  return piece({
+    key: option.key,
+    x: 0,
+    edgeFlush: side,
+    y,
+    scale: baseScale * option.sizeMul,
+    rotation: edgeRotation(side),
+    role: "obstacle",
+  });
+}
+
 // Convierte una posición relativa a un borde (0 = pegado al borde, hacia
 // dentro conforme crece el valor) a coordenada absoluta de mundo, según el
 // lado — pedido explícito del usuario: "LOS OBSTACULOS DE LOS LATERALES
@@ -156,15 +205,7 @@ function diagonalLeft(worldWidth: number, centerY: number): ReefClusterSpec {
   const branchKey1 = pickBranch();
   const branchX = fromEdge(worldWidth, "left", 0.23);
   const pieces: ReefPieceSpec[] = [
-    piece({
-      key: "reef_boulder_rock",
-      x: 0,
-      edgeFlush: "left",
-      y: centerY + 160,
-      scale: 0.4,
-      rotation: edgeRotation("left"),
-      role: "obstacle",
-    }),
+    wallPiece("left", centerY + 160, 0.4),
     piece({
       key: branchKey1,
       x: branchX,
@@ -208,15 +249,7 @@ function centerTwoPaths(worldWidth: number, centerY: number): ReefClusterSpec {
   const branchKey1 = pickBranch();
   const branchX = fromEdge(worldWidth, "right", 0.22);
   const pieces: ReefPieceSpec[] = [
-    piece({
-      key: "reef_boulder_rock",
-      x: 0,
-      edgeFlush: "left",
-      y: centerY + 50,
-      scale: 0.42,
-      rotation: edgeRotation("left"),
-      role: "obstacle",
-    }),
+    wallPiece("left", centerY + 50, 0.42),
     piece({
       key: branchKey1,
       x: branchX,
@@ -266,15 +299,7 @@ function sCurveEdges(worldWidth: number, centerY: number): ReefClusterSpec {
 
   const pieces: ReefPieceSpec[] = [
     // Banda superior: entra por la izquierda.
-    piece({
-      key: "reef_boulder_rock",
-      x: 0,
-      edgeFlush: "left",
-      y: topY,
-      scale: 0.38,
-      rotation: edgeRotation("left"),
-      role: "obstacle",
-    }),
+    wallPiece("left", topY, 0.38),
 
     // Banda media: entra por la derecha — espejada (ver BRANCH_VARIANTS),
     // para que la parte con coral quede pegada al borde.
@@ -293,17 +318,9 @@ function sCurveEdges(worldWidth: number, centerY: number): ReefClusterSpec {
     piece({ key: "sponge", x: fromEdge(worldWidth, "right", 0.1), y: topY - 100, scale: 0.24, role: "obstacle" }),
 
     // Banda inferior: entra por la izquierda otra vez — el "distinto
-    // alcance" respecto a la superior ahora lo da la decoración (la roca
-    // en sí va pegada al borde en ambas, ver edgeX).
-    piece({
-      key: "reef_boulder_rock",
-      x: 0,
-      edgeFlush: "left",
-      y: bottomY,
-      scale: 0.34,
-      rotation: edgeRotation("left"),
-      role: "obstacle",
-    }),
+    // alcance" respecto a la superior ahora lo da la decoración (la pieza
+    // de pared en sí va pegada al borde en ambas, ver wallPiece/edgeFlush).
+    wallPiece("left", bottomY, 0.34),
     // Balanos pegados al fondo de la banda — mismo lado que el cúmulo
     // inferior pero bien por debajo, no encima.
     piece({ key: "barnacle", x: fromEdge(worldWidth, "left", 0.3), y: bottomY + 110, scale: 0.22, role: "obstacle" }),
@@ -341,18 +358,11 @@ function lateralWall(worldWidth: number, centerY: number): ReefClusterSpec {
   const wallBranchKey = pickBranch();
 
   const pieces: ReefPieceSpec[] = [
-    // Pedido explícito del usuario: girar la roca 90º según el lado para
-    // que su parte plana quede pegada al lateral, a ras del borde real sin
-    // hueco (ver edgeFlushX en ReefCluster.ts).
-    piece({
-      key: "reef_boulder_rock",
-      x: 0,
-      edgeFlush: side,
-      y: centerY + 150,
-      scale: 0.46,
-      rotation: side === "left" ? Math.PI / 2 : -Math.PI / 2,
-      role: "obstacle",
-    }),
+    // Pedido explícito del usuario: girar la pieza 90º según el lado para
+    // que su base quede pegada al lateral, a ras del borde real sin hueco
+    // (ver edgeFlushX en ReefCluster.ts) — y variedad de estilo/tamaño
+    // entre rocas y corales (ver wallPiece/WALL_PIECE_POOL).
+    wallPiece(side, centerY + 150, 0.46),
     // Pedido explícito del usuario: al salir por la derecha hay que
     // espejar la rama (flipX) para que la parte con coral quede pegada al
     // borde y la parte lisa apunte hacia el interior, igual que por la

@@ -56,6 +56,7 @@ export class Shark {
     private readonly worldWidth: number,
     private readonly canChase: boolean,
     private readonly getLumiPosition: () => { x: number; y: number },
+    forcedDirection?: 1 | -1,
   ) {
     this.sprite = scene.physics.add.image(x, y, "shark");
     this.sprite.setScale(scale);
@@ -81,8 +82,11 @@ export class Shark {
     this.baseScaleY = scale;
     this.phase = Phaser.Math.FloatBetween(0, Math.PI * 2);
     // El arte mira hacia la izquierda por defecto: moverse a la derecha
-    // necesita flip.
-    this.direction = Math.random() < 0.5 ? 1 : -1;
+    // necesita flip. Pedido explícito: "poner dos tiburones seguidos...
+    // que los dos patrullen pero vayan a la inversa" — cuando se fuerza una
+    // dirección (ver SharkSpawner.spawnExact) se respeta esa en vez de
+    // tirar la moneda al azar.
+    this.direction = forcedDirection ?? (Math.random() < 0.5 ? 1 : -1);
     this.sprite.setFlipX(this.direction === 1);
     this.sprite.setVelocityX(SHARK_PATROL_SPEED * this.direction);
   }

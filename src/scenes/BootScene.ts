@@ -122,6 +122,13 @@ export class BootScene extends Phaser.Scene {
     this.load.image("sponge", assetPath("/objects/reef/sponge.png"));
     this.load.image("barnacle", assetPath("/objects/reef/barnacle.png"));
     this.load.image("giant_clam", assetPath("/objects/reef/giant_clam.png"));
+    // Pedido explícito: "crea diferentes estilos de rocas... de distintos
+    // tamaños, más largas tmb pueden ser" — más variedad para la pieza de
+    // pared lateral (antes SIEMPRE reef_boulder_rock, ver ReefTemplates.ts
+    // WALL_PIECE_POOL). Mismas anclas de estilo (boulder_rock + rocks_back)
+    // para mantener la paleta piedra gris-lavanda + musgo + acento de coral.
+    this.load.image("reef_rock_slab", assetPath("/objects/reef/rock_slab.png"));
+    this.load.image("reef_rock_smooth", assetPath("/objects/reef/rock_boulder_smooth.png"));
     // Parpadeo: arte de verdad (ojos cerrados) generado con Gemini a partir
     // de cada sprite base, ver systems/BlinkTimer — nunca un Graphics
     // dibujado por código.

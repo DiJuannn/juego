@@ -45,12 +45,14 @@ export class SharkSpawner {
 
   /** Colocación exacta desde el nivel scripteado del Tramo 1 (ver
    * Zone1Level.ts) — sin la comprobación de descanso, que es solo para la
-   * generación al azar de más arriba. */
-  spawnExact(y: number, x?: number) {
-    this.place(y, x);
+   * generación al azar de más arriba. `direction` opcional: pedido
+   * explícito del usuario para poder forzar dos tiburones seguidos
+   * patrullando en sentidos opuestos, en vez de dejarlo al azar. */
+  spawnExact(y: number, x?: number, direction?: 1 | -1) {
+    this.place(y, x, direction);
   }
 
-  private place(y: number, x?: number) {
+  private place(y: number, x?: number, direction?: 1 | -1) {
     const scale = SHARK_SCALE * Phaser.Math.FloatBetween(0.9, 1.1);
     const finalX = x ?? Phaser.Math.Between(this.worldWidth * 0.3, this.worldWidth * 0.7);
     // Radio local alrededor del punto de aparición, recortado a los bordes
@@ -63,7 +65,18 @@ export class SharkSpawner {
     // cerca del final de la Zona 1 pueden lanzar la persecución puntual —
     // los primeros que ve el jugador se quedan en patrulla simple.
     const canChase = START_Y - y >= SHARK_CHASE_MIN_OFFSET;
-    const shark = new Shark(this.scene, finalX, y, scale, minX, maxX, this.worldWidth, canChase, this.getLumiPosition);
+    const shark = new Shark(
+      this.scene,
+      finalX,
+      y,
+      scale,
+      minX,
+      maxX,
+      this.worldWidth,
+      canChase,
+      this.getLumiPosition,
+      direction,
+    );
     this.group.add(shark.sprite);
     this.sharks.push(shark);
     if (y < this.highestY) this.highestY = y;

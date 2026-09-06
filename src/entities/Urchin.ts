@@ -3,6 +3,12 @@ import { BlinkTimer } from "@/systems/BlinkTimer";
 
 const BOB_AMPLITUDE = 5;
 const BOB_SPEED = 0.35;
+// Pedido explícito: "el erizo que tenga animación tmb" — el bamboleo de
+// BOB_AMPLITUDE era casi imperceptible a este tamaño. Añade un pulso de
+// escala leve (las púas "respiran") con el mismo criterio que la medusa/
+// los corales: nunca mover el dibujo sin mover la hitbox con él.
+const BREATHE_AMPLITUDE = 0.06;
+const BREATHE_SPEED = 1.1;
 
 /**
  * Cuarto enemigo: un erizo de mar. A diferencia de la medusa (deriva) o el
@@ -13,6 +19,7 @@ const BOB_SPEED = 0.35;
 export class Urchin {
   readonly sprite: Phaser.Physics.Arcade.Image;
   private baseY: number;
+  private baseScale: number;
   private phase: number;
   private readonly blinkTimer = new BlinkTimer();
   private isBlinking = false;
@@ -34,15 +41,28 @@ export class Urchin {
       .setOffset(220 * scale, 162 * scale);
 
     this.baseY = y;
+    this.baseScale = scale;
     this.phase = Phaser.Math.FloatBetween(0, Math.PI * 2);
   }
 
   /** Mismo motivo que Jellyfish.update(): un StaticBody no sigue sprite.x/y
    * asignado a mano, hay que reposicionar el body explícitamente con
-   * reset() aunque aquí el bamboleo sea pequeño. */
+   * reset() aunque aquí el bamboleo sea pequeño. El pulso de escala
+   * también reescala el body en la misma proporción (igual que el
+   * "respirar" de ReefCluster) para que la hitbox nunca se desincronice
+   * del dibujo. */
   update(time: number) {
-    const y = this.baseY + Math.sin((time / 1000) * BOB_SPEED + this.phase) * BOB_AMPLITUDE;
-    (this.sprite.body as Phaser.Physics.Arcade.StaticBody).reset(this.sprite.x, y);
+    const t = time / 1000;
+    const y = this.baseY + Math.sin(t * BOB_SPEED + this.phase) * BOB_AMPLITUDE;
+    const pulse = 1 + Math.sin(t * BREATHE_SPEED + this.phase) * BREATHE_AMPLITUDE;
+    this.sprite.setScale(this.baseScale * pulse);
+
+    const body = this.sprite.body as Phaser.Physics.Arcade.StaticBody;
+    body.setSize(406 * this.baseScale * pulse, 355 * this.baseScale * pulse).setOffset(
+      220 * this.baseScale * pulse,
+      162 * this.baseScale * pulse,
+    );
+    body.reset(this.sprite.x, y);
 
     // Parpadeo: arte de verdad (urchin_blink.png, generado con Gemini a
     // partir de este mismo sprite), no un Graphics dibujado por código.
