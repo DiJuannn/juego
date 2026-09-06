@@ -3,6 +3,10 @@ import {
   BOOST_BASE_SPEED,
   BOOST_DURATION_MS,
   BOOST_EASE_MS,
+  DASH_COOLDOWN_MS,
+  DASH_DURATION_MS,
+  DASH_EASE_MS,
+  DASH_SPEED,
   LILY_PAD_BOOST_MULT,
   LUMI_DRIFT_SPEED,
   LUMI_SCALE,
@@ -21,7 +25,8 @@ type LumiState =
   | "swim_up_right"
   | "swim_up_left"
   | "swim_down_right"
-  | "swim_down_left";
+  | "swim_down_left"
+  | "dash";
 
 /**
  * Envuelve el sprite físico de Lumi y decide qué animación reproducir
@@ -38,6 +43,11 @@ export class Lumi {
   private knockbackRemainingMs = 0;
   private knockbackVX = 0;
   private knockbackVY = 0;
+  private dashRemainingMs = 0;
+  private dashCooldownRemainingMs = 0;
+  private dashDirX = 0;
+  private dashDirY = 0;
+  private dashAngle = 0;
 
   constructor(private scene: Phaser.Scene, x: number, y: number) {
     this.sprite = scene.physics.add.sprite(x, y, frameKey("idle", 1));
@@ -94,12 +104,46 @@ export class Lumi {
     this.knockbackVY = vy;
   }
 
+  /** Dash (pedido explícito: "si haces dos veces una misma dirección hace
+   * un Dash hacia esa dirección") — ignora la petición si ya está en
+   * cooldown (dashCooldownRemainingMs cubre tanto el propio Dash como el
+   * respiro posterior, ver DASH_COOLDOWN_MS). Dirección fija normalizada
+   * durante todo el Dash, igual que el boost del nenúfar no se puede
+   * redirigir a medio impulso. */
+  triggerDash(direction: DirectionVector) {
+    if (this.dashCooldownRemainingMs > 0) return;
+    const vec = new Phaser.Math.Vector2(direction.x, direction.y).normalize();
+    this.dashDirX = vec.x;
+    this.dashDirY = vec.y;
+    // El arte de "dash" apunta hacia arriba en su rotación nativa (0) —
+    // atan2(y,x) da 0 apuntando a la derecha y -90° apuntando arriba, así
+    // que hay que sumar 90° para que "arriba" quede en 0 y el resto rote
+    // relativo a eso (ver Lumi.ts / entities/SeaDragon.ts para la misma
+    // trigonometría de rotación aplicada a otro sprite).
+    this.dashAngle = Math.atan2(vec.y, vec.x) + Math.PI / 2;
+    this.dashRemainingMs = DASH_DURATION_MS;
+    this.dashCooldownRemainingMs = DASH_DURATION_MS + DASH_COOLDOWN_MS;
+  }
+
   update(direction: DirectionVector, deltaMs: number) {
     const body = this.sprite.body as Phaser.Physics.Arcade.Body;
+
+    if (this.dashCooldownRemainingMs > 0) {
+      this.dashCooldownRemainingMs -= deltaMs;
+    }
 
     if (this.knockbackRemainingMs > 0) {
       this.knockbackRemainingMs -= deltaMs;
       body.setVelocity(this.knockbackVX, this.knockbackVY);
+      return;
+    }
+
+    if (this.dashRemainingMs > 0) {
+      this.dashRemainingMs -= deltaMs;
+      const easeFactor = this.dashRemainingMs < DASH_EASE_MS ? Math.max(this.dashRemainingMs, 0) / DASH_EASE_MS : 1;
+      const dashSpeed = DASH_SPEED * (0.5 + 0.5 * easeFactor);
+      body.setVelocity(this.dashDirX * dashSpeed, this.dashDirY * dashSpeed);
+      this.setState("dash");
       return;
     }
 
@@ -163,7 +207,17 @@ export class Lumi {
     // diseño sino corregir una inconsistencia real del asset.
     this.sprite.setScale(Lumi.isSideSwim(next) ? LUMI_SCALE * SWIM_SIDE_SCALE_CORRECTION : LUMI_SCALE);
 
+    // Todas las poses normales usan flip (nunca rotación) — solo "dash"
+    // rota el sprite para apuntar a las 8 direcciones (ver triggerDash),
+    // así que cualquier otra transición debe devolver la rotación a 0 o se
+    // quedaría heredada de un Dash anterior.
+    this.sprite.setRotation(next === "dash" ? this.dashAngle : 0);
+
     switch (next) {
+      case "dash":
+        this.sprite.setFlip(false, false);
+        this.sprite.play("dash");
+        break;
       case "idle":
         this.sprite.setFlip(false, false);
         this.sprite.play("idle");

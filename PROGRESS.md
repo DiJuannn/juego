@@ -2345,6 +2345,89 @@ funciona **hoy**, verificado en el código — no lo que el diseño aspira a ten
     asset" es `water_overlay.png`, preexistente y ajeno a esta ronda).
     `npx tsc --noEmit` y build de producción limpios, con los 30 PNG
     nuevos/renumerados empaquetados en `dist/characters/lumi/`.
+- **Dragón marino: TERCERA corrección — una sola pieza, sin recortar**
+  (pedido explícito: "Me entendiste mal, que el dragón vaya lateralmente
+  y en horizontal pero no lo recortes, que ESTE COMPLETO y el nado sea
+  muy fluido. QUE VAYA LATERALMENTE TAPANDO TODO PERO SIEMPRE QUE DEJE UN
+  ESPACIO POR DONDE PASAR"). La versión anterior (cuerpo+cola como dos
+  sprites separados por un hueco fijo) seguía leyéndose como "cortada" —
+  el usuario quería la ilustración ENTERA como una sola pieza. Reconstruida
+  `sea_dragon.png` (768x1344) apilando verticalmente los dos recortes que
+  existían (`sea_dragon_body.png` + `sea_dragon_tail.png`, cortados sin
+  solape en el punto exacto de unión, así que la reconstrucción es
+  pixel-perfecta y sin costura visible) — ambos archivos viejos borrados.
+  `entities/SeaDragon.ts` reescrito de cero: UN solo `Phaser.Physics.Arcade.Image`
+  en vez de dos, misma trigonometría de rotación (`rotatedAabb`/
+  `rotatePoint`, ya documentada en ReefCluster.ts) pero sobre el bbox
+  completo. El "espacio para pasar" ya no es un recorte del propio
+  dragón: `SEA_DRAGON_SCALE` se eligió (0.38) para que la longitud
+  renderizada (1344×0.38≈511px) quede por debajo de `WORLD_WIDTH` (690px)
+  con un margen de ~180px — el mismo espacio de antes, pero ahora
+  GARANTIZADO por geometría (longitud fija < ancho del mundo) en vez de
+  por un hueco recortado a mano. "El nado sea muy fluido": con una sola
+  pieza no hay forma de animar un latigazo de cola independiente, así que
+  se combinaron dos oscilaciones simples desfasadas (vaivén de rotación +
+  balanceo vertical a otra frecuencia, `SEA_DRAGON_SWAY_*`/`BOB_*` en
+  GameConfig.ts) — se lee como un movimiento bastante más orgánico que
+  una sola oscilación.
+  - Verificado en juego con Playwright: capturas confirmando el cuerpo
+    ENTERO visible sin ningún corte (cabeza, cuello, torso serpenteante y
+    la cola enroscada, todo de una pieza), `sprite.rotation`/`.y`
+    oscilando dentro de los rangos esperados (vaivén ±0.12 rad, balanceo
+    ±14px), y colisión letal confirmada de nuevo (mensaje "¡Un dragón
+    marino te ha atrapado!"). `npx tsc --noEmit` y build de producción
+    limpios, con `sea_dragon.png` empaquetado.
+- **Nuevo movimiento: Dash (doble pulsación de dirección)** (pedido
+  explícito: "si haces dos veces una misma dirección hace un Dash hacia
+  esa dirección, entonces hay que agregarle como un Sprite animado de él
+  haciendo el Dash"). Mecánica nueva de punta a punta:
+  - **Detección** (`InputController.ts`): registra CUÁNDO empieza cada
+    pulsación/deslizamiento nuevo (el flanco de bajada, no que se
+    mantenga pulsado) — si la misma dirección vuelve a empezar dentro de
+    `DASH_DOUBLE_TAP_WINDOW_MS` (350ms), cuenta como doble toque. En
+    teclado son las 4 teclas cardinales (flechas/WASD); en táctil,
+    cualquiera de los 8 deslizamientos ya reconocidos por el dial
+    existente. `consumeDash()` entrega la petición una vez por frame,
+    igual que `getVector()`.
+  - **Movimiento** (`Lumi.ts`): `triggerDash()` fija una dirección
+    normalizada durante `DASH_DURATION_MS` (280ms) a `DASH_SPEED`
+    (2.2× la velocidad normal de nado) con una rebajada final suave
+    (`DASH_EASE_MS`) — misma estructura que el impulso del nenúfar. Un
+    `dashCooldownRemainingMs` (dash + `DASH_COOLDOWN_MS` extra) evita
+    encadenar dashes sin parar con una ráfaga de dobles toques.
+  - **Sprite nuevo**: pose de Dash generada con Gemini (NO interpolada de
+    ninguna existente) — Lumi estirada como una flecha/torpedo, brazos
+    pegados al cuerpo, cola recta y rígida, con líneas de velocidad y
+    burbujas comprimidas, vista diagonal desde atrás (mismo ángulo que
+    swim_up). 3 frames (vibración sutil de cola/estela por la velocidad)
+    a 20 FPS — pedido explícito: "tenlo en cuenta tmb para los sprites
+    animados", el mismo criterio de "varios frames = fluido" de la ronda
+    anterior aplicado aquí desde el principio, no como retoque posterior.
+    Verificado con blend 50% entre los 3 frames: cabeza/cuerpo alineados,
+    sin fantasma.
+  - **Orientación por rotación, no por flip**: a diferencia de las poses
+    de nado (que usan flips + arte propio por eje), el Dash es UNA sola
+    pose que se ROTA por código (`sprite.setRotation`, misma trigonometría
+    que SeaDragon.ts) para apuntar a las 8 direcciones — posible porque la
+    pose está dibujada como un torpedo relativamente simétrico alrededor
+    de su eje de avance. Compromiso consciente: en la dirección "abajo"
+    (rotación 180°) el personaje queda boca abajo respecto a su pose
+    normal — se lee igual como "lanzándose rápido hacia abajo" pero es
+    la orientación menos perfecta de las 8, a diferencia de arriba/
+    derecha/izquierda que leen limpiamente. Si no convence, la solución
+    sería un segundo frame dedicado para el eje vertical, mismo criterio
+    que swim_right/swim_up ya tienen arte separado en vez de compartir
+    por rotación.
+  - Verificado en juego con Playwright: doble toque en las 4 direcciones
+    cardinales dispara el Dash con la velocidad/duración/rotación
+    correctas (velocidad pico exacta = `DASH_SPEED`, con la rebajada
+    final visible en el muestreo), un solo toque NO dispara nada, dos
+    direcciones DISTINTAS seguidas no cuentan como doble toque, un doble
+    toque más lento que la ventana tampoco — y tras terminar, vuelve
+    limpiamente al estado normal (idle o nado según el input del momento,
+    sin quedarse pegado en "dash"). Capturas confirmando la pose/rotación
+    en las 4 direcciones cardinales. `npx tsc --noEmit` y build de
+    producción limpios, con los 3 PNG de dash empaquetados.
 
 # PENDIENTE
 
@@ -2409,30 +2492,36 @@ avanzando)
 
 # PRÓXIMA TAREA
 
-Esperar la reacción del usuario a dos rondas seguidas:
+Esperar la reacción del usuario a tres rondas seguidas:
 
-1. **Dragón marino corregido** (horizontal, cuerpo entero sin cortar,
-   hueco solo antes de la cola, vaivén de cuerpo + latigazo de cola).
-   Verificado en juego que la orientación, el hueco y la animación se
-   comportan como se pidió (capturas, muestreo de ángulos y posición,
-   colisión letal), pero igual que con la primera versión, no se pudo
-   confirmar por captura automatizada si el TIMING real de cronometrar el
-   hueco (velocidad de deslizamiento, frecuencia de aparición) se siente
-   bien jugado a mano — pedir confirmación de juego real antes de ajustar
-   velocidad/tamaño del hueco.
+1. **Dragón marino, TERCERA corrección** (ahora una sola pieza sin
+   cortar, longitud fija menor que WORLD_WIDTH para garantizar espacio
+   libre por geometría, vaivén + balanceo vertical para el nado). Las dos
+   rondas anteriores del dragón NO acertaron lo que el usuario pedía a la
+   primera — la más reciente corrige explícitamente "no lo recortes, que
+   ESTE COMPLETO". Verificado en juego que el cuerpo se ve entero sin
+   ningún corte y que la animación/colisión funcionan, pero dado el
+   historial de esta función concreta, prestar especial atención a la
+   próxima reacción del usuario antes de dar esto por cerrado.
 2. **Lumi: idle/swim_right/swim_up/swim_diagonal con el doble de frames**
-   (3→6 y 4→8). Verificado programáticamente que las 4 animaciones
-   reproducen el número de frames correcto, en el orden correcto, a 16
-   FPS (el doble de antes, así que el ciclo dura lo mismo en tiempo real)
-   y sin fantasma de cabeza duplicada en ningún blend de la cadena — pero
-   "se siente más fluido de verdad" es inherentemente subjetivo y solo se
-   puede confirmar jugando de verdad, igual que con el resto de
-   animaciones de este proyecto. `sleep` se dejó explícitamente FUERA de
-   esta ronda (sigue en 3 frames/8 FPS) — es una animación poco visible
-   (solo dispara por inactividad) y no se quiso gastar presupuesto de
-   generación ahí sin que el usuario lo pida; si el usuario también la
-   quiere más fluida, es la misma receta (frames intermedios + doblar
-   FPS) aplicada a una carpeta más.
+   (3→6 y 4→8, ronda anterior a esta). Verificado programáticamente que
+   las 4 animaciones reproducen el número de frames correcto a 16 FPS y
+   sin fantasma de cabeza duplicada — pero "se siente más fluido de
+   verdad" es inherentemente subjetivo. `sleep` se dejó fuera a propósito.
+3. **Dash nuevo (doble pulsación de dirección)**. Mecánica verificada a
+   fondo por Playwright (velocidad/duración/rotación exactas, cooldown,
+   rechazo correcto de toques simples/direcciones distintas/dobles toques
+   lentos, vuelta limpia al estado normal) y sprite nuevo de 3 frames
+   verificado sin fantasma — pero quedan dos cosas que solo el usuario
+   puede juzgar jugando de verdad: (a) si `DASH_DOUBLE_TAP_WINDOW_MS`
+   (350ms), `DASH_SPEED` (2.2×) y `DASH_COOLDOWN_MS` (400ms) SE SIENTEN
+   bien (una ventana de doble toque muy corta puede costar de ejecutar a
+   propósito; una muy larga puede disparar dashes sin querer durante un
+   cambio de dirección normal); (b) la pose rotada se lee bien en
+   arriba/derecha/izquierda pero queda "boca abajo" en la dirección
+   "abajo" (compromiso documentado en EN PROGRESO) — si el usuario lo
+   nota raro, la solución es un frame dedicado para el eje vertical en
+   vez de compartir por rotación.
 
 Si el usuario sigue viendo algo "cuadrado" en las paredes de laberinto de
 una ronda anterior,

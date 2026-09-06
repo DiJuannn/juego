@@ -7,12 +7,10 @@ const SPAWN_LOOKAHEAD = 900;
 const DESPAWN_MARGIN = 1200;
 
 /**
- * Decimotercer enemigo (pedido explícito: "un dragón marino Largo que
- * vaya... de lado a lado, pero que salga del mapa y reaparezca la otra
- * parte en el otro lateral... que deje un hueco justo para que pase Lumi
- * por ahí"), ver entities/SeaDragon.ts. Mismo patrón de reciclado que el
- * resto de spawners de animal — la única diferencia es que cada instancia
- * son DOS sprites (cuerpo/cola) que hay que añadir/quitar juntos.
+ * Decimotercer enemigo (ver entities/SeaDragon.ts para el historial de
+ * correcciones). Mismo patrón de reciclado que el resto de spawners de
+ * animal — ahora cada instancia es UN solo sprite (la ilustración
+ * completa, sin cortar).
  */
 export class SeaDragonSpawner {
   readonly group: Phaser.Physics.Arcade.StaticGroup;
@@ -45,8 +43,7 @@ export class SeaDragonSpawner {
     // phaseDistance en SeaDragon) — el startX real es irrelevante, update()
     // lo recalcula desde el primer frame.
     const dragon = new SeaDragon(this.scene, this.worldWidth / 2, y, SEA_DRAGON_SCALE, this.worldWidth);
-    this.group.add(dragon.bodySprite);
-    this.group.add(dragon.tailSprite);
+    this.group.add(dragon.sprite);
     this.dragons.push(dragon);
     if (y < this.highestY) this.highestY = y;
   }
@@ -58,9 +55,8 @@ export class SeaDragonSpawner {
     }
 
     this.dragons = this.dragons.filter((dragon) => {
-      if (dragon.bodySprite.y > cameraBottomY + DESPAWN_MARGIN) {
-        this.group.remove(dragon.bodySprite, false, false);
-        this.group.remove(dragon.tailSprite, false, false);
+      if (dragon.sprite.y > cameraBottomY + DESPAWN_MARGIN) {
+        this.group.remove(dragon.sprite, false, false);
         dragon.destroy();
         return false;
       }

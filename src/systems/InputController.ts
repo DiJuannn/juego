@@ -1,4 +1,5 @@
 import Phaser from "phaser";
+import { DASH_DOUBLE_TAP_WINDOW_MS } from "@/config/GameConfig";
 
 export interface DirectionVector {
   x: number;
@@ -90,6 +91,23 @@ export class InputController {
   private resolvedThisTouch = false;
   private flash: Flash | null = null;
 
+  // Dash (pedido explícito: "si haces dos veces una misma dirección hace
+  // un Dash hacia esa dirección"). Se detecta por separado de
+  // lockedDirection/getVector: aquí solo se registra CUÁNDO empezó cada
+  // pulsación/deslizamiento nuevo (el flanco de bajada, no que se
+  // mantenga pulsado) — si la misma dirección vuelve a empezar dentro de
+  // DASH_DOUBLE_TAP_WINDOW_MS, es un doble toque. `dashRequest` queda a la
+  // espera de ser consumido una vez por PondScene (ver consumeDash()).
+  private readonly lastCardinalPressAt: Record<"up" | "down" | "left" | "right", number> = {
+    up: -Infinity,
+    down: -Infinity,
+    left: -Infinity,
+    right: -Infinity,
+  };
+  private lastSwipeDirection: DirectionVector | null = null;
+  private lastSwipeAt = -Infinity;
+  private dashRequest: DirectionVector | null = null;
+
   constructor(private readonly scene: Phaser.Scene) {
     const keyboard = scene.input.keyboard;
     this.cursors = keyboard ? keyboard.createCursorKeys() : null;
@@ -104,7 +122,36 @@ export class InputController {
     scene.input.on("pointerup", this.handlePointerUp, this);
     scene.input.on("pointerupoutside", this.handlePointerUp, this);
 
+    if (keyboard) {
+      keyboard.on("keydown-UP", () => this.handleCardinalPress("up", 0, -1));
+      keyboard.on("keydown-W", () => this.handleCardinalPress("up", 0, -1));
+      keyboard.on("keydown-DOWN", () => this.handleCardinalPress("down", 0, 1));
+      keyboard.on("keydown-S", () => this.handleCardinalPress("down", 0, 1));
+      keyboard.on("keydown-LEFT", () => this.handleCardinalPress("left", -1, 0));
+      keyboard.on("keydown-A", () => this.handleCardinalPress("left", -1, 0));
+      keyboard.on("keydown-RIGHT", () => this.handleCardinalPress("right", 1, 0));
+      keyboard.on("keydown-D", () => this.handleCardinalPress("right", 1, 0));
+    }
+
     scene.events.once(Phaser.Scenes.Events.SHUTDOWN, this.destroy, this);
+  }
+
+  private handleCardinalPress(key: "up" | "down" | "left" | "right", x: number, y: number) {
+    const now = this.scene.time.now;
+    if (now - this.lastCardinalPressAt[key] <= DASH_DOUBLE_TAP_WINDOW_MS) {
+      this.dashRequest = { x, y };
+      this.lastCardinalPressAt[key] = -Infinity;
+    } else {
+      this.lastCardinalPressAt[key] = now;
+    }
+  }
+
+  /** Consume la petición de Dash pendiente (si hay alguna) — se llama una
+   * vez por frame desde PondScene, igual que getVector(). */
+  consumeDash(): DirectionVector | null {
+    const request = this.dashRequest;
+    this.dashRequest = null;
+    return request;
   }
 
   private handlePointerDown(pointer: Phaser.Input.Pointer) {
@@ -123,6 +170,21 @@ export class InputController {
     this.lockedDirection = snapToDirection(dx, dy);
     this.resolvedThisTouch = true;
     this.flash = { x: pointer.x, y: pointer.y, angle: Math.atan2(dy, dx), startMs: this.scene.time.now };
+
+    // Mismo criterio de doble toque que el teclado, pero aquí la "misma
+    // dirección" es cualquiera de las 8 (el deslizamiento ya viene
+    // enganchado a una de ellas) — dos deslizamientos seguidos hacia el
+    // mismo lado dentro de la ventana cuentan como Dash.
+    const now = this.scene.time.now;
+    const same = this.lastSwipeDirection?.x === this.lockedDirection.x && this.lastSwipeDirection?.y === this.lockedDirection.y;
+    if (same && now - this.lastSwipeAt <= DASH_DOUBLE_TAP_WINDOW_MS) {
+      this.dashRequest = { ...this.lockedDirection };
+      this.lastSwipeDirection = null;
+      this.lastSwipeAt = -Infinity;
+    } else {
+      this.lastSwipeDirection = { ...this.lockedDirection };
+      this.lastSwipeAt = now;
+    }
   }
 
   private handlePointerUp(pointer: Phaser.Input.Pointer) {
@@ -181,6 +243,12 @@ export class InputController {
     this.scene.input.off("pointermove", this.handlePointerMove, this);
     this.scene.input.off("pointerup", this.handlePointerUp, this);
     this.scene.input.off("pointerupoutside", this.handlePointerUp, this);
+    const keyboard = this.scene.input.keyboard;
+    if (keyboard) {
+      for (const key of ["UP", "W", "DOWN", "S", "LEFT", "A", "RIGHT", "D"]) {
+        keyboard.off(`keydown-${key}`);
+      }
+    }
     this.graphics.destroy();
   }
 }

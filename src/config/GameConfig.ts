@@ -117,6 +117,22 @@ export const LILY_PAD_BOOST_DISTANCE =
 // cámara, se considera que ha caído del todo: game over.
 export const GAME_OVER_MARGIN = 200;
 
+// Dash (pedido explícito: "si haces dos veces una misma dirección hace un
+// Dash hacia esa dirección"). Detectado en InputController.ts (doble
+// pulsación de la misma tecla direccional, o doble deslizamiento hacia el
+// mismo lado en táctil, dentro de DASH_DOUBLE_TAP_WINDOW_MS) y aplicado en
+// Lumi.ts como un impulso de dirección fija, igual de estructura que el
+// boost del nenúfar (velocidad fija durante DASH_DURATION_MS con una
+// rebajada final suave).
+export const DASH_DOUBLE_TAP_WINDOW_MS = 350;
+export const DASH_SPEED = LUMI_SWIM_SPEED * 2.2;
+export const DASH_DURATION_MS = 280;
+export const DASH_EASE_MS = 90;
+// Tras terminar un Dash, cuánto hay que esperar antes de poder disparar
+// otro — evita encadenar dashes sin parar con una ráfaga de dobles
+// pulsaciones seguidas.
+export const DASH_COOLDOWN_MS = 400;
+
 // Medusas: primer enemigo, introducido "poco a poco" — mucho más
 // espaciadas que los nenúfares para que sea una amenaza ocasional, no una
 // pared de peligros.
@@ -313,36 +329,49 @@ export const BIG_FISH_PATROL_SPEED = 60;
 export const BIG_FISH_PUSH_STRENGTH = 300;
 export const BIG_FISH_PUSH_COOLDOWN_MS = 500;
 
-// Decimotercer enemigo (pedido explícito, con corrección posterior): "un
-// dragón marino Largo que vaya... de lado a lado, pero que salga del mapa
-// y reaparezca la otra parte en el otro lateral... que deje un hueco
-// justo para que pase Lumi por ahí" — "me confundí, que sea horizontal.
-// Y la separación sea de la cola nomas, no lo partas. Y hazlo animado
-// bien bueno". Cuerpo entero (cabeza+cuello+torso, sin cortar) orientado
-// en horizontal (nada de estar de pie) + la cola como pieza aparte
-// arrastrando detrás, con un hueco real entre torso y cola por donde
-// colarse — ver entities/SeaDragon.ts. Ambas piezas se deslizan juntas en
-// X sin parar — nunca rebota como el tiburón, envuelve de un lateral al
-// otro del MUNDO. Muy espaciado: es un obstáculo grande y de cronometraje
-// exigente, no debe aparecer seguido.
+// Decimotercer enemigo (pedido explícito, con DOS correcciones
+// posteriores): "un dragón marino Largo que vaya... de lado a lado, pero
+// que salga del mapa y reaparezca la otra parte en el otro lateral...
+// que deje un hueco justo para que pase Lumi por ahí" → "me confundí, que
+// sea horizontal. Y la separación sea de la cola nomas, no lo partas. Y
+// hazlo animado bien bueno" → "que el dragón vaya lateralmente y en
+// horizontal pero no lo recortes, que ESTE COMPLETO y el nado sea muy
+// fluido. QUE VAYA LATERALMENTE TAPANDO TODO PERO SIEMPRE QUE DEJE UN
+// ESPACIO POR DONDE PASAR". La versión de dos piezas (cuerpo+cola
+// separados por un hueco fijo) seguía leyéndose como "cortado" — ahora es
+// UN SOLO sprite entero (`sea_dragon.png`, la ilustración completa sin
+// ningún recorte) tumbado en horizontal, ver entities/SeaDragon.ts. El
+// "espacio por donde pasar" ya no es un hueco recortado en el propio
+// dragón: sale de que su longitud renderizada es DELIBERADAMENTE menor
+// que WORLD_WIDTH, así que en todo momento queda un tramo del mundo sin
+// cubrir en alguno de los dos lados (garantizado por geometría, no por
+// suerte — ver SEA_DRAGON_SCALE más abajo). Se desliza sin parar — nunca
+// rebota como el tiburón, envuelve de un lateral al otro del MUNDO. Muy
+// espaciado: es un obstáculo grande y de cronometraje exigente, no debe
+// aparecer seguido.
 export const SEA_DRAGON_MIN_GAP = 7000;
 export const SEA_DRAGON_MAX_GAP = 10000;
-export const SEA_DRAGON_SCALE = 0.36;
-// Hueco horizontal real entre el torso y la cola — más generoso que
-// CORAL_GAP_WIDTH (230, el carril libre de la pared angosta) porque aquí
-// encima hay que cronometrar CUÁNDO cruzar, no solo POR DÓNDE.
-export const SEA_DRAGON_GAP_WIDTH = 180;
+// El lienzo del arte mide 768x1344 — tumbado en horizontal (rotado 90°),
+// su longitud en pantalla es 1344*SEA_DRAGON_SCALE. Elegido para que esa
+// longitud quede WORLD_WIDTH menos ~180px (el mismo margen de "hueco para
+// colarse" que ya se usaba antes), así el espacio libre queda garantizado
+// por geometría en vez de por un recorte: 1344*0.38 ≈ 511px, sobre un
+// WORLD_WIDTH de 690px deja siempre al menos ~179px libres en un lateral.
+export const SEA_DRAGON_SCALE = 0.38;
 // Velocidad de deslizamiento horizontal (px/s) — lenta a propósito: da
-// tiempo real a leer por dónde va el hueco antes de que llegue.
+// tiempo real a leer por dónde queda el espacio libre antes de que llegue.
 export const SEA_DRAGON_SPEED = 70;
-// Animación (pedido explícito: "hazlo animado bien bueno") — el torso
-// ondula suave (como nadando de verdad) mientras la cola azota mucho más
-// marcado, como un latigazo, sujeta a la altura del hueco: no es solo un
-// giro estático plano.
-export const SEA_DRAGON_BODY_SWAY_AMPLITUDE = 0.08; // rad, ~4.6°
-export const SEA_DRAGON_BODY_SWAY_PERIOD_MS = 3400;
-export const SEA_DRAGON_TAIL_WAG_AMPLITUDE = 0.4; // rad, ~23°
-export const SEA_DRAGON_TAIL_WAG_PERIOD_MS = 800;
+// Animación (pedido explícito: "el nado sea muy fluido") — al ser ahora
+// una sola pieza no se puede animar un latigazo de cola independiente,
+// así que la fluidez viene de combinar un vaivén de rotación suave (como
+// nadando de verdad, todo el cuerpo se inclina) con un ligero balanceo
+// vertical a una frecuencia distinta (imita la propulsión ondulante real
+// de nadar) — dos oscilaciones simples desfasadas se leen como un
+// movimiento mucho más orgánico que una sola.
+export const SEA_DRAGON_SWAY_AMPLITUDE = 0.12; // rad, ~6.9°
+export const SEA_DRAGON_SWAY_PERIOD_MS = 2200;
+export const SEA_DRAGON_BOB_AMPLITUDE = 14; // px, balanceo vertical
+export const SEA_DRAGON_BOB_PERIOD_MS = 1100;
 
 // Coral estrecho: pedido explícito — un obstáculo plantado que solo deja
 // pasar a Lumi por UN lado (izquierda o derecha al azar), con el lado

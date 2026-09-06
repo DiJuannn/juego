@@ -129,15 +129,14 @@ export class BootScene extends Phaser.Scene {
     this.load.image("mantaray", assetPath("/objects/enemies/mantaray.png"));
     // Duodécimo enemigo, mismo pedido — ver entities/FlyingFish.ts.
     this.load.image("flyingfish", assetPath("/objects/enemies/flyingfish.png"));
-    // Decimotercer enemigo (pedido explícito: "un dragón marino Largo que
-    // vaya... de lado a lado, pero que salga del mapa y reaparezca la otra
-    // parte en el otro lateral... que deje un hueco justo para que pase
-    // Lumi por ahí"; corregido después: "que sea horizontal... la
-    // separación sea de la cola nomas, no lo partas") — cuerpo entero
-    // (cabeza+cuello+torso, sin cortar) + cola como pieza aparte, ver
+    // Decimotercer enemigo (pedido explícito, con dos correcciones: "un
+    // dragón marino Largo que vaya... de lado a lado... que deje un hueco
+    // justo para que pase Lumi por ahí" → "que sea horizontal" → "que
+    // ESTE COMPLETO [no lo recortes]... QUE VAYA LATERALMENTE TAPANDO
+    // TODO PERO SIEMPRE QUE DEJE UN ESPACIO POR DONDE PASAR") — UN solo
+    // sprite con la ilustración entera, sin cortar en piezas, ver
     // entities/SeaDragon.ts.
-    this.load.image("sea_dragon_body", assetPath("/objects/enemies/sea_dragon_body.png"));
-    this.load.image("sea_dragon_tail", assetPath("/objects/enemies/sea_dragon_tail.png"));
+    this.load.image("sea_dragon", assetPath("/objects/enemies/sea_dragon.png"));
     // Librería de piezas para ReefCluster (composiciones orgánicas de
     // obstáculos de Zona 1, ver systems/ReefCluster.ts). Tercera tanda,
     // generada directamente a partir de las 3 imágenes de referencia que

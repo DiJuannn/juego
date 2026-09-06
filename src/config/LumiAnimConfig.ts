@@ -42,12 +42,23 @@ import { assetPath } from "@/config/assetPath";
 // número de frames sin doblar también el framerate habría dejado el mismo
 // ciclo reproduciéndose el doble de lento. sleep se deja para una ronda
 // aparte (animación poco visible, disparada solo por inactividad).
+//
+// dash: pedido explícito ("si haces dos veces una misma dirección hace un
+// Dash... hay que agregarle como un Sprite animado de él haciendo el
+// Dash"). Pose nueva (no interpolada de ninguna existente): Lumi estirada
+// como una flecha/torpedo, brazos pegados al cuerpo, cola recta y rígida,
+// con líneas de velocidad — vista diagonal desde atrás, mismo ángulo de
+// cámara que swim_up para que la rotación por código (ver Lumi.ts) quede
+// coherente en las 8 direcciones. 3 frames (vibración sutil de cola/estela
+// por la velocidad, no una brazada completa) a un framerate más vivo que
+// el resto, ver LUMI_ANIM_FPS.
 export const LUMI_FRAME_COUNT: Record<string, number> = {
   idle: 6,
   sleep: 3,
   swim_right: 8,
   swim_up: 8,
   swim_diagonal: 8,
+  dash: 3,
   // Un solo frame: la pose de muerte (ojos en X, generada con Gemini, ver
   // lumi-asset-gen) no es una animación en bucle — se pone como textura
   // fija justo al empezar el giro/hundimiento (ver Lumi.showDeathFace).
@@ -73,6 +84,7 @@ export const LUMI_ANIM_FPS: Partial<Record<string, number>> = {
   swim_right: 16,
   swim_up: 16,
   swim_diagonal: 16,
+  dash: 20,
 };
 
 export function framePath(folder: string, index: number): string {

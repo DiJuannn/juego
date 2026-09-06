@@ -926,6 +926,8 @@ export class PondScene extends Phaser.Scene {
   update(time: number, delta: number) {
     if (this.isGameOver || this.isDying) return;
 
+    const dashRequest = this.inputController.consumeDash();
+    if (dashRequest) this.lumi.triggerDash(dashRequest);
     this.lumi.update(this.inputController.getVector(), delta);
 
     const cam = this.cameras.main;

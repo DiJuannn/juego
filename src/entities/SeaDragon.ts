@@ -1,21 +1,17 @@
 import Phaser from "phaser";
 import {
-  SEA_DRAGON_BODY_SWAY_AMPLITUDE,
-  SEA_DRAGON_BODY_SWAY_PERIOD_MS,
-  SEA_DRAGON_GAP_WIDTH,
+  SEA_DRAGON_BOB_AMPLITUDE,
+  SEA_DRAGON_BOB_PERIOD_MS,
   SEA_DRAGON_SPEED,
-  SEA_DRAGON_TAIL_WAG_AMPLITUDE,
-  SEA_DRAGON_TAIL_WAG_PERIOD_MS,
+  SEA_DRAGON_SWAY_AMPLITUDE,
+  SEA_DRAGON_SWAY_PERIOD_MS,
 } from "@/config/GameConfig";
 
-// Bbox real medido sobre cada PNG, en FRACCIÓN del lienzo (no en píxeles
-// fijos, porque aquí el lienzo entra en la trigonometría de rotación) —
-// ver docs de generación en PROGRESS.md. body: cuerpo entero sin cortar
-// (cabeza+cuello+torso), canvas 768x970, toca el borde INFERIOR (ahí es
-// donde se cose la cola). tail: solo la cola, canvas 768x374, toca el
-// borde SUPERIOR (el lado que se cose al cuerpo).
-const BODY_FRAC = { x0: 205 / 768, y0: 40 / 970, x1: 610 / 768, y1: 969 / 970 };
-const TAIL_FRAC = { x0: 252 / 768, y0: 0, x1: 530 / 768, y1: 337 / 374 };
+// Bbox real medido sobre sea_dragon.png (la ilustración COMPLETA, cabeza a
+// punta de cola, sin ningún recorte — ver docs de generación en
+// PROGRESS.md), en FRACCIÓN del lienzo (768x1344) porque el lienzo entra
+// en la trigonometría de rotación.
+const BODY_FRAC = { x0: 203 / 768, y0: 38 / 1344, x1: 612 / 768, y1: 1309 / 1344 };
 
 function rotatePoint(x: number, y: number, angle: number): { x: number; y: number } {
   const cos = Math.cos(angle);
@@ -24,9 +20,7 @@ function rotatePoint(x: number, y: number, angle: number): { x: number; y: numbe
 }
 
 /** AABB (relativo al CENTRO del sprite, origin 0.5/0.5) de un recorte
- * fraccional ya rotado — misma trigonometría que ReefCluster.ts, pero
- * aislada aquí porque esta pieza gira de verdad cada frame (ondulación/
- * latigazo), no es un ángulo fijo con jitter mínimo. */
+ * fraccional ya rotado — misma trigonometría que ReefCluster.ts. */
 function rotatedAabb(
   frac: { x0: number; y0: number; x1: number; y1: number },
   texW: number,
@@ -46,44 +40,35 @@ function rotatedAabb(
   return { xmin: Math.min(...xs), xmax: Math.max(...xs), ymin: Math.min(...ys), ymax: Math.max(...ys) };
 }
 
-/** Offset de mundo (relativo al CENTRO del sprite, origin 0.5/0.5) del
- * punto de "costura" — borde inferior del cuerpo, o superior de la cola —
- * para el ángulo actual. Con origin 0.5/0.5 ese punto recorre un pequeño
- * arco alrededor del centro conforme el ángulo oscila (ondulación/
- * latigazo), así que hay que recalcularlo cada frame: `center = costura -
- * offset`. `edgeSign` es +1 para el borde inferior (cuerpo) o -1 para el
- * superior (cola). */
-function seamOffset(texH: number, scale: number, angle: number, edgeSign: 1 | -1): { x: number; y: number } {
-  return rotatePoint(0, (edgeSign * texH * scale) / 2, angle);
-}
-
 /**
- * Decimotercer enemigo (pedido explícito, con corrección: "un dragón
- * marino Largo que vaya... de lado a lado, pero que salga del mapa y
- * reaparezca la otra parte en el otro lateral... que deje un hueco justo
- * para que pase Lumi por ahí" — "me confundí, que sea horizontal. Y la
- * separación sea de la cola nomas, no lo partas. Y hazlo animado bien
- * bueno"). El cuerpo entero (cabeza+cuello+torso, SIN cortar) nada
- * tumbado en horizontal con una ondulación suave; la cola es una pieza
- * aparte que cuelga del hueco y azota con un latigazo mucho más marcado,
- * como si tirara de verdad desde su propio punto de unión. Ambas piezas
- * comparten la misma coordenada de "costura" (recalculada cada frame
- * según el ángulo actual de cada una) separada por `SEA_DRAGON_GAP_WIDTH`
- * — el hueco por el que Lumi tiene que colarse. Se deslizan juntas en X
- * sin parar: al salir del todo por un lado del MUNDO la posición envuelve
- * y reaparecen entrando por el lado contrario.
+ * Decimotercer enemigo (pedido explícito, con DOS correcciones: "un dragón
+ * marino Largo que vaya... de lado a lado... que deje un hueco justo para
+ * que pase Lumi por ahí" → "que sea horizontal" → "que ESTE COMPLETO [no
+ * lo recortes] y el nado sea muy fluido. QUE VAYA LATERALMENTE TAPANDO
+ * TODO PERO SIEMPRE QUE DEJE UN ESPACIO POR DONDE PASAR"). Un único
+ * sprite con la ilustración ENTERA (cabeza a punta de cola, sin cortar en
+ * dos piezas como en el intento anterior) tumbado en horizontal, con la
+ * cabeza siempre por delante en la dirección de avance. Se desliza en X
+ * sin parar y envuelve de un lateral al otro del MUNDO (misma fórmula de
+ * módulo que el resto de patrullas). El "espacio para pasar" no es un
+ * recorte del propio dragón — sale de que su longitud renderizada es
+ * menor que WORLD_WIDTH (ver SEA_DRAGON_SCALE en GameConfig.ts), así que
+ * siempre queda un tramo libre en alguno de los dos lados mientras
+ * transita. La fluidez del nado combina un vaivén de rotación con un
+ * balanceo vertical a otra frecuencia (ver constantes SEA_DRAGON_SWAY y
+ * SEA_DRAGON_BOB en GameConfig.ts) — dos oscilaciones simples desfasadas
+ * leen como un movimiento mucho más orgánico que una sola.
  */
 export class SeaDragon {
-  readonly bodySprite: Phaser.Physics.Arcade.Image;
-  readonly tailSprite: Phaser.Physics.Arcade.Image;
+  readonly sprite: Phaser.Physics.Arcade.Image;
   private readonly direction: 1 | -1;
   private readonly baseAngle: number;
   private readonly centerY: number;
   private readonly halfSpan: number;
   private readonly totalRange: number;
   private readonly phaseDistance: number;
-  private readonly bodyPhase: number;
-  private readonly tailPhase: number;
+  private readonly swayPhase: number;
+  private readonly bobPhase: number;
   private readonly scale: number;
 
   constructor(scene: Phaser.Scene, startX: number, centerY: number, scale: number, worldWidth: number) {
@@ -92,33 +77,26 @@ export class SeaDragon {
     // avanza a la derecha, -90° cuando avanza a la izquierda — con el
     // arte apuntando "hacia arriba local" desde la cabeza, +90° (giro
     // horario) deja la cabeza mirando a la derecha y -90° mirando a la
-    // izquierda (verificado en juego, ver PROGRESS.md).
+    // izquierda (mismo criterio verificado en la versión anterior).
     this.baseAngle = this.direction === 1 ? Math.PI / 2 : -Math.PI / 2;
     this.centerY = centerY;
     this.scale = scale;
-    this.bodyPhase = Phaser.Math.FloatBetween(0, Math.PI * 2);
-    this.tailPhase = Phaser.Math.FloatBetween(0, Math.PI * 2);
+    this.swayPhase = Phaser.Math.FloatBetween(0, Math.PI * 2);
+    this.bobPhase = Phaser.Math.FloatBetween(0, Math.PI * 2);
 
-    this.bodySprite = scene.physics.add.staticImage(startX, centerY, "sea_dragon_body");
-    this.bodySprite.setScale(scale).setDepth(5);
-    this.bodySprite.refreshBody();
+    this.sprite = scene.physics.add.staticImage(startX, centerY, "sea_dragon");
+    this.sprite.setScale(scale).setDepth(5);
+    this.sprite.refreshBody();
     // Body de colisión fijo, calculado UNA vez sobre el ángulo base (no
-    // el ángulo con ondulación/latigazo de cada frame) — mismo criterio
-    // que la mayoría de animales del juego (Seahorse, Shark...): la
-    // hitbox no persigue cada detalle de una animación sutil, solo su
-    // CENTRO sigue la posición visual real cada frame (ver update()).
-    // Intentar re-triangular la AABB rotada en vivo cada frame añadía
-    // riesgo real de una hitbox rota sin ganar nada perceptible.
-    this.applyFixedBody(this.bodySprite, BODY_FRAC, this.baseAngle);
+    // el ángulo con vaivén de cada frame) — mismo criterio que la mayoría
+    // de animales del juego: la hitbox no persigue cada detalle de una
+    // animación sutil, solo su CENTRO sigue la posición visual real cada
+    // frame (ver update()).
+    this.applyFixedBody();
 
-    this.tailSprite = scene.physics.add.staticImage(startX, centerY, "sea_dragon_tail");
-    this.tailSprite.setScale(scale).setDepth(5);
-    this.tailSprite.refreshBody();
-    this.applyFixedBody(this.tailSprite, TAIL_FRAC, this.baseAngle);
-
-    // Envergadura total generosa (cuerpo + cola + hueco, con margen) para
+    // Envergadura total generosa (longitud del dragón + margen) para
     // garantizar que salga del todo del mundo antes de envolver.
-    this.halfSpan = this.bodySprite.displayHeight + this.tailSprite.displayHeight + SEA_DRAGON_GAP_WIDTH;
+    this.halfSpan = this.sprite.displayHeight;
     this.totalRange = worldWidth + this.halfSpan * 2;
     this.phaseDistance = Phaser.Math.FloatBetween(0, this.totalRange);
 
@@ -130,12 +108,12 @@ export class SeaDragon {
    * esquina sin rotar el rectángulo — así que el offset que hay que
    * pasarle a `setOffset` es la diferencia entre el AABB real (ya girado)
    * y esa esquina de referencia, no el AABB a secas. */
-  private applyFixedBody(sprite: Phaser.Physics.Arcade.Image, frac: { x0: number; y0: number; x1: number; y1: number }, angle: number) {
-    const dW = sprite.width * this.scale;
-    const dH = sprite.height * this.scale;
-    const aabb = rotatedAabb(frac, sprite.width, sprite.height, this.scale, angle);
-    const base = rotatePoint(-dW / 2, -dH / 2, angle);
-    (sprite.body as Phaser.Physics.Arcade.StaticBody)
+  private applyFixedBody() {
+    const dW = this.sprite.width * this.scale;
+    const dH = this.sprite.height * this.scale;
+    const aabb = rotatedAabb(BODY_FRAC, this.sprite.width, this.sprite.height, this.scale, this.baseAngle);
+    const base = rotatePoint(-dW / 2, -dH / 2, this.baseAngle);
+    (this.sprite.body as Phaser.Physics.Arcade.StaticBody)
       .setSize(aabb.xmax - aabb.xmin, aabb.ymax - aabb.ymin)
       .setOffset(aabb.xmin - base.x, aabb.ymin - base.y);
   }
@@ -146,37 +124,21 @@ export class SeaDragon {
     // Deslizamiento sin parar + envoltura: una sola fórmula de módulo, sin
     // guardar de qué lado toca reaparecer.
     const progress = (t * SEA_DRAGON_SPEED + this.phaseDistance) % this.totalRange;
-    const seamX = this.direction === 1 ? -this.halfSpan + progress : this.totalRange - this.halfSpan - progress;
+    const centerX = this.direction === 1 ? -this.halfSpan + progress : this.totalRange - this.halfSpan - progress;
 
-    // Ondulación del torso (suave) y latigazo de la cola (marcado) —
-    // ambos oscilan alrededor del mismo ángulo base, cada uno con su
-    // propia amplitud/velocidad/fase, ver "hazlo animado bien bueno".
-    const bodyAngle =
-      this.baseAngle +
-      SEA_DRAGON_BODY_SWAY_AMPLITUDE * Math.sin((time * Math.PI * 2) / SEA_DRAGON_BODY_SWAY_PERIOD_MS + this.bodyPhase);
-    const tailAngle =
-      this.baseAngle +
-      SEA_DRAGON_TAIL_WAG_AMPLITUDE * Math.sin((time * Math.PI * 2) / SEA_DRAGON_TAIL_WAG_PERIOD_MS + this.tailPhase);
+    // Vaivén de rotación + balanceo vertical a otra frecuencia — dos
+    // oscilaciones simples desfasadas, ver "el nado sea muy fluido".
+    const angle =
+      this.baseAngle + SEA_DRAGON_SWAY_AMPLITUDE * Math.sin((time * Math.PI * 2) / SEA_DRAGON_SWAY_PERIOD_MS + this.swayPhase);
+    const bobY = SEA_DRAGON_BOB_AMPLITUDE * Math.sin((time * Math.PI * 2) / SEA_DRAGON_BOB_PERIOD_MS + this.bobPhase);
 
-    // La cola vive del lado "de atrás" de la costura respecto a la
-    // dirección de viaje — arrastra detrás de la cabeza, nunca por
-    // delante.
-    const tailSeamX = seamX - this.direction * SEA_DRAGON_GAP_WIDTH;
+    this.sprite.setRotation(angle);
+    this.sprite.setPosition(centerX, this.centerY + bobY);
 
-    const bodySeam = seamOffset(this.bodySprite.height, this.scale, bodyAngle, 1);
-    const tailSeam = seamOffset(this.tailSprite.height, this.scale, tailAngle, -1);
-
-    this.bodySprite.setRotation(bodyAngle);
-    this.tailSprite.setRotation(tailAngle);
-    this.bodySprite.setPosition(seamX - bodySeam.x, this.centerY - bodySeam.y);
-    this.tailSprite.setPosition(tailSeamX - tailSeam.x, this.centerY - tailSeam.y);
-
-    (this.bodySprite.body as Phaser.Physics.Arcade.StaticBody).reset(this.bodySprite.x, this.bodySprite.y);
-    (this.tailSprite.body as Phaser.Physics.Arcade.StaticBody).reset(this.tailSprite.x, this.tailSprite.y);
+    (this.sprite.body as Phaser.Physics.Arcade.StaticBody).reset(this.sprite.x, this.sprite.y);
   }
 
   destroy() {
-    this.bodySprite.destroy();
-    this.tailSprite.destroy();
+    this.sprite.destroy();
   }
 }
