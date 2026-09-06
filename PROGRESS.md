@@ -1303,6 +1303,21 @@ funciona **hoy**, verificado en el código — no lo que el diseño aspira a ten
     (izquierda/derecha/izquierda o al revés) se cumplió en las 20. `npx
     tsc --noEmit` limpio, playtest automático sin errores, build de
     producción real exitoso.
+- **`reefLabyrinth` restaurado** — se había retirado del todo interpretando
+  "las dos rocas gigantes no, déjalas como estaban antes" como un rechazo
+  al cúmulo especial completo; el usuario aclaró después que seguía
+  esperando verlo ("no me sale el laberinto ese que te dije grandote") —
+  el mensaje anterior no era un rechazo del todo. Restaurado con `git
+  revert` del commit que lo quitaba (recupera exactamente la versión de 3
+  bandas en zigzag, sin volver a escribir el código a mano, para no
+  arriesgar una re-implementación ligeramente distinta). Verificado de
+  nuevo tras el revert: 20 muestras, hueco mínimo 280.2px, cero
+  solapamiento entre bandas — mismas garantías que antes. Sigue pendiente
+  aclarar con el usuario si además quiere que aparezca garantizado al
+  principio del juego (ahora mismo solo sale en la generación aleatoria
+  después de `ZONE1_LEVEL_END_OFFSET`, lo cual probablemente explica por
+  qué "no le salía": toca progresar bastante en una partida real para
+  toparse con él por primera vez).
 
 # PENDIENTE
 
