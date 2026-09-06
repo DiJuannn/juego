@@ -1409,6 +1409,40 @@ funciona **hoy**, verificado en el código — no lo que el diseño aspira a ten
     (captura confirmada). `npx tsc --noEmit` limpio, build de producción
     real exitoso con ambos PNGs nuevos bundleados
     (`dist/objects/enemies/giant_clam.png` y `giant_clam_closed.png`).
+- **"Estas cosas ahí flotando me parecen feas" (captura real del usuario)**
+  — respuesta a la pregunta pendiente sobre qué se veía "feo flotando
+  solo" en `ReefTemplates.ts`. La captura mostraba dos problemas
+  distintos, ambos de composición (no de arte nuevo, nada tocado en
+  `/assets`):
+  1. Una anémona sola en pantalla, sin ninguna otra pieza de su mismo
+     cúmulo a la vista — causa real: en `diagonalLeft` estaba a 170px en Y
+     Y a un x bien distinto de la rama más cercana (0.14 vs 0.23
+     `fromEdge`), y en `lateralWall` el `coral_fan`/`decor_starfish`
+     estaban a 200-260px de la rama/roca de esa misma composición. Con una
+     cámara de ~640-720px de alto, esa separación bastaba para que la
+     pieza saliera sola en pantalla sin sus vecinas, leyéndose como
+     basura flotante suelta en vez de parte de un cúmulo. Acercadas: la
+     anémona ahora a 94-119px de la rama (antes ~170-250px en la práctica,
+     con eje X distinto), `coral_fan` a ~150px de la rama (antes ~200px)
+     y `decor_starfish` a ~98px de la roca (antes ~260px) — medido en el
+     motor real (`body`/sprite x,y), no a ojo.
+  2. Un calamar apareciendo visualmente fusionado con un `coral_fan` (el
+     tentáculo pegado a la pieza, como si fuera parte de ella) — causa
+     real: `BAND_SAFETY_MARGIN` en `ReefClusterSpawner.ts` (el margen que
+     impide que un animal aparezca dentro de la banda de un cúmulo) era
+     de solo 60px, menos que la altura típica de un sprite de animal a su
+     escala (~110-150px) — un spawn "seguro" por 61px de sobra igual podía
+     solapar visualmente el borde del cúmulo con su propio cuerpo. Subido
+     a 170px. Verificado en el motor: con un cúmulo de prueba aislado
+     (lejos de cualquier otro contenido), `isWithinAnyClusterBand` pasa de
+     `true` a `false` exactamente en el delta 171 respecto al borde de la
+     banda — el margen nuevo está bien cableado.
+  - Todas las plantillas siguen sin apeñuzcarse (la queja opuesta de una
+    ronda anterior): las piezas se acercaron a su vecina más próxima, no
+    se pegaron entre sí — verificado con capturas reales in-game
+    mostrando la anémona+rama y el coral_fan+rama ya agrupados en la misma
+    composición visible. `npx tsc --noEmit` limpio, build de producción
+    real exitoso.
 
 # PENDIENTE
 
@@ -1420,14 +1454,15 @@ funciona **hoy**, verificado en el código — no lo que el diseño aspira a ten
   animal activo en vez de obstáculo estático, siguiendo el mismo patrón
   Entity+Spawner+overlap ya usado 7 veces.
 - **"Los obstáculos tengan menos importancia, es que se ven muy feos
-  algunos ahí flotando solos"** (mismo mensaje) — no arrancado. Pedido
-  aún sin acotar del todo: falta preguntar al usuario si se refiere a (a)
-  piezas concretas que se sienten sueltas/sin componer bien dentro de las
-  6 plantillas de `ReefTemplates.ts`, (b) reducir la escala/protagonismo
-  visual de los `bgAccent` o piezas `role: "obstacle"` en general, o (c)
-  bajar la frecuencia de aparición de arrecife frente a animales. Mejor
-  pedir un ejemplo concreto (altura/plantilla) antes de re-tunear a
-  ciegas, mismo criterio que ya se aplicó con el fondo/animales antes.
+  algunos ahí flotando solos"** (mismo mensaje) — la lectura (a) de este
+  pedido (piezas concretas mal compuestas/sueltas dentro de una
+  plantilla) ya se resolvió con la captura real del usuario, ver EN
+  PROGRESO ("estas cosas ahí flotando me parecen feas"). Sigue sin tocar
+  la lectura (b)/(c): reducir el protagonismo visual de los obstáculos de
+  arrecife EN GENERAL (escala/opacidad/frecuencia frente a animales), si
+  es que el usuario seguía pidiendo eso además del problema puntual ya
+  arreglado — pendiente de su reacción a la ronda actual antes de tocar
+  nada más aquí.
 - Una vez el Tramo 1+2 esté aprobado y estable: variaciones del mismo
   esqueleto para que no sea idéntico entre intentos (pedido explícito,
   para después).
@@ -1448,21 +1483,17 @@ que se cerraron)
 
 # PRÓXIMA TAREA
 
-La almeja gigante ya está convertida en animal real y verificada de
-punta a punta (ver EN PROGRESO). Del mismo mensaje del usuario quedan
-dos pedidos explícitos sin empezar — ver PENDIENTE para el detalle de
-cada uno:
-1. Más animales nuevos (además de la almeja).
-2. Bajar el protagonismo visual de los obstáculos sueltos de arrecife.
-
-Para el (2) en concreto, mejor preguntar por un ejemplo puntual
-("¿cuál obstáculo en concreto se ve feo flotando solo, y en qué
-plantilla/altura?") antes de re-tunear escalas/composición a ciegas —
-el pedido admite varias lecturas distintas (ver PENDIENTE) y ya se
-demostró esta sesión que adivinar mal una corrección ambigua (el
-episodio de "las dos rocas gigantes no, déjalas como estaban") cuesta
-una ronda entera de ida y vuelta. Si el usuario da un ejemplo concreto,
-usarlo para decidir cuál de las 3 lecturas es la correcta; si prefiere
-que se decida sin más detalle, empezar por (b) — reducir escala/opacidad
-de los `bgAccent` decorativos, que es el cambio más barato de revertir
-si no es lo que pedía.
+La almeja gigante ya es animal real (verificada de punta a punta) y la
+composición "flotando solo" que el usuario mostró con una captura real ya
+se corrigió (anémona/coral_fan reagrupados junto a su pieza vecina más
+próxima, margen animal-vs-cúmulo subido de 60 a 170px) — ver EN PROGRESO
+para el detalle de ambos. Esperar la reacción del usuario a esta ronda:
+si la composición ya se siente resuelta, queda un pedido explícito sin
+empezar del mismo mensaje original — "crea más animales para que sea
+mejor, más animales y menos obstáculos" (ver PENDIENTE): decidir con el
+usuario qué piezas hoy decorativas (anémona, percebe, esponja...) tienen
+sentido como animal activo, siguiendo el mismo patrón Entity+Spawner+
+overlap ya usado 7 veces (medusa/tiburón/calamar/erizo/cangrejo/pez
+grande/almeja). Si en cambio la queja de composición persiste con otro
+ejemplo, pedir ese ejemplo concreto (altura/plantilla) antes de re-tunear
+más a ciegas.

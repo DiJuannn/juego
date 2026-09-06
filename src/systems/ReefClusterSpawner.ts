@@ -9,7 +9,15 @@ const SPAWN_LOOKAHEAD = 900;
 const DESPAWN_MARGIN = 1200;
 // Igual que CoralSpawner: margen extra alrededor de la banda de cada
 // cúmulo para que medusa/erizo nunca aparezcan encima de la ruta segura.
-const BAND_SAFETY_MARGIN = 60;
+// Pedido explícito del usuario, con captura real: un calamar apareció tan
+// pegado al borde de un cúmulo que su sprite se leía fusionado con una
+// pieza de coral ("estas cosas ahí flotando me parecen feas") — 60px era
+// menos que la altura típica de un sprite de animal (~110-150px a esta
+// escala), así que un spawn "seguro" por poco podía terminar solapando
+// visualmente el borde del cúmulo de todos modos. Subido a 170px, más que
+// esa altura típica, para que quede un hueco de agua limpia de verdad
+// entre cualquier animal y el cúmulo más cercano.
+const BAND_SAFETY_MARGIN = 170;
 
 /**
  * Prototipo de obstáculo orgánico de Zona 1 (sustituye a CoralSpawner en

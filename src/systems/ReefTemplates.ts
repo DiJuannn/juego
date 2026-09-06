@@ -219,9 +219,15 @@ function diagonalLeft(worldWidth: number, centerY: number): ReefClusterSpec {
     // Pedido explícito: "no los acumules todos en un mismo sitio, piensa
     // dónde poner cada uno" (y, tras verla amontonada con la roca+rama en
     // la primera versión: "no queda bonito asi todo apeñuzcado") — la
-    // anémona va arriba del todo, lejos de la roca (y+160) y la rama
-    // (y-40), en vez de justo al lado.
-    piece({ key: "anemone", x: fromEdge(worldWidth, "left", 0.14), y: centerY - 210, scale: 0.28, role: "obstacle" }),
+    // anémona va arriba de la rama, no justo al lado. Antes estaba a
+    // y-210/x=0.14 (170px de la rama Y, y en un x bien distinto): con una
+    // cámara de ~640-720px de alto eso podía dejarla sola en pantalla, sin
+    // ninguna otra pieza del mismo cúmulo a la vista — se leía como basura
+    // flotante suelta, no como parte de la composición (captura real del
+    // usuario: "estas cosas ahí flotando me parecen feas"). Acercada a
+    // y-130/x=0.19, bastante más cerca de la rama en ambos ejes sin llegar
+    // a tocarla.
+    piece({ key: "anemone", x: fromEdge(worldWidth, "left", 0.19), y: centerY - 130, scale: 0.28, role: "obstacle" }),
     // Acento de fondo: lejos del lado abierto (derecha), sugiere que el
     // arrecife sigue más allá sin invadir el carril libre.
     bgAccent("reef_coral_branch", worldWidth * 0.93, centerY + 60, 0.16),
@@ -377,14 +383,15 @@ function lateralWall(worldWidth: number, centerY: number): ReefClusterSpec {
       flipX: branchFlipX(wallBranchKey, side === "right"),
       role: "obstacle",
     }),
-    // Mismo criterio de reparto: abanico de coral (arriba del todo) y
-    // estrella (abajo del todo) — únicas en esta plantilla, con al menos
-    // ~150px libres entre cada una para que no se amontonen. La almeja
-    // gigante que iba aquí se retiró como pieza estática: ahora es un
-    // animal real (ver entities/GiantClam.ts, pedido explícito de que "te
-    // coma" en vez de ser solo un obstáculo decorativo).
-    piece({ key: "coral_fan", x: fromEdge(worldWidth, side, 0.16), y: centerY - 260, scale: 0.22, role: "obstacle" }),
-    piece({ key: "decor_starfish", x: fromEdge(worldWidth, side, 0.13), y: centerY + 260, scale: 0.28, role: "obstacle" }),
+    // Mismo criterio de reparto: abanico de coral (arriba) y estrella
+    // (abajo) — únicas en esta plantilla. Antes a ±260px de la rama
+    // (centerY-60): demasiado lejos para una cámara de ~640-720px de alto,
+    // podían quedar solas en pantalla sin el resto del cúmulo a la vista
+    // (captura real del usuario: "estas cosas ahí flotando me parecen
+    // feas"). Acercadas a ±150px de la rama — siguen sin tocarse entre
+    // ellas, pero ahora leen como parte de la misma composición.
+    piece({ key: "coral_fan", x: fromEdge(worldWidth, side, 0.16), y: centerY - 210, scale: 0.22, role: "obstacle" }),
+    piece({ key: "decor_starfish", x: fromEdge(worldWidth, side, 0.13), y: centerY + 210, scale: 0.28, role: "obstacle" }),
     // Acento de fondo: en el lado abierto (el contrario a la pared), lejos
     // de la ruta guía que serpentea por `openCenterX` — sugiere más
     // arrecife sin invadir el carril libre.
