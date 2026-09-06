@@ -71,8 +71,15 @@ function bgAccent(key: string, x: number, y: number, scale: number): ReefPieceSp
  * así que al usarlas entrando por la derecha hay que espejarlas (flipX) —
  * salvo `reef_branch_straight`, que va exactamente al revés (ver
  * INVERT_FLIP_KEYS más abajo).
+ *
+ * `reef_branch_hook` retirada del pool (pedido explícito, con captura
+ * real: "esto mejor quitarlo no me convence estos diseños, elimina esos
+ * dos obstáculos" — el diseño "coral cerebro" de rayas onduladas no
+ * convenció). Sigue cargada en BootScene.ts y con su bbox en
+ * ReefCluster.ts por si hay que revertir, pero ya no se elige en ningún
+ * lado (ni aquí ni en WALL_PIECE_POOL).
  */
-const BRANCH_VARIANTS = ["reef_coral_branch", "reef_branch_straight", "reef_branch_hook", "reef_branch_short"];
+const BRANCH_VARIANTS = ["reef_coral_branch", "reef_branch_straight", "reef_branch_short"];
 
 function pickBranch(): string {
   return Phaser.Utils.Array.GetRandom(BRANCH_VARIANTS);
@@ -153,7 +160,8 @@ const WALL_PIECE_POOL: WallPieceOption[] = [
   { key: "reef_rock_spikes", sizeMul: 1 },
   { key: "reef_coral_branch", sizeMul: 1 },
   { key: "reef_branch_straight", sizeMul: 0.85 },
-  { key: "reef_branch_hook", sizeMul: 0.85 },
+  // reef_branch_hook retirada (pedido explícito, "no me convence este
+  // diseño" — ver comentario junto a BRANCH_VARIANTS).
   { key: "reef_branch_short", sizeMul: 1 },
 ];
 
@@ -216,18 +224,10 @@ function diagonalLeft(worldWidth: number, centerY: number): ReefClusterSpec {
       flipX: branchFlipX(branchKey1, towardsRightEdge(branchX, worldWidth)),
       role: "obstacle",
     }),
-    // Pedido explícito: "no los acumules todos en un mismo sitio, piensa
-    // dónde poner cada uno" (y, tras verla amontonada con la roca+rama en
-    // la primera versión: "no queda bonito asi todo apeñuzcado") — la
-    // anémona va arriba de la rama, no justo al lado. Antes estaba a
-    // y-210/x=0.14 (170px de la rama Y, y en un x bien distinto): con una
-    // cámara de ~640-720px de alto eso podía dejarla sola en pantalla, sin
-    // ninguna otra pieza del mismo cúmulo a la vista — se leía como basura
-    // flotante suelta, no como parte de la composición (captura real del
-    // usuario: "estas cosas ahí flotando me parecen feas"). Acercada a
-    // y-130/x=0.19, bastante más cerca de la rama en ambos ejes sin llegar
-    // a tocarla.
-    piece({ key: "anemone", x: fromEdge(worldWidth, "left", 0.19), y: centerY - 130, scale: 0.28, role: "obstacle" }),
+    // La anémona que iba aquí se retiró (pedido explícito, con captura
+    // real: "esto mejor quitarlo no me convence estos diseños, elimina
+    // esos dos obstáculos" — la combinación anémona+reef_branch_hook no
+    // convenció). Sigue cargada en BootScene.ts por si hay que revertir.
     // Acento de fondo: lejos del lado abierto (derecha), sugiere que el
     // arrecife sigue más allá sin invadir el carril libre.
     bgAccent("reef_coral_branch", worldWidth * 0.93, centerY + 60, 0.16),
@@ -674,24 +674,25 @@ function miniLabyrinth(worldWidth: number, centerY: number): ReefClusterSpec {
  * puerta, así que cada hueco es siempre exactamente el calculado aquí,
  * nunca varía en vivo.
  *
- * Pedido explícito de una ronda posterior: "el laberinto me imagino un
- * diseño totalmente nuevo. Pídeselo a la api que te lo haga, que si sea
- * estilo laberinto grande cozy" — arte nuevo generado con Gemini
- * (`reef_maze_wall`, un cúmulo de 9 rocas mucho más grande y compuesto
- * que las piezas sueltas del pool clásico, misma ancla de estilo que
- * `boulder_rock`), EXCLUSIVO de este laberinto (nunca se mezcla en
- * `CORRIDOR_WALL_POOL`, que es el que usan `reefLabyrinth`/
- * `miniLabyrinth` — esos "no se tocan", pedido explícito). Se combina con
- * las 3 rocas clásicas en `GRAND_MAZE_WALL_POOL` con el doble de peso
- * (repetida en el array) para que predomine sin ser la única silueta.
+ * Arte nuevo generado con Gemini, EXCLUSIVO de este laberinto (nunca se
+ * mezcla en `CORRIDOR_WALL_POOL`, que es el que usan `reefLabyrinth`/
+ * `miniLabyrinth` — esos "no se tocan", pedido explícito). Segunda
+ * versión de esa pieza: la primera ("estilo laberinto grande cozy", un
+ * cúmulo de rocas) no convenció — pedido explícito de la ronda siguiente:
+ * "la nueva pieza me la imagino totalmente diferente que no sean rocas.
+ * Que sea como los laberintos reales pues de hojas, pero acuático".
+ * `reef_maze_wall` es ahora un seto denso de hojas/algas (mismas anclas
+ * de estilo que `foreground_plants`), y `GRAND_MAZE_WALL_POOL` ya NO
+ * mezcla rocas clásicas — todo el laberinto es de un único lenguaje
+ * visual (hojas), como pidió el usuario.
+ *
+ * Esta pieza es mucho más "ancha que alta" en su lienzo nativo (1344x768,
+ * casi a sangre completa) que las rocas del pool clásico, así que su
+ * extensión a lo largo de la pared una vez rotada 90º es bastante mayor
+ * a igual `reachPx` — `GRAND_MAZE_BAND_SPACING` se subió de 700 a 1000
+ * exactamente por esto (ver el comentario junto a esa constante).
  */
-const GRAND_MAZE_WALL_POOL = [
-  "reef_maze_wall",
-  "reef_maze_wall",
-  "reef_boulder_rock",
-  "reef_rock_smooth",
-  "reef_rock_spikes",
-];
+const GRAND_MAZE_WALL_POOL = ["reef_maze_wall"];
 const GRAND_MAZE_REACH_PX = 430;
 const GRAND_MAZE_EXIT_REACH_PX = 380;
 // Hueco centrado de la "puerta" (pared a ambos lados) — igual de holgado
@@ -699,13 +700,15 @@ const GRAND_MAZE_EXIT_REACH_PX = 380;
 // lado, generoso de sobra para que la variedad de tamaño de
 // CORRIDOR_WALL_POOL nunca lo achique en la práctica).
 const GRAND_MAZE_GATE_GAP_PX = 320;
-// Espaciado entre bandas: mayor que el de reefLabyrinth (700) para que el
-// cúmulo entero sea más grande de verdad, con el mismo margen de sobra
-// (la extensión a lo largo de la pared de la pieza más ancha escala con
-// el reach: a 430px de reach queda ~580px de extensión, mitad ~290px —
-// 820px de separación deja de sobra para que dos bandas vecinas nunca se
-// pisen en vertical).
-const GRAND_MAZE_BAND_SPACING = 820;
+// Espaciado entre bandas: mayor que el de reefLabyrinth (700). Con la
+// pieza de rocas original (más "redonda") 820px bastaba; con el seto de
+// hojas (lienzo 1344x768, casi a sangre completa) la extensión a lo largo
+// de la pared una vez rotado 90º es mucho mayor a igual reach — medido
+// con el bbox real: a reach=430 (+5% de jitter) la extensión ronda 794px,
+// mitad ~397px; el par más exigente es corredor-salida (397+351≈748px).
+// Subido a 1000px para dejar ~250px de margen real, mismo criterio de
+// sobra que el resto de laberintos.
+const GRAND_MAZE_BAND_SPACING = 1000;
 
 function mazeGate(y: number, gapPx: number, worldWidth: number): { pieces: ReefPieceSpec[]; reachEach: number } {
   const reachEach = (worldWidth - gapPx) / 2;
@@ -761,7 +764,9 @@ function grandMaze(worldWidth: number, centerY: number): ReefClusterSpec {
     }),
 
     ...gate.pieces,
-    piece({ key: "reef_rock_spikes", x: nookX, y: yGate + 60, scale: 0.16, alpha: 0.55, role: "background" }),
+    // reef_coral_branch en vez de reef_rock_spikes: todo el laberinto es
+    // ahora de un único lenguaje visual (hojas/orgánico, sin roca).
+    piece({ key: "reef_coral_branch", x: nookX, y: yGate + 60, scale: 0.16, alpha: 0.55, role: "background" }),
     piece({ key: "sponge", x: nookX, y: yGate - 40, scale: 0.14, alpha: 0.55, role: "background" }),
 
     corridorWall(sideCorridor, yCorridor, reachCorridor, GRAND_MAZE_WALL_POOL),

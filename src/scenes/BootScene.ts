@@ -114,10 +114,11 @@ export class BootScene extends Phaser.Scene {
     // del usuario: muchas formas distintas de la misma idea, no repetir
     // siempre la misma silueta.
     this.load.image("reef_branch_straight", assetPath("/objects/reef/branch_straight.png"));
+    // reef_branch_hook y anemone (más abajo) ya no se usan en ningún
+    // ReefTemplates.ts — retiradas por pedido explícito ("no me convence
+    // estos diseños"), pero se dejan cargadas por si hay que revertir.
     this.load.image("reef_branch_hook", assetPath("/objects/reef/branch_hook.png"));
     this.load.image("reef_branch_short", assetPath("/objects/reef/branch_short.png"));
-    // Anémona: pieza nueva de arrecife (pedido explícito: "veas qué nuevos
-    // enemigos hacer... rediseñar obstáculos"), arte generado con Gemini.
     this.load.image("anemone", assetPath("/objects/reef/anemone.png"));
     // Ronda de "muchos más obstáculos" (pedido explícito): 4 piezas nuevas,
     // todas diseñadas sin base/silueta de "apoyado en el suelo" para que
@@ -133,10 +134,10 @@ export class BootScene extends Phaser.Scene {
     this.load.image("reef_rock_slab", assetPath("/objects/reef/rock_slab.png"));
     this.load.image("reef_rock_smooth", assetPath("/objects/reef/rock_boulder_smooth.png"));
     // Pieza exclusiva del segundo laberinto (grandMaze, ver
-    // ReefTemplates.ts): pedido explícito "un diseño totalmente nuevo...
-    // estilo laberinto grande cozy", generada con Gemini a partir de las
-    // mismas anclas de estilo que boulder_rock — un cúmulo de 9 rocas
-    // mucho más grande y compuesto.
+    // ReefTemplates.ts). Segunda versión (pedido explícito: "que no sean
+    // rocas... como los laberintos reales pues de hojas, pero acuático"):
+    // un seto denso de hojas/algas generado con Gemini a partir de las
+    // mismas anclas de estilo que foreground_plants, no de las rocas.
     this.load.image("reef_maze_wall", assetPath("/objects/reef/maze_wall.png"));
     // Pedido explícito: "crea más rocas o pinchos en forma de obstáculo" —
     // cúmulo de rocas puntiagudas, silueta bien distinta de las otras 3

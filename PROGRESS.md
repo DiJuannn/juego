@@ -1582,23 +1582,80 @@ funciona **hoy**, verificado en el código — no lo que el diseño aspira a ten
     Confirmado visualmente en el motor real que se ve claramente más
     grande y elaborada que las rocas clásicas al lado. `npx tsc --noEmit`
     limpio, build de producción real exitoso con el nuevo PNG bundleado.
+- **Investigación de una captura real + segunda versión del arte del
+  laberinto + retirada de 2 piezas que "no convencen"**: el usuario
+  mandó una captura mostrando una anémona encima de un cúmulo verde/gris
+  con rayas onduladas, preguntando "¿por qué desapareció los pinchos del
+  principio?" y pidiendo "elimina esos dos obstáculos". Identificación
+  (comparando la captura contra cada PNG de `assets/objects/reef/` uno a
+  uno, no a ojo): el piso NO era `reef_maze_wall` — era la combinación de
+  `anemone` (plantilla `diagonalLeft`) y `reef_branch_hook` (una de las 4
+  variantes de `BRANCH_VARIANTS`, el "coral cerebro" de rayas onduladas),
+  que quedaron muy pegadas entre sí tras el ajuste de composición de una
+  ronda anterior (la anémona se acercó a la rama para dejar de "flotar
+  sola" — con `reef_branch_hook` en concreto, esa cercanía se lee como
+  una sola pieza fusionada fea). Sobre "los pinchos desaparecidos":
+  verificado en el código que `reef_rock_spikes` sigue presente en los 3
+  pools donde siempre estuvo (`WALL_PIECE_POOL`, `CORRIDOR_WALL_POOL`,
+  `GRAND_MAZE_WALL_POOL`) — no se quitó nada, lo más probable es que no
+  tocara salir en esa parte concreta de esa partida (solo ~12-14% de
+  probabilidad por posición).
+  - Retiradas del todo: `anemone` (pieza única en `diagonalLeft`,
+    eliminada del array de piezas) y `reef_branch_hook` (fuera de
+    `BRANCH_VARIANTS` y de `WALL_PIECE_POOL`, sus dos únicos usos). Ambas
+    siguen cargadas en `BootScene.ts` por si hay que revertir, mismo
+    criterio que `CoralWall`/`CoralSpawner` en su día.
+  - Pedido explícito adicional: "lo que quiero es tener varias piezas
+    para poner durante todo el tramo, no reemplazar la que ya teníamos"
+    — principio general para rondas futuras: sumar variedad al pool, no
+    sustituir piezas ya aceptadas por una sola nueva.
+  - Segunda versión del arte del laberinto grande: "la nueva pieza me la
+    imagino totalmente diferente que no sean rocas. Que sea como los
+    laberintos reales pues de hojas, pero acuático" — `reef_maze_wall`
+    (misma clave, mismo archivo, contenido nuevo) pasa de ser un cúmulo
+    de rocas a un seto denso de hojas/algas, generado con las mismas
+    anclas de estilo que `foreground_plants` (nunca con las rocas como
+    referencia esta vez). `GRAND_MAZE_WALL_POOL` ya no mezcla rocas
+    clásicas — todo el laberinto grande es ahora de un único lenguaje
+    visual (hojas).
+  - El nuevo lienzo (1344x768, casi a sangre completa, mucho más "ancho
+    que alto" que las rocas) tiene una extensión a lo largo de la pared
+    bastante mayor una vez rotado 90º a igual `reachPx` — recalculado con
+    la geometría real: `GRAND_MAZE_BAND_SPACING` subido de 820 a 1000
+    para mantener el margen de seguridad de siempre. Recalculado también
+    el offset del Tramo 3 en `Zone1Level.ts` (25330→25600) y
+    `ZONE1_LEVEL_END_OFFSET` (el cúmulo ahora es más alto: banda
+    [23840,27360] en vez de [23840,26820]).
+  - Verificado con `body.position` (30 muestras): siempre 4 bandas, cero
+    solapamiento vertical, hueco mínimo 249px (igual que antes) y margen
+    vertical mínimo real entre bandas de 279px (por encima del ~250px de
+    diseño). Confirmado visualmente en el motor que el seto se lee como
+    una pared de hojas densa y gruesa, distinta del resto de plantas de
+    fondo pero del mismo lenguaje visual del juego. Playtest automático
+    sin errores/cuelgues, `npx tsc --noEmit` limpio, build de producción
+    real exitoso con el PNG nuevo bundleado.
 
 # PENDIENTE
 
-- **"Crea más animales"** (repetido en dos mensajes seguidos) — sigue sin
-  arrancar. La almeja ya subió el recuento de animales reales de 6 a 7;
-  falta decidir con el usuario qué otras piezas hoy decorativas de
-  `ReefTemplates.ts` (anémona, percebe, esponja...) tienen sentido como
-  animal activo en vez de obstáculo estático, o diseñar especies
-  totalmente nuevas — siguiendo el mismo patrón Entity+Spawner+overlap ya
-  usado 7 veces. Requiere generación de arte nueva (Gemini), así que es
-  la tarea más grande que queda pendiente de este hilo de peticiones.
-- "Mejora el movimiento... más elaborado" ya se aplicó a erizo (giro
-  continuo) y almeja (balanceo), los dos animales más pasivos — el resto
-  (medusa, tiburón, calamar, cangrejo, pez grande) ya tenían varios
-  patrones de movimiento de rondas anteriores y no se tocaron esta vez.
-  Si el usuario sigue viendo alguno "muy pacífico" tras esta ronda, pedir
-  cuál en concreto en vez de retocar los 5 a ciegas.
+- **"Crea más animales"** (repetido varias veces) — sigue sin arrancar.
+  La almeja ya subió el recuento de animales reales de 6 a 7; falta
+  decidir con el usuario qué piezas hoy decorativas de `ReefTemplates.ts`
+  (percebe, esponja...) tienen sentido como animal activo en vez de
+  obstáculo estático, o diseñar especies totalmente nuevas — siguiendo el
+  mismo patrón Entity+Spawner+overlap ya usado 7 veces. Requiere
+  generación de arte nueva (Gemini, ya con precedente fresco tras
+  `reef_maze_wall`), así que sigue siendo la tarea más grande pendiente
+  de este hilo. La anémona (una de las candidatas obvias) ya no existe
+  como pieza — se retiró del todo, ver EN PROGRESO.
+- "Mejora el movimiento... más elaborado" se aplicó a la almeja
+  (balanceo) y se probó en el erizo (giro continuo), pero el usuario pidió
+  revertir el del erizo explícitamente ("la gracia de ellos es que
+  siempre están quietos" — ver EN PROGRESO). El resto (medusa, tiburón,
+  calamar, cangrejo, pez grande) ya tenían varios patrones de movimiento
+  de rondas anteriores y no se tocaron. Si el usuario sigue viendo alguno
+  "muy pacífico" tras esta ronda, pedir cuál en concreto en vez de
+  retocar a ciegas — el erizo ya demostró que "pasivo" a veces es a
+  propósito.
 - El protagonismo visual de los obstáculos de arrecife frente a los
   animales ya se atendió por dos vías: la anémona/coral_fan ahora animan
   mucho más (lectura "se ven quietos") y el hueco entre cúmulos de
@@ -1626,22 +1683,24 @@ que se cerraron)
 
 # PRÓXIMA TAREA
 
-`grandMaze` ya tiene arte propio (`reef_maze_wall`, generado con Gemini,
-"estilo laberinto grande cozy" pedido explícito) en vez de reciclar las
-rocas clásicas — ver EN PROGRESO para el detalle completo (generación,
-limpieza de transparencia, pool exclusivo, verificación de seguridad con
-la pieza nueva incluida). También revertido el giro del erizo por pedido
-explícito ("la gracia de ellos es que siempre están quietos"). Esperar la
-reacción del usuario a ambos antes de seguir tocando el segundo
-laberinto — si el estilo del `reef_maze_wall` no es exactamente lo que
-imaginaba, pedir qué cambiaría en concreto (¿otro color? ¿otra forma,
-menos "montón de piedras" y más "muro"?) en vez de generar más variantes
-a ciegas.
+`grandMaze` ya tiene su segunda versión de arte (`reef_maze_wall`, un
+seto denso de hojas/algas, "que no sean rocas... laberinto real de hojas
+pero acuático" pedido explícito) tras rechazar la primera ("cúmulo de
+rocas cozy"). También se identificó y resolvió la queja de la captura
+real (anémona + `reef_branch_hook` fusionadas, ambas retiradas del todo)
+y se revirtió el giro del erizo. Ver EN PROGRESO para el detalle completo
+de las tres cosas. Esperar la reacción del usuario a esta ronda antes de
+seguir tocando el segundo laberinto — si el seto de hojas tampoco
+convence, pedir qué cambiaría en concreto (¿otro tipo de planta? ¿otro
+color? ¿más "pared recortada" y menos "matorral denso"?) en vez de
+generar más variantes a ciegas. Tener en cuenta el principio que dejó
+claro esta ronda para cualquier arte nuevo futuro: sumar variedad al
+pool, nunca sustituir una pieza ya aceptada por una sola nueva.
 
 Sigue sin empezar, y sigue siendo lo más grande que queda de todo este
 hilo: "crea más animales" (pedido varias veces). Al retomarla, decidir
-con el usuario qué piezas hoy decorativas (anémona, percebe, esponja...)
-tienen sentido como animal activo, o diseñar una especie nueva desde
-cero, siguiendo el mismo patrón Entity+Spawner+overlap ya usado 7 veces
-— y ahora ya hay precedente fresco de generar arte nuevo bajo demanda
-(`reef_maze_wall`) si hace falta una criatura sin ancla existente.
+con el usuario qué piezas hoy decorativas (percebe, esponja...) tienen
+sentido como animal activo, o diseñar una especie nueva desde cero,
+siguiendo el mismo patrón Entity+Spawner+overlap ya usado 7 veces — y ya
+hay precedente fresco de generar arte nuevo bajo demanda (`reef_maze_wall`,
+dos veces esta ronda) si hace falta una criatura sin ancla existente.

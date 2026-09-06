@@ -78,11 +78,14 @@ const HITBOX_FRACTION: Record<string, [number, number, number, number]> = {
   // de rocas puntiagudas, bbox medido programáticamente igual que las
   // otras dos rocas nuevas.
   reef_rock_spikes: [0.198, 0.222, 0.794, 0.793],
-  // Pieza exclusiva del segundo laberinto (grandMaze, pedido explícito:
-  // "diseño totalmente nuevo... estilo laberinto grande cozy", generada
-  // con Gemini) — bbox medido programáticamente igual que las rocas de
-  // arriba.
-  reef_maze_wall: [0.071, 0.159, 0.951, 0.825],
+  // Pieza exclusiva del segundo laberinto (grandMaze). Segunda versión:
+  // pedido explícito "la nueva pieza me la imagino totalmente diferente
+  // que no sean rocas. Que sea como los laberintos reales pues de hojas,
+  // pero acuático" — ya no es un cúmulo de rocas, es un seto denso de
+  // hojas/algas (lienzo 1344x768, no cuadrado). Bbox medido
+  // programáticamente sobre el PNG real, casi a sangre completa (el seto
+  // ocupa prácticamente todo el lienzo).
+  reef_maze_wall: [0.001, 0.008, 0.997, 0.999],
 };
 
 /**
