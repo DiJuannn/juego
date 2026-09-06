@@ -1303,25 +1303,6 @@ funciona **hoy**, verificado en el código — no lo que el diseño aspira a ten
     (izquierda/derecha/izquierda o al revés) se cumplió en las 20. `npx
     tsc --noEmit` limpio, playtest automático sin errores, build de
     producción real exitoso.
-- **`reefLabyrinth` retirado del todo — pedido explícito: "las dos rocas
-  gigantes no, déjalas como estaban antes"**. Tras dos rondas de intentos
-  (2 bandas, luego 3 bandas en zigzag), el usuario decidió que ni siquiera
-  la versión corregida encajaba — vuelta a las 4 plantillas originales de
-  siempre (`diagonalLeft`/`centerTwoPaths`/`sCurveEdges`/`lateralWall`),
-  sin ningún 5º cúmulo especial. Retirada completa, no dejada dormida:
-  `reefLabyrinth`, `corridorWall`, `otherSide`, `corridorGapCenterX`,
-  `CORRIDOR_WALL_POOL`/`CORRIDOR_REACH_PX`/`CORRIDOR_BAND_SPACING` fuera
-  de `ReefTemplates.ts`; el mecanismo `edgeReach` (el complemento de
-  `edgeFlush` que calculaba la escala a partir de una penetración
-  deseada) fuera de `ReefCluster.ts` también, ya que solo lo usaba esta
-  plantilla y quedaba código muerto. `edgeFlush`/`wallPiece`/
-  `WALL_PIECE_POOL` (la variedad de rocas/corales en la pared lateral de
-  las 4 plantillas normales, ronda anterior) NO se tocan — esa parte sí
-  se mantiene, el rechazo era solo sobre el cúmulo especial de "casi todo
-  el mapa". Verificado: `npx tsc --noEmit` limpio (sin referencias
-  colgando al código retirado), playtest automático sin errores, build de
-  producción real exitoso (bundle más pequeño, confirma que el código se
-  quitó de verdad).
 
 # PENDIENTE
 
@@ -1345,15 +1326,16 @@ que se cerraron)
 
 # PRÓXIMA TAREA
 
-El cúmulo especial "que ocupe casi todo el mapa" (2 bandas, luego 3 bandas
-en zigzag) quedó descartado del todo tras dos rondas — no reabrir esa idea
-salvo que el usuario la pida de nuevo explícitamente, y en ese caso pedir
-una descripción más concreta de qué tenía en mente (dibujo, referencia de
-otro juego, etc.) antes de volver a intentarlo a ciegas por tercera vez.
-El arrecife vuelve a sus 4 plantillas de siempre. Esperar la reacción del
-usuario al resto de la ronda anterior que sigue en pie (medusa con
-movimiento visible, roca de pinchos nueva en `WALL_PIECE_POOL`) probada en
-su móvil real. Según lo que diga:
+Esperar la reacción del usuario a `reefLabyrinth` (el pasillo/laberinto de
+3 bandas en zigzag, corregido tras su primer feedback de que el diseño
+anterior de 2 bandas se sentía "un obstáculo" y no "un pasadizo bonito") y
+al resto de esta ronda (medusa con movimiento visible, roca de pinchos)
+probados en su móvil real. `reefLabyrinth` (5ª plantilla) solo entra en
+juego en la generación aleatoria de después de `ZONE1_LEVEL_END_OFFSET` —
+no se scripteó ninguna aparición garantizada en el Tramo 1/2 de
+`Zone1Level.ts`, así que el usuario puede tardar en topárselo si no juega
+lo bastante lejos; si pregunta por él y no lo ha visto, ofrecer añadirlo
+también al nivel scripteado. Según lo que diga:
 - Si el arrecife ya "se siente terminado": retomar el roadmap normal —
   Tramo 2 en adelante, variaciones de esqueleto, Zona 2.
 - Si sigue faltando algo puntual: pedir que describa el momento exacto
