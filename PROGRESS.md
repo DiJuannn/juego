@@ -1312,12 +1312,37 @@ funciona **hoy**, verificado en el código — no lo que el diseño aspira a ten
   bandas en zigzag, sin volver a escribir el código a mano, para no
   arriesgar una re-implementación ligeramente distinta). Verificado de
   nuevo tras el revert: 20 muestras, hueco mínimo 280.2px, cero
-  solapamiento entre bandas — mismas garantías que antes. Sigue pendiente
-  aclarar con el usuario si además quiere que aparezca garantizado al
-  principio del juego (ahora mismo solo sale en la generación aleatoria
-  después de `ZONE1_LEVEL_END_OFFSET`, lo cual probablemente explica por
-  qué "no le salía": toca progresar bastante en una partida real para
-  toparse con él por primera vez).
+  solapamiento entre bandas — mismas garantías que antes.
+- **`reefLabyrinth` garantizado al principio del juego** — preguntado
+  explícitamente tras la restauración ("¿quieres que te lo garantice
+  mucho antes, para que lo veas enseguida al jugar?"), el usuario
+  confirmó que sí. Nuevo "Tramo 0" en `Zone1Level.ts`: una única entrada
+  `{ type: "reef", offset: 1200, reefTemplate: 4 }` antes que nada más —
+  el laberinto es ya de por sí "difícil desde el minuto uno" y trae su
+  propia ruta de monedas, así que no se le amontona ningún otro peligro
+  encima.
+  - Todo el Tramo 1/2 original se desplazó +2240 (mismo valor que ya usaba
+    el nivel entre cúmulos consecutivos, para mantener el mismo criterio
+    de espaciado) para dejarle sitio sin solapar bandas: el laberinto
+    ocupa el rango de banda [250,2150] y el primer cúmulo del Tramo 1
+    original (antes en offset 960, ahora 3200) queda en [2950,3450] — casi
+    800px de margen libre entre ambos.
+  - `CURRENT_ZONE_START_OFFSET` (dónde arranca la corriente de agua, en
+    `GameConfig.ts`) era una fórmula duplicada e independiente de
+    `ZONE1_LEVEL_END_OFFSET` (los mismos números, `6500*1.6*2`,
+    mantenidos a mano en dos sitios) — se habría desincronizado de verdad
+    con este cambio (la corriente habría empezado antes de que terminara
+    el gauntlet final scripteado). Ahora se deriva directamente de
+    `ZONE1_LEVEL_END_OFFSET` para que no puedan volver a desincronizarse.
+  - Verificado en el motor (no solo en la spec): tras arrancar la escena
+    sin tocar nada, las 3 bandas del laberinto son literalmente lo primero
+    que coloca `ReefClusterSpawner` (antes que cualquier otro cúmulo del
+    Tramo 1), con el espaciado de banda esperado (700px entre bandas). El
+    playtest automático (zigzag aleatorio, no una IA que apunte al hueco)
+    a veces muere dentro del laberinto — esperado y correcto: es un reto
+    real de navegación, no un fallo, el hueco en sí sigue garantizado por
+    construcción (ver arriba). `npx tsc --noEmit` limpio, build de
+    producción real exitoso.
 
 # PENDIENTE
 
@@ -1341,16 +1366,18 @@ que se cerraron)
 
 # PRÓXIMA TAREA
 
-Esperar la reacción del usuario a `reefLabyrinth` (el pasillo/laberinto de
-3 bandas en zigzag, corregido tras su primer feedback de que el diseño
-anterior de 2 bandas se sentía "un obstáculo" y no "un pasadizo bonito") y
-al resto de esta ronda (medusa con movimiento visible, roca de pinchos)
-probados en su móvil real. `reefLabyrinth` (5ª plantilla) solo entra en
-juego en la generación aleatoria de después de `ZONE1_LEVEL_END_OFFSET` —
-no se scripteó ninguna aparición garantizada en el Tramo 1/2 de
-`Zone1Level.ts`, así que el usuario puede tardar en topárselo si no juega
-lo bastante lejos; si pregunta por él y no lo ha visto, ofrecer añadirlo
-también al nivel scripteado. Según lo que diga:
+Esperar la reacción del usuario a `reefLabyrinth` ya garantizado justo al
+empezar una partida nueva (Tramo 0, offset 1200) — con esto debería
+resolverse del todo el "no me sale" del mensaje anterior. Ojo: al ser lo
+primero que ve el jugador, el arranque del juego ahora es notablemente
+más exigente que antes (toca cruzar 3 bandas en zigzag desde el primer
+segundo, en vez de un único cúmulo sencillo) — si el usuario lo siente
+"demasiado duro para empezar", la vía más simple es mover esta entrada
+más adentro del Tramo 1 (no hace falta que sea literalmente lo primero)
+en vez de tocar las garantías de hueco/espaciado ya verificadas. Esperar
+también su reacción al resto de la ronda que sigue en pie (medusa con
+movimiento visible, roca de pinchos nueva en `WALL_PIECE_POOL`). Según lo
+que diga:
 - Si el arrecife ya "se siente terminado": retomar el roadmap normal —
   Tramo 2 en adelante, variaciones de esqueleto, Zona 2.
 - Si sigue faltando algo puntual: pedir que describa el momento exacto

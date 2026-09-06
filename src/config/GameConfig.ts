@@ -1,6 +1,8 @@
 // Constantes de tuning del juego. Nada de esto es arte: son números que
 // controlan cámara, velocidad y tamaño en pantalla.
 
+import { ZONE1_LEVEL_END_OFFSET } from "@/config/Zone1Level";
+
 // Pedido explícito: el juego está diseñado para jugarse en móvil, siempre
 // en vertical — estas medidas son solo el tamaño inicial antes de que el
 // modo RESIZE de Phaser (ver main.ts) lo ajuste al contenedor real; se
@@ -278,8 +280,14 @@ export const REEF_COIN_SPACING = 90; // separación entre monedas a lo largo de 
 
 // Corriente de agua: no es una criatura, es una franja de mundo que empuja
 // lateralmente mientras Lumi está dentro — el último obstáculo de la Zona
-// 1 (altura ~650), justo antes de la Zona 2.
-export const CURRENT_ZONE_START_OFFSET = 6500 * 1.6 * 2; // reescalado con el resto de la Zona 1 (ver arriba)
+// 1, justo antes de la Zona 2. Antes era una fórmula duplicada e
+// independiente de ZONE1_LEVEL_END_OFFSET (mismos números, "6500*1.6*2",
+// mantenidos a mano en dos sitios) — se desincronizaron de verdad al
+// insertar el laberinto de bienvenida en Zone1Level.ts (esa ronda solo
+// tocó ZONE1_LEVEL_END_OFFSET, dejando la corriente arrancando ANTES de
+// que terminara el gauntlet final scripteado). Derivado directamente de
+// ZONE1_LEVEL_END_OFFSET para que ya no puedan volver a desincronizarse.
+export const CURRENT_ZONE_START_OFFSET = ZONE1_LEVEL_END_OFFSET;
 export const CURRENT_ZONE_MIN_GAP = 1600;
 export const CURRENT_ZONE_MAX_GAP = 2600;
 export const CURRENT_ZONE_HEIGHT = 260;
