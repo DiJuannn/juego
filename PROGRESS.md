@@ -206,6 +206,48 @@ funciona **hoy**, verificado en el código — no lo que el diseño aspira a ten
   envoltura (muestreo de X a lo largo de varios ciclos, sin saltos), hueco
   real en Y donde Lumi puede colarse (captura in-game), y colisión letal
   real contra cualquiera de las dos mitades (game over con mensaje propio).
+- **Corrección del dragón marino: horizontal, hueco solo en la cola**
+  (pedido explícito tras ver la ronda anterior: "me confundí, que sea
+  horizontal. Y la separación sea de la cola nomas, no lo partas. Y hazlo
+  animado bien bueno"). Rediseño completo, no un ajuste — tres cambios:
+  - **Orientación**: el dragón ya no viaja vertical con el cuerpo de pie;
+    ahora nada TUMBADO en horizontal, deslizándose de lado a lado como se
+    pidió desde el principio, con la cabeza siempre por delante en la
+    dirección de avance (rotación base ±90° según el signo de la
+    dirección, derivado analíticamente de hacia dónde apunta el eje
+    cabeza→cola del arte original y verificado en juego para ambos
+    sentidos).
+  - **El hueco es solo de la cola, no parte el cuerpo**: recorte nuevo del
+    mismo dibujo (`sea_dragon_body.png`, cabeza+cuello+torso enteros sin
+    cortar, reemplaza a `sea_dragon_head.png`) — el corte real ahora cae
+    en la base de la cola (una sola hebra estrecha del serpenteo en S),
+    no a media espalda como la primera versión. `sea_dragon_tail.png` es
+    solo la punta de la cola enroscada. El hueco (`SEA_DRAGON_GAP_WIDTH`)
+    separa cuerpo y cola, nunca corta dentro del cuerpo mismo.
+  - **Animación real** ("hazlo animado bien bueno"): el cuerpo ondula
+    suave alrededor de su ángulo base (`SEA_DRAGON_BODY_SWAY_AMPLITUDE`
+    ±0.08 rad) mientras la cola azota con un latigazo mucho más marcado
+    (`SEA_DRAGON_TAIL_WAG_AMPLITUDE` ±0.4 rad), cada una con su propio
+    período y fase — ambas piezas usan origin por defecto (0.5/0.5) y
+    recalculan cada frame el offset mundo→costura según su ángulo actual
+    (`seamOffset`), así que la cola gira de verdad alrededor de su punto
+    de unión con el cuerpo (bisagra), no alrededor de su propio centro
+    geométrico. La hitbox física de cada pieza se calcula UNA sola vez
+    sobre el ángulo BASE (sin el vaivén/latigazo) y solo su centro se
+    reposiciona cada frame — mismo criterio que el resto de animales del
+    juego, para no arriesgar una hitbox rota recalculando la AABB rotada
+    en vivo sobre un ángulo que oscila constantemente.
+  - Verificado en juego con Playwright: cuerpo horizontal con la cabeza
+    liderando la dirección de avance (confirmado en ambos sentidos por
+    separado, cada uno con una instancia distinta), cuerpo intacto sin
+    ningún corte visible dentro de él, hueco real y legible únicamente
+    entre el cuerpo y la cola (capturas), deslizamiento + envoltura sin
+    saltos (una única transición limpia al cruzar el borde del mundo,
+    igual que la versión anterior), vaivén del cuerpo y latigazo de la
+    cola visibles frame a frame (ángulos muestreados a lo largo de varios
+    segundos), y colisión letal confirmada contra el cuerpo (mensaje
+    "¡Un dragón marino te ha atrapado!"). `npx tsc --noEmit` limpio, build
+    de producción empaqueta `sea_dragon_body.png`/`sea_dragon_tail.png`.
 
 # EN PROGRESO
 
@@ -2308,14 +2350,17 @@ avanzando)
 
 # PRÓXIMA TAREA
 
-Esperar la reacción del usuario a esta ronda (dragón marino nuevo — cuerpo
-largo en dos mitades que se desliza de lado a lado del mundo, envuelve al
-salir por un lateral y reaparece por el otro, con un hueco fijo para
-colarse). No se pudo confirmar por captura automatizada si el TIMING real
-de cronometrar el hueco se siente bien jugado a mano (solo se verificó
-geometría/colisión/envoltura programáticamente) — pedir confirmación de
-juego real antes de ajustar velocidad/tamaño del hueco. Si el usuario sigue
-viendo algo "cuadrado" en las paredes de laberinto de la ronda anterior,
+Esperar la reacción del usuario a esta ronda (corrección del dragón
+marino: ahora horizontal, cuerpo entero sin cortar, hueco solo antes de
+la cola, con vaivén de cuerpo + latigazo de cola). Verificado en juego
+que la orientación, el hueco y la animación se comportan como se pidió
+(capturas, muestreo de ángulos y posición, colisión letal), pero igual
+que con la primera versión, no se pudo confirmar por captura automatizada
+si el TIMING real de cronometrar el hueco (velocidad de deslizamiento,
+frecuencia de aparición) se siente bien jugado a mano — pedir
+confirmación de juego real antes de ajustar velocidad/tamaño del hueco.
+Si el usuario sigue viendo algo "cuadrado" en las paredes de laberinto de
+una ronda anterior,
 probablemente haga falta ver la captura exacta para saber si es una
 plantilla concreta (`reef_maze_wall` de hojas, que sigue siendo casi a
 sangre completa por diseño) o un ángulo/escala donde el montículo nuevo

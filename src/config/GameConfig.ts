@@ -313,24 +313,36 @@ export const BIG_FISH_PATROL_SPEED = 60;
 export const BIG_FISH_PUSH_STRENGTH = 300;
 export const BIG_FISH_PUSH_COOLDOWN_MS = 500;
 
-// Decimotercer enemigo (pedido explícito): "un dragón marino Largo que
-// vaya en vertical de lado a lado, pero que salga del mapa y reaparezca
-// la otra parte en el otro lateral... que deje un hueco justo para que
-// pase Lumi por ahí". Cuerpo largo en dos mitades (cabeza arriba, cola
-// abajo, ver entities/SeaDragon.ts) que se deslizan juntas en X sin
-// parar — nunca rebota como el tiburón, envuelve de un lateral al otro
-// del MUNDO. Muy espaciado: es un obstáculo grande y de cronometraje
+// Decimotercer enemigo (pedido explícito, con corrección posterior): "un
+// dragón marino Largo que vaya... de lado a lado, pero que salga del mapa
+// y reaparezca la otra parte en el otro lateral... que deje un hueco
+// justo para que pase Lumi por ahí" — "me confundí, que sea horizontal.
+// Y la separación sea de la cola nomas, no lo partas. Y hazlo animado
+// bien bueno". Cuerpo entero (cabeza+cuello+torso, sin cortar) orientado
+// en horizontal (nada de estar de pie) + la cola como pieza aparte
+// arrastrando detrás, con un hueco real entre torso y cola por donde
+// colarse — ver entities/SeaDragon.ts. Ambas piezas se deslizan juntas en
+// X sin parar — nunca rebota como el tiburón, envuelve de un lateral al
+// otro del MUNDO. Muy espaciado: es un obstáculo grande y de cronometraje
 // exigente, no debe aparecer seguido.
 export const SEA_DRAGON_MIN_GAP = 7000;
 export const SEA_DRAGON_MAX_GAP = 10000;
-export const SEA_DRAGON_SCALE = 0.45;
-// Hueco vertical real entre las dos mitades — más generoso que
+export const SEA_DRAGON_SCALE = 0.36;
+// Hueco horizontal real entre el torso y la cola — más generoso que
 // CORAL_GAP_WIDTH (230, el carril libre de la pared angosta) porque aquí
 // encima hay que cronometrar CUÁNDO cruzar, no solo POR DÓNDE.
-export const SEA_DRAGON_GAP_HEIGHT = 260;
+export const SEA_DRAGON_GAP_WIDTH = 180;
 // Velocidad de deslizamiento horizontal (px/s) — lenta a propósito: da
 // tiempo real a leer por dónde va el hueco antes de que llegue.
 export const SEA_DRAGON_SPEED = 70;
+// Animación (pedido explícito: "hazlo animado bien bueno") — el torso
+// ondula suave (como nadando de verdad) mientras la cola azota mucho más
+// marcado, como un latigazo, sujeta a la altura del hueco: no es solo un
+// giro estático plano.
+export const SEA_DRAGON_BODY_SWAY_AMPLITUDE = 0.08; // rad, ~4.6°
+export const SEA_DRAGON_BODY_SWAY_PERIOD_MS = 3400;
+export const SEA_DRAGON_TAIL_WAG_AMPLITUDE = 0.4; // rad, ~23°
+export const SEA_DRAGON_TAIL_WAG_PERIOD_MS = 800;
 
 // Coral estrecho: pedido explícito — un obstáculo plantado que solo deja
 // pasar a Lumi por UN lado (izquierda o derecha al azar), con el lado
