@@ -1,3 +1,5 @@
+import type { UrchinVariant } from "@/entities/Urchin";
+
 // Zona 1, diseñada a mano (pedido explícito: "como si fuera el Mario
 // Maker", nada de composición al azar). Sustituye a la generación
 // procedural de medusa/erizo/tiburón/calamar/pez grande/ReefCluster desde
@@ -99,6 +101,11 @@ export interface Zone1LevelEntry {
    * azar — pedido explícito: dos tiburones seguidos patrullando en
    * sentidos opuestos. */
   direction?: 1 | -1;
+  /** Solo para "urchin": qué tipo visual usar (ver entities/Urchin.ts).
+   * Por defecto el erizo original — pedido explícito ("haz más erizos de
+   * otros tipos") para que una columna vertical de varios no se lea como
+   * el mismo erizo repetido. */
+  variant?: UrchinVariant;
 }
 
 export const ZONE1_LEVEL_ENTRIES: Zone1LevelEntry[] = [
@@ -216,6 +223,17 @@ export const ZONE1_LEVEL_ENTRIES: Zone1LevelEntry[] = [
 
   // Segundo repetido del laberinto (antes centerTwoPaths aquí), tier 1.
   { type: "reef", offset: 16320, reefTemplate: 5 }, // miniLabyrinth (tier 1) — banda ~[15820,16820]
+  // Debut de la línea VERTICAL de erizos (pedido explícito: "haz más
+  // erizos de otros tipos que se coloquen en vertical en línea") — hasta
+  // ahora las líneas de erizo siempre eran horizontales (mismo offset,
+  // distinta x). Aquí es al revés: misma x, offsets escalonados, así que
+  // en vez de esquivar hacia un hueco lateral hay que esquivar la COLUMNA
+  // entera pasando por un lado mientras se sube. Solo 2 (hueco corto entre
+  // laberinto y calamar) — la versión larga de 3 en columna, y la versión
+  // "en paralelo" con dos columnas, están más arriba en dificultad (ver
+  // más abajo).
+  { type: "urchin", offset: 16920, x: 350, variant: "default" },
+  { type: "urchin", offset: 17120, x: 350, variant: "long" },
   { type: "squid", offset: 17280, x: 300 }, // debut del calamar
   // Pedido explícito: "entre más arriba más animales en combo colocados
   // estratégicamente" — este combo tenía 2 animales, ahora 4 (mantarraya
@@ -225,6 +243,20 @@ export const ZONE1_LEVEL_ENTRIES: Zone1LevelEntry[] = [
   { type: "mantaray", offset: 18050, x: 300 },
 
   { type: "reef", offset: 18560, reefTemplate: 2 }, // sCurveEdges — banda ~[18260,18860]
+  // "Zona" de erizos EN PARALELO (pedido explícito: "en paralelo puede ser
+  // una zona tmb") — dos columnas verticales a la vez, con un pasillo
+  // limpio en medio (x≈230-460 libre, WORLD_WIDTH=690) para subir
+  // esquivando ambas a la vez, no solo una. Más difícil que el debut de
+  // arriba (2 columnas en vez de 1) y colocada más arriba en altura, tal
+  // como se pidió ("cuando haya más dificultad aparezcan en vertical").
+  // Cada fila mezcla tipos distintos entre las dos columnas para que
+  // ninguna fila se lea repetida.
+  { type: "urchin", offset: 18950, x: 140, variant: "round" },
+  { type: "urchin", offset: 18950, x: 550, variant: "default" },
+  { type: "urchin", offset: 19150, x: 140, variant: "default" },
+  { type: "urchin", offset: 19150, x: 550, variant: "long" },
+  { type: "urchin", offset: 19350, x: 140, variant: "long" },
+  { type: "urchin", offset: 19350, x: 550, variant: "round" },
   // Misma idea que el combo de 3 erizos de más arriba, pero con 2 —
   // "dos erizos o tres en línea". Mismo ensanche de espaciado (ver el
   // combo de 3 erizos, offset 6560).

@@ -445,7 +445,7 @@ export class PondScene extends Phaser.Scene {
           this.jellyfishSpawner.spawnExact(y, entry.x);
           break;
         case "urchin":
-          this.urchinSpawner.spawnExact(y, entry.x);
+          this.urchinSpawner.spawnExact(y, entry.x, entry.variant);
           break;
         case "shark":
           this.sharkSpawner.spawnExact(y, entry.x, entry.direction);

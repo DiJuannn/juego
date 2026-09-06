@@ -91,6 +91,11 @@ export class BootScene extends Phaser.Scene {
     this.load.image("shark", assetPath("/objects/enemies/shark.png"));
     this.load.image("squid", assetPath("/objects/enemies/squid.png"));
     this.load.image("urchin", assetPath("/objects/enemies/urchin.png"));
+    // 2 tipos nuevos de erizo (pedido explícito: "haz más erizos de otros
+    // tipos") pensados para colocarse en columna vertical — ver
+    // entities/Urchin.ts.
+    this.load.image("urchin_long", assetPath("/objects/enemies/urchin_long.png"));
+    this.load.image("urchin_round", assetPath("/objects/enemies/urchin_round.png"));
     this.load.image("coral", assetPath("/objects/enemies/coral.png"));
     // Sexto enemigo (pedido explícito: "veas qué nuevos enemigos hacer"),
     // ver entities/Crab.ts.

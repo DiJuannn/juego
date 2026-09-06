@@ -1,5 +1,5 @@
 import Phaser from "phaser";
-import { Urchin } from "@/entities/Urchin";
+import { Urchin, UrchinVariant } from "@/entities/Urchin";
 import { URCHIN_MAX_GAP, URCHIN_MIN_GAP, URCHIN_SCALE, START_Y } from "@/config/GameConfig";
 import { isHazardAllowed } from "@/config/Zone1Segments";
 
@@ -13,6 +13,14 @@ const BUDDY_Y_OFFSET_MIN = 50;
 const BUDDY_Y_OFFSET_MAX = 110;
 const BUDDY_X_OFFSET_MIN = 150;
 const BUDDY_X_OFFSET_MAX = 280;
+// Pedido explícito ("haz más erizos de otros tipos"): la generación al
+// azar también mezcla los 2 tipos nuevos de vez en cuando, no solo el
+// nivel scripteado — el original sigue siendo el más común.
+const RANDOM_VARIANTS: UrchinVariant[] = ["default", "default", "default", "long", "round"];
+
+function randomVariant(): UrchinVariant {
+  return RANDOM_VARIANTS[Phaser.Math.Between(0, RANDOM_VARIANTS.length - 1)];
+}
 
 /** Cuarto enemigo: erizos, casi inmóviles. Mismo patrón de reciclado que
  * JellyfishSpawner. */
@@ -39,29 +47,30 @@ export class UrchinSpawner {
     // Progresión de Zona 1 en tramos (ver Zone1Segments).
     if (!isHazardAllowed(START_Y - y)) return;
     const x = Phaser.Math.Between(120, this.worldWidth - 120);
-    this.place(y, x);
+    this.place(y, x, randomVariant());
 
     if (Phaser.Math.FloatBetween(0, 1) < BUDDY_CHANCE) {
       const buddyY = y - Phaser.Math.Between(BUDDY_Y_OFFSET_MIN, BUDDY_Y_OFFSET_MAX);
       const xOffset = Phaser.Math.Between(BUDDY_X_OFFSET_MIN, BUDDY_X_OFFSET_MAX);
       const buddyX = Phaser.Math.Clamp(x + (Math.random() < 0.5 ? -xOffset : xOffset), 120, this.worldWidth - 120);
       if (!this.isWithinCoralBand?.(buddyY) && isHazardAllowed(START_Y - buddyY)) {
-        this.place(buddyY, buddyX);
+        this.place(buddyY, buddyX, randomVariant());
       }
     }
   }
 
   /** Colocación exacta desde el nivel scripteado del Tramo 1 (ver
    * Zone1Level.ts) — sin las comprobaciones de banda/descanso, que son
-   * solo para la generación al azar de más arriba. */
-  spawnExact(y: number, x?: number) {
-    this.place(y, x);
+   * solo para la generación al azar de más arriba. `variant` por defecto
+   * es el erizo original. */
+  spawnExact(y: number, x?: number, variant?: UrchinVariant) {
+    this.place(y, x, variant);
   }
 
-  private place(y: number, x?: number) {
+  private place(y: number, x?: number, variant?: UrchinVariant) {
     const finalX = x ?? Phaser.Math.Between(120, this.worldWidth - 120);
     const scale = URCHIN_SCALE * Phaser.Math.FloatBetween(0.9, 1.1);
-    const urchin = new Urchin(this.scene, finalX, y, scale);
+    const urchin = new Urchin(this.scene, finalX, y, scale, variant);
     this.group.add(urchin.sprite);
     this.urchins.push(urchin);
     if (y < this.highestY) this.highestY = y;

@@ -1943,6 +1943,44 @@ funciona **hoy**, verificado en el código — no lo que el diseño aspira a ten
     residuo de checkerboard ni artefactos, y build de producción
     (`GITHUB_PAGES=true vite build`) confirmando que ambos PNG se
     empaquetan.
+- **2 tipos nuevos de erizo + colocación en columna VERTICAL** (pedido
+  explícito: "haz más erizos de otros tipos que se coloquen en vertical en
+  línea para cuando haya más dificultad aparezcan en vertical y en
+  paralelo puede ser una zona"). Hasta ahora todas las líneas de erizo
+  eran horizontales (mismo offset, distinta x) — el pedido es lo
+  contrario: misma x, offsets escalonados, así que hay que esquivar la
+  columna entera pasando por un lado mientras se sube, no elegir un hueco
+  lateral.
+  - **Arte**: `urchin_long` (cuerpo ovalado, púas muy largas y finas, azul
+    pastel con puntas moradas) y `urchin_round` (cuerpo compacto casi
+    esférico, púas cortas y densas, coral con puntas crema) — ambos
+    generados con Gemini a partir de `urchin.png` como ancla de estilo,
+    pidiendo explícitamente un tipo de erizo distinto (no una variación
+    mínima). Limpieza de transparencia con el bypass manual habitual
+    (salida cruda 100% opaca con checkerboard horneado); verificados por
+    composite en magenta antes de integrar. Ninguno de los dos tiene pose
+    de parpadeo propia (mismo criterio que Barnacle/CoralTrap — no todos
+    los animales la necesitan).
+  - **Código**: `Urchin.ts` ahora toma un `variant` opcional
+    (`"default"|"long"|"round"`) con textura e hitbox propias por tipo
+    (medida sobre cada PNG, igual criterio que siempre — región de
+    densidad real, no el lienzo completo). `UrchinSpawner.spawnExact()`
+    admite el mismo parámetro; la generación al azar también mezcla los 3
+    tipos (60% original, 20%/20% los nuevos) para que no sea exclusivo del
+    nivel scripteado.
+  - **Nivel scripteado** (`Zone1Level.ts`): debut de una columna corta (2
+    erizos, offset 16920/17120, x=350) en el hueco entre el segundo mini
+    laberinto y el debut del calamar; más arriba, una "zona" de 2 columnas
+    EN PARALELO (offset 18950-19350, x=140 y x=550, 3 filas cada una,
+    tipos mezclados por fila) con un pasillo libre de ~260-320px en medio
+    (verificado por hitbox real vía Playwright) — pedido explícito: "en
+    paralelo puede ser una zona tmb". Colocada más arriba que el debut
+    (más difícil, 2 columnas en vez de 1), tal como se pidió ("cuando haya
+    más dificultad aparezcan en vertical").
+  - Verificado: `npx tsc --noEmit` limpio, spawn manual + medición de
+    hitbox por Playwright confirmando tamaño/textura correctos por tipo,
+    captura in-game confirmando arte y estilo correctos, build de
+    producción empaquetando ambos PNG nuevos.
 
 # PENDIENTE
 
@@ -2007,10 +2045,15 @@ avanzando)
 
 # PRÓXIMA TAREA
 
-Esperar la reacción del usuario a esta ronda (caballito patrullando el
-mapa de verdad, más densidad de medusas/combos, mantarraya y pez volador
-como animales 11 y 12) antes de seguir. Líneas abiertas explícitas:
+Esperar la reacción del usuario a esta ronda (2 tipos nuevos de erizo,
+columna vertical de erizos + zona de 2 columnas en paralelo) antes de
+seguir. Líneas abiertas explícitas:
 
+0. **Confirmar que la "zona en paralelo" se lee bien en el móvil** — el
+   pasillo libre entre las 2 columnas (offset 18950-19350) mide ~260-320px
+   verificado por hitbox real, pero solo se probó en el viewport de
+   escritorio de este entorno de test; pedir confirmación real en pantalla
+   táctil antes de repetir el patrón en más sitios.
 1. **"Mejora las animaciones de los animales"** — atendido para el
    caballito en la ronda anterior; el resto (medusa aparte del rastro de
    burbujas, tiburón, calamar, erizo, cangrejo, pez grande, coral trampa,
