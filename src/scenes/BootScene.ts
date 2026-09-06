@@ -158,6 +158,11 @@ export class BootScene extends Phaser.Scene {
     // un seto denso de hojas/algas generado con Gemini a partir de las
     // mismas anclas de estilo que foreground_plants, no de las rocas.
     this.load.image("reef_maze_wall", assetPath("/objects/reef/maze_wall.png"));
+    // 2 estilos de muro más (pedido explícito: "crea con Gemini distintos
+    // laberintos... que sean así como los que tenemos pero diferentes") —
+    // ver shellMaze/spongeMaze en ReefTemplates.ts.
+    this.load.image("reef_maze_wall_shell", assetPath("/objects/reef/maze_wall_shell.png"));
+    this.load.image("reef_maze_wall_sponge", assetPath("/objects/reef/maze_wall_sponge.png"));
     // Pedido explícito: "crea más rocas o pinchos en forma de obstáculo" —
     // cúmulo de rocas puntiagudas, silueta bien distinta de las otras 3
     // (redondeadas/planas) para que se note como una pieza nueva de verdad.

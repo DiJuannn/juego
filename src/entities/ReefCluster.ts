@@ -93,6 +93,13 @@ const HITBOX_FRACTION: Record<string, [number, number, number, number]> = {
   // programáticamente sobre el PNG real, casi a sangre completa (el seto
   // ocupa prácticamente todo el lienzo).
   reef_maze_wall: [0.001, 0.008, 0.997, 0.999],
+  // Pedido explícito: "crea con Gemini distintos laberintos... que sean
+  // así como los que tenemos pero diferentes" — 2 estilos de muro nuevos
+  // para laberintos (ver shellMaze/spongeMaze en ReefTemplates.ts), ambos
+  // a sangre completa igual que reef_maze_wall, bbox medido
+  // programáticamente sobre cada PNG real.
+  reef_maze_wall_shell: [0, 0, 0.999, 0.999],
+  reef_maze_wall_sponge: [0, 0.01, 0.999, 0.999],
 };
 
 /**
@@ -280,6 +287,10 @@ const NO_BREATHE_KEYS = new Set([
   // el resto de rocas: una hitbox que cambia de tamaño en vivo podría, en
   // el peor caso, cerrar el paso.
   "reef_maze_wall",
+  // Mismo motivo: paredes de los 2 nuevos estilos de laberinto
+  // (shellMaze/spongeMaze, ver ReefTemplates.ts).
+  "reef_maze_wall_shell",
+  "reef_maze_wall_sponge",
 ]);
 
 // Amplitud/periodo pensados para que se note como un detalle vivo, no como

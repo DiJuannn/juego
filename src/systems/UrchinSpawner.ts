@@ -47,14 +47,18 @@ export class UrchinSpawner {
     // Progresión de Zona 1 en tramos (ver Zone1Segments).
     if (!isHazardAllowed(START_Y - y)) return;
     const x = Phaser.Math.Between(120, this.worldWidth - 120);
-    this.place(y, x, randomVariant());
+    // Pedido explícito: "no combines erizos de distintos tipos juntos" —
+    // un mismo tipo para el erizo y su compañero (si sale), nunca cada uno
+    // el suyo al azar.
+    const variant = randomVariant();
+    this.place(y, x, variant);
 
     if (Phaser.Math.FloatBetween(0, 1) < BUDDY_CHANCE) {
       const buddyY = y - Phaser.Math.Between(BUDDY_Y_OFFSET_MIN, BUDDY_Y_OFFSET_MAX);
       const xOffset = Phaser.Math.Between(BUDDY_X_OFFSET_MIN, BUDDY_X_OFFSET_MAX);
       const buddyX = Phaser.Math.Clamp(x + (Math.random() < 0.5 ? -xOffset : xOffset), 120, this.worldWidth - 120);
       if (!this.isWithinCoralBand?.(buddyY) && isHazardAllowed(START_Y - buddyY)) {
-        this.place(buddyY, buddyX, randomVariant());
+        this.place(buddyY, buddyX, variant);
       }
     }
   }

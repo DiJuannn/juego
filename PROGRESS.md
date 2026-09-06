@@ -2043,6 +2043,55 @@ funciona **hoy**, verificado en el código — no lo que el diseño aspira a ten
   se tocó, solo se extendió la cola). Igual que el resto de repeticiones de
   laberinto, ya no depende de la generación al azar para que el usuario lo
   vea — está garantizado dentro del nivel diseñado a mano.
+- **Erizos: nunca combinar tipos distintos "juntos"** (pedido explícito:
+  "no combines erizos de distintos tipos juntos"). La ronda anterior
+  mezclaba `default`/`long`/`round` dentro de la misma columna vertical y
+  dentro de la misma "zona en paralelo" (una fila con un tipo, otra fila
+  con otro) — corregido: la columna debut (offset 16920/17120) y las 3
+  filas × 2 columnas de la zona en paralelo (offset 18950-19350) usan
+  ahora un único tipo cada una. `UrchinSpawner.spawnAt()` (generación al
+  azar) también corregido: antes tiraba `randomVariant()` dos veces
+  (erizo + su "buddy" cercano), pudiendo salir distinto tipo aunque
+  aparecieran a menos de 280px el uno del otro — ahora se sortea una sola
+  vez y se reutiliza para ambos.
+- **2 estilos de laberinto más, con arte nuevo generado con Gemini**
+  (pedido explícito: "crea con Gemini distintos laberintos para
+  colocarlos tmb que sean así como los que tenemos pero diferentes").
+  Mismo mecanismo EXACTO que `reefLabyrinth` (3 bandas alternando de lado
+  A/B/A, hueco EXACTO garantizado por `edgeReach`, animales reales dentro
+  según altura vía `labyrinthAnimalTier`) factorizado en un helper
+  compartido (`alternatingWallMaze`) — la variedad aquí es de ARTE, no de
+  recorrido (ya hay plantillas con recorridos distintos:
+  `doubleZigzagMaze`, `grandMaze`).
+  - **Arte**: `reef_maze_wall_shell` (muro de conchas/percebes apilados,
+    tonos crema/rosa/lavanda) y `reef_maze_wall_sponge` (muro de esponjas
+    marinas abultadas, tonos coral/amarillo/naranja pastel), ambos
+    generados con Gemini a partir de `maze_wall.png` (el seto de hojas del
+    laberinto grande) + `jellyfish.png` + `boulder_rock.png` como anclas,
+    pidiendo explícitamente una pared a sangre completa (borde a borde,
+    sin huecos) como la referencia. Limpieza de transparencia con el flujo
+    normal (sin necesitar el bypass manual esta vez — ninguna de las dos
+    salidas crudas disparó la salvaguarda de "más de la mitad borrado").
+    Canvas cuadrado 1024×1024 en ambas (a diferencia del 1344×768 de
+    `reef_maze_wall`), con bbox medido programáticamente y añadido a
+    `HITBOX_FRACTION` en `ReefCluster.ts` (imprescindible: sin esa entrada
+    `edgeReach` no sabe calcular el hueco real de la pared) — también
+    añadidas a `NO_BREATHE_KEYS` (paredes de laberinto nunca deben
+    "respirar": una hitbox que cambia de tamaño en vivo podría cerrar el
+    paso).
+  - **Nivel scripteado**: Tramo 5 nuevo tras `doubleZigzagMaze`
+    (offset 32660) — mantarraya → `shellMaze` (offset 34010, índice 8) →
+    balano → `spongeMaze` (offset 36310, índice 9), cerrando el nivel en
+    el punto más alto de todos. `ZONE1_LEVEL_END_OFFSET` subido de 33460 a
+    38060 (cambio puramente aditivo, igual que el Tramo 4 de la ronda
+    anterior).
+  - Verificado: `npx tsc --noEmit` limpio, generación de 5 instancias de
+    cada plantilla con medición de hueco libre real por hitbox
+    (Playwright) — todas entre 283-320px, dentro de lo esperado
+    matemáticamente (canvas cuadrado ⇒ penetración a lo largo de la pared
+    ronda el propio `reachPx`, muy por debajo del margen de seguridad de
+    `CORRIDOR_BAND_SPACING`), captura in-game confirmando arte correcto,
+    build de producción empaquetando ambos PNG.
 
 # PENDIENTE
 
@@ -2107,20 +2156,23 @@ avanzando)
 
 # PRÓXIMA TAREA
 
-Esperar la reacción del usuario a esta ronda (tiburón más frecuente y con
-persecución repetible/progresiva, laberinto nuevo doubleZigzagMaze,
-Tramo 4 con reefLabyrinth repetido) antes de seguir. Líneas abiertas
-explícitas:
+Esperar la reacción del usuario a esta ronda (erizos ya nunca mezclan
+tipos, 2 estilos nuevos de laberinto con arte de Gemini — conchas y
+esponjas) antes de seguir. Líneas abiertas explícitas:
 
 0. **Confirmar que la "zona en paralelo" de erizos se lee bien en el
    móvil** — el pasillo libre entre las 2 columnas (offset 18950-19350)
    mide ~260-320px verificado por hitbox real, pero solo se probó en el
    viewport de escritorio de este entorno de test; pedir confirmación real
    en pantalla táctil antes de repetir el patrón en más sitios.
-0b. **El Tramo 4 nuevo (offset ~27560-32660) alarga bastante la partida
-   completa** — es un cambio puramente aditivo (nada anterior se movió),
-   pero conviene que el usuario confirme que el ritmo hasta el final se
-   sigue sintiendo bien tras la extensión, no solo que "funciona".
+0b. **La partida completa ya es bastante larga** — dos rondas seguidas
+   extendieron la cola del nivel scripteado de forma puramente aditiva
+   (Tramo 4: 27560-32660; Tramo 5: 32960-37260; `ZONE1_LEVEL_END_OFFSET`
+   pasó de 28160 a 38060 en total). Cada extensión por separado es segura
+   (nada anterior se movió), pero convendría preguntar al usuario si el
+   ritmo de la partida completa hasta el final se sigue sintiendo bien, en
+   vez de seguir alargando la cola sin más en la próxima ronda de
+   contenido nuevo.
 1. **"Mejora las animaciones de los animales"** — atendido para el
    caballito en la ronda anterior; el resto (medusa aparte del rastro de
    burbujas, tiburón, calamar, erizo, cangrejo, pez grande, coral trampa,

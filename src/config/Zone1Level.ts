@@ -73,12 +73,21 @@ import type { UrchinVariant } from "@/entities/Urchin";
 // centrado en 28710 ocupa [28710-950,28710+950]=[27760,29660] (margen de
 // 400 tras el final de grandMaze en 27360); doubleZigzagMaze centrado en
 // 31360 ocupa [31360-1300,31360+1300]=[30060,32660] (margen de 400 tras el
-// final del laberinto anterior en 29660). El nivel scripteado ya no
-// termina en 27360 sino después de esta banda + el mismo margen de
+// final del laberinto anterior en 29660).
+// Tramo 5 (misma ronda que el Tramo 4, pedido explícito: "crea con Gemini
+// distintos laberintos para colocarlos tmb que sean así como los que
+// tenemos pero diferentes") — 2 laberintos más, mismo mecanismo que
+// `reefLabyrinth` (3 bandas alternando de lado) pero con arte nuevo
+// generado con Gemini: `shellMaze` (índice 8, muro de conchas) centrado en
+// 34010 ocupa [34010-950,34010+950]=[33060,34960] (margen de 400 tras el
+// final de doubleZigzagMaze en 32660); `spongeMaze` (índice 9, muro de
+// esponjas) centrado en 36310 ocupa [36310-950,36310+950]=[35360,37260]
+// (margen de 400 tras el final de shellMaze en 34960). El nivel scripteado
+// ya no termina en 32660 sino después de esta banda + el mismo margen de
 // siempre para que Lumi tenga agua abierta para recuperarse antes de que
 // arranque la corriente (ver CURRENT_ZONE_START_OFFSET en GameConfig.ts,
 // que se deriva de este valor).
-export const ZONE1_LEVEL_END_OFFSET = 32660 + 800;
+export const ZONE1_LEVEL_END_OFFSET = 37260 + 800;
 
 export type Zone1LevelEntryType =
   | "jellyfish"
@@ -106,7 +115,8 @@ export interface Zone1LevelEntry {
   x?: number;
   /** Solo para "reef": índice en REEF_TEMPLATES (0=diagonalLeft,
    * 1=centerTwoPaths, 2=sCurveEdges, 3=lateralWall, 4=reefLabyrinth,
-   * 5=miniLabyrinth, 6=grandMaze, 7=doubleZigzagMaze). */
+   * 5=miniLabyrinth, 6=grandMaze, 7=doubleZigzagMaze, 8=shellMaze,
+   * 9=spongeMaze). */
   reefTemplate?: number;
   /** Solo para "shark": fuerza el sentido de patrulla en vez de tirarlo al
    * azar — pedido explícito: dos tiburones seguidos patrullando en
@@ -242,8 +252,9 @@ export const ZONE1_LEVEL_ENTRIES: Zone1LevelEntry[] = [
   // entera pasando por un lado mientras se sube. Solo 2 (hueco corto entre
   // laberinto y calamar) — la versión larga de 3 en columna, y la versión
   // "en paralelo" con dos columnas, están más arriba en dificultad (ver
-  // más abajo).
-  { type: "urchin", offset: 16920, x: 350, variant: "default" },
+  // más abajo). Pedido explícito: "no combines erizos de distintos tipos
+  // juntos" — toda la columna usa el mismo tipo.
+  { type: "urchin", offset: 16920, x: 350, variant: "long" },
   { type: "urchin", offset: 17120, x: 350, variant: "long" },
   { type: "squid", offset: 17280, x: 300 }, // debut del calamar
   // Pedido explícito: "entre más arriba más animales en combo colocados
@@ -260,13 +271,14 @@ export const ZONE1_LEVEL_ENTRIES: Zone1LevelEntry[] = [
   // esquivando ambas a la vez, no solo una. Más difícil que el debut de
   // arriba (2 columnas en vez de 1) y colocada más arriba en altura, tal
   // como se pidió ("cuando haya más dificultad aparezcan en vertical").
-  // Cada fila mezcla tipos distintos entre las dos columnas para que
-  // ninguna fila se lea repetida.
+  // Pedido explícito: "no combines erizos de distintos tipos juntos" — las
+  // 2 columnas y las 3 filas usan todas el mismo tipo (antes mezclaba los
+  // 3 tipos entre filas/columnas).
   { type: "urchin", offset: 18950, x: 140, variant: "round" },
-  { type: "urchin", offset: 18950, x: 550, variant: "default" },
-  { type: "urchin", offset: 19150, x: 140, variant: "default" },
-  { type: "urchin", offset: 19150, x: 550, variant: "long" },
-  { type: "urchin", offset: 19350, x: 140, variant: "long" },
+  { type: "urchin", offset: 18950, x: 550, variant: "round" },
+  { type: "urchin", offset: 19150, x: 140, variant: "round" },
+  { type: "urchin", offset: 19150, x: 550, variant: "round" },
+  { type: "urchin", offset: 19350, x: 140, variant: "round" },
   { type: "urchin", offset: 19350, x: 550, variant: "round" },
   // Misma idea que el combo de 3 erizos de más arriba, pero con 2 —
   // "dos erizos o tres en línea". Mismo ensanche de espaciado (ver el
@@ -328,7 +340,18 @@ export const ZONE1_LEVEL_ENTRIES: Zone1LevelEntry[] = [
 
   // doubleZigzagMaze, el estilo NUEVO (índice 7, ver ReefTemplates.ts) —
   // dos bandas seguidas pegadas al mismo lado antes de cruzar del todo,
-  // en vez del zigzag de siempre. Cierra el nivel scripteado en el punto
-  // más alto y más difícil. Banda [31360-1300,31360+1300]=[30060,32660].
+  // en vez del zigzag de siempre. Banda [31360-1300,31360+1300]=[30060,32660].
   { type: "reef", offset: 31360, reefTemplate: 7 }, // doubleZigzagMaze — banda ~[30060,32660]
+
+  // --- Tramo 5: 2 estilos de laberinto MÁS (pedido explícito de la misma
+  // ronda: "crea con Gemini distintos laberintos para colocarlos tmb que
+  // sean así como los que tenemos pero diferentes") — mismo mecanismo que
+  // reefLabyrinth (3 bandas alternando de lado), pero con arte nuevo
+  // generado con Gemini: un laberinto de conchas y uno de esponjas, en vez
+  // de siempre las mismas rocas o el mismo seto de hojas. Cierra el nivel
+  // scripteado en el punto más alto y más difícil de todos.
+  { type: "mantaray", offset: 32960, x: 350 },
+  { type: "reef", offset: 34010, reefTemplate: 8 }, // shellMaze — banda ~[33060,34960]
+  { type: "barnacle", offset: 35160, x: 300 },
+  { type: "reef", offset: 36310, reefTemplate: 9 }, // spongeMaze — banda ~[35360,37260]
 ];

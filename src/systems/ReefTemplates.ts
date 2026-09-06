@@ -784,6 +784,91 @@ function doubleZigzagMaze(worldWidth: number, centerY: number): ReefClusterSpec 
   return { pieces, path, yTop: y4 - 250, yBottom: y1 + 250, animalHints };
 }
 
+/**
+ * 9-10) Dos laberintos más, MISMO mecanismo que `reefLabyrinth` (3 bandas
+ * alternando de lado A/B/A, hueco EXACTO garantizado por `edgeReach`,
+ * animales reales dentro según altura) pero con arte nuevo generado con
+ * Gemini — pedido explícito: "crea con Gemini distintos laberintos para
+ * colocarlos tmb que sean así como los que tenemos pero diferentes". La
+ * variedad aquí es visual (un "laberinto de conchas" y un "laberinto de
+ * esponjas", en vez de siempre las mismas rocas), no de recorrido — ya hay
+ * plantillas con recorridos distintos (`doubleZigzagMaze`, `grandMaze`).
+ * `reef_maze_wall_shell`/`reef_maze_wall_sponge` son piezas a sangre
+ * completa (canvas cuadrado 1024×1024, casi sin margen transparente,
+ * mismo criterio que `reef_maze_wall`) — con `CORRIDOR_REACH_PX` la
+ * extensión a lo largo de la pared ronda los ~400px (canvas cuadrado, a
+ * diferencia del 1344×768 de `reef_maze_wall`), muy por debajo de
+ * `CORRIDOR_BAND_SPACING` (700), así que reutilizan las mismas constantes
+ * de reefLabyrinth sin necesitar un espaciado especial.
+ */
+function alternatingWallMaze(worldWidth: number, centerY: number, pool: string[]): ReefClusterSpec {
+  const bottomY = centerY + CORRIDOR_BAND_SPACING;
+  const midY = centerY;
+  const topY = centerY - CORRIDOR_BAND_SPACING;
+
+  const sideBottom: Side = Math.random() < 0.5 ? "left" : "right";
+  const sideMid = otherSide(sideBottom);
+  const sideTop = sideBottom;
+
+  const jitterReach = () => CORRIDOR_REACH_PX * (1 + Phaser.Math.FloatBetween(-0.05, 0.05));
+  const reachBottom = jitterReach();
+  const reachMid = jitterReach();
+  const reachTop = jitterReach();
+
+  const gapBottom = corridorGapCenterX(worldWidth, sideBottom, reachBottom);
+  const gapMid = corridorGapCenterX(worldWidth, sideMid, reachMid);
+  const gapTop = corridorGapCenterX(worldWidth, sideTop, reachTop);
+
+  const pieces: ReefPieceSpec[] = [
+    corridorWall(sideBottom, bottomY, reachBottom, pool),
+    corridorWall(sideMid, midY, reachMid, pool),
+    corridorWall(sideTop, topY, reachTop, pool),
+    bgAccent(pool[0], sideTop === "left" ? worldWidth * 0.08 : worldWidth * 0.92, topY - 150, 0.16),
+  ];
+
+  const path = [
+    { x: gapBottom, y: bottomY + 200 },
+    { x: gapBottom, y: bottomY },
+    { x: (gapBottom + gapMid) / 2, y: (bottomY + midY) / 2 },
+    { x: gapMid, y: midY },
+    { x: (gapMid + gapTop) / 2, y: (midY + topY) / 2 },
+    { x: gapTop, y: topY },
+    { x: gapTop, y: topY - 200 },
+  ];
+
+  const tier = labyrinthAnimalTier(centerY);
+  const inward = (side: Side) => (side === "left" ? 1 : -1);
+  const bands = [
+    { side: sideBottom, gap: gapBottom, y: bottomY },
+    { side: sideMid, gap: gapMid, y: midY },
+    { side: sideTop, gap: gapTop, y: topY },
+  ];
+  const animalHints = Phaser.Utils.Array.Shuffle(bands.slice())
+    .slice(0, tier)
+    .map((band) => {
+      const type = (Math.random() < 0.5 ? "urchin" : "seahorse") as "urchin" | "seahorse";
+      return {
+        type,
+        x: band.gap + inward(band.side) * LABYRINTH_ANIMAL_OFFSET_PX,
+        y: band.y,
+        patrolRadius: type === "seahorse" ? LABYRINTH_SEAHORSE_PATROL_RADIUS : undefined,
+      };
+    });
+
+  return { pieces, path, yTop: topY - 250, yBottom: bottomY + 250, animalHints };
+}
+
+const SHELL_WALL_POOL = ["reef_maze_wall_shell"];
+const SPONGE_WALL_POOL = ["reef_maze_wall_sponge"];
+
+function shellMaze(worldWidth: number, centerY: number): ReefClusterSpec {
+  return alternatingWallMaze(worldWidth, centerY, SHELL_WALL_POOL);
+}
+
+function spongeMaze(worldWidth: number, centerY: number): ReefClusterSpec {
+  return alternatingWallMaze(worldWidth, centerY, SPONGE_WALL_POOL);
+}
+
 export const REEF_TEMPLATES: ((worldWidth: number, centerY: number) => ReefClusterSpec)[] = [
   diagonalLeft,
   centerTwoPaths,
@@ -793,4 +878,6 @@ export const REEF_TEMPLATES: ((worldWidth: number, centerY: number) => ReefClust
   miniLabyrinth,
   grandMaze,
   doubleZigzagMaze,
+  shellMaze,
+  spongeMaze,
 ];
