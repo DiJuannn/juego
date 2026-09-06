@@ -1710,17 +1710,139 @@ funciona **hoy**, verificado en el código — no lo que el diseño aspira a ten
     producción real con `seahorse.png`/`seahorse_blink.png` bundleados
     confirmado.
 
+- **Almeja gigante: boca mucho más abierta, secuencia de mordisco real y
+  sprite propio de Lumi siendo comida** (pedido explícito: "la almeja no
+  parece que haga la animación... boca abierta muy abierta del inicio y
+  al tocarla se cierre y coma a lumi", "lumi haz otro Sprite de siendo
+  comido por la almeja"):
+  - `giant_clam.png` regenerado con Gemini: mismo diseño/paleta/contorno
+    de la concha ya aprobada, pero con la boca dramáticamente más abierta
+    (valva de arriba casi vertical, "lengua"/perla mucho más expuesta) —
+    limpieza de transparencia con el caso ya documentado de "checkerboard
+    llena todo el lienzo", verificado que el hueco de la boca es real
+    (conectado al fondo transparente por los lados, no un agujero
+    interior falso). Hitbox de `GiantClam.ts` remedida sobre el nuevo arte
+    (bbox `671x658` offset `(194,178)`, antes `757.76x604.16`/`(133,215)`).
+  - **Secuencia de mordisco de 3 fases** (`GiantClam.triggerBite()`):
+    anticipación (se abre un pelín más) → cierre de golpe con "squash" de
+    escala justo cuando cambia a `giant_clam_closed` → asentamiento.
+    Primer intento implementado como matemática manual dentro de
+    `update(time)` — **bug real encontrado y corregido**: `PondScene.
+    update()` deja de llamarse por completo en cuanto empieza la
+    secuencia de muerte (`if (this.isDying || this.isGameOver) return;`
+    al principio de la función), así que `GiantClamSpawner.update()` (y
+    con él, `clam.update(time)`) nunca se volvía a ejecutar después de
+    `triggerBite()` — la concha se quedaba abierta para siempre, exacto
+    el bug que reportó el usuario ("no se ve cuando se cierra"). Reescrito
+    como una cadena de `Phaser.Tweens` reales dentro de `triggerBite()`
+    (igual criterio que el hundimiento de Lumi, que sí sigue avanzando
+    porque los tweens del TweenManager no dependen del `update()` de la
+    escena) — confirmado con un test real en el motor: la textura cambia
+    a `giant_clam_closed` ~150ms después del golpe y se queda cerrada.
+  - **Nuevo sprite de Lumi: "eaten"** (`assets/characters/lumi/eaten/
+    eaten_01.png`, generado con Gemini a partir de `idle_01`+`death_01`
+    como anclas) — ojos muy abiertos, boca en O de sorpresa, bracitos
+    encogidos hacia adelante, sin las X de la pose de muerte genérica.
+    `Lumi.prepareForDeath()` ahora acepta una variante (`"death"|"eaten"`,
+    por defecto `"death"`); `PondScene.startDeathSequence` la pasa según
+    el motivo (`"eaten"` solo para `"almeja"`). El tween de hundimiento ya
+    no gira a la almeja (un giro se lee como "cayendo", no como "tragada")
+    — solo se encoge, se acerca al centro de la concha y se desvanece.
+  - **Verificación:** test real en el motor disparando el mordisco vía
+    `triggerBite()` con Playwright (textura, escala y timing exactos en
+    cada fase), y un segundo test forzando la colisión real Lumi↔almeja a
+    través del spawner de verdad (overlap → `handleHazardHit` →
+    `startDeathSequence` → cierre + game over), ambos limpios. `npx tsc
+    --noEmit` limpio, build de producción confirmado.
+- **Limpieza de "obstáculos pequeños" en las 7 plantillas de
+  `ReefTemplates.ts`** (pedido explícito con 3 capturas reales — un
+  coral en abanico, un cúmulo con perlas/balano, una rama de coral —
+  "que no haya esos obstáculos pequeños al lado de la roca en zigzag del
+  inicio... solo con las rocas grandes, los pequeñitos sobran"):
+  - **`reefLabyrinth`/`miniLabyrinth`/`grandMaze`** (los 3 "laberintos"):
+    se retiraron TODAS las decoraciones pegadas a la punta de cada pared
+    (estrella/esponja/balano/guijarro) — se quedan solo las paredes de
+    roca en sí (el mecanismo no se tocó, mismo criterio de rondas
+    anteriores) y un único acento de fondo lejano por plantilla. La
+    hornacina del "camino falso" de `grandMaze` se mantuvo (no es un
+    acento pegado a una pared, es parte del propio diseño de laberinto).
+  - **`diagonalLeft`/`centerTwoPaths`/`sCurveEdges`/`lateralWall`**: la
+    familia de "rama de coral" (`reef_branch_straight`/`reef_branch_
+    short`, usada como segunda pieza de cada composición) se retiró por
+    completo — reemplazada por una segunda `wallPiece()` (roca/pincho,
+    pegada al borde igual que la principal). Los pequeños "obstáculo"
+    sueltos que acompañaban a cada plantilla (`decor_pebble` en
+    centerTwoPaths, `sponge`/`barnacle` en sCurveEdges, `decor_starfish`
+    en lateralWall) también se retiraron. Los 4 assets de rama siguen
+    cargados en `BootScene.ts` por si hay que revertir; `pickBranch`/
+    `branchScale`/`INVERT_FLIP_KEYS`/`branchFlipX`/`towardsRightEdge` se
+    borraron del todo (código muerto de verdad, no un asset).
+  - **2 variaciones nuevas de `reef_rock_spikes`** generadas con Gemini
+    (pedido explícito: "en vez de esos obstáculos haya más obstáculos de
+    los pinchos de piedra que son más bonitos... crea variaciones"):
+    `rock_spikes_b` (picos altos y torcidos, alturas desiguales) y
+    `rock_spikes_c` (cresta baja y ancha, muchos picos parejos). Ambas
+    limpiadas con el mismo caso de "checkerboard llena el lienzo" ya
+    documentado. Sumadas a `WALL_PIECE_POOL` (duplicando de facto el peso
+    de "pincho" frente a las 3 rocas clásicas). `rock_spikes_b` también se
+    sumó a `CORRIDOR_WALL_POOL` (el pool seguro de los laberintos) tras
+    verificar con la misma trigonometría de `ReefCluster.ts` que su
+    extensión a lo largo de la pared (~342px al reach del laberinto
+    grande) queda por debajo del peor caso ya cubierto por
+    `reef_boulder_rock` (~538px) — `rock_spikes_c` se quedó FUERA de ese
+    pool a propósito: su proporción tan ancha dispararía esa extensión a
+    ~1111px, muy por encima del margen ya calculado (700px/350px de
+    separación entre bandas).
+  - **Verificación:** construidos los 7 `ReefClusterSpec` reales (20
+    muestras cada uno) con el motor cargado de verdad, midiendo el hueco
+    libre máximo por banda a partir de `body.position`/`body.width` reales
+    — mínimo 555-582px en las 4 plantillas simples, 280px en
+    `reefLabyrinth`, 490px en `miniLabyrinth`, 249px en `grandMaze` (estos
+    3 últimos coinciden con los márgenes ya documentados en rondas
+    anteriores, confirmando que las piezas nuevas no los estrecharon).
+    `npx tsc --noEmit` limpio (incluida la limpieza del código muerto),
+    build de producción con los 2 PNGs nuevos bundleados confirmado.
+- **Zona 1 "muy suave"**: con libertad creativa del usuario, se rellenaron
+  los 2 huecos genuinamente vacíos que quedaban en el tramo más jugado
+  (offset 0-12000, el que de verdad se ve con 1 sola vida): un cangrejo en
+  el hueco 6560-7450 (adelantando su debut, antes solo aparecía en offset
+  20740 — más variedad de enemigos mucho antes) y un coral trampa en el
+  hueco 10220-11040. Se explica también, para responder "el laberinto de
+  algas no lo he visto, en qué zona lo has puesto": `grandMaze` está en el
+  offset 25600, dentro del rango [23840,27360] — muy cerca del final del
+  tramo scripteado (`ZONE1_LEVEL_END_OFFSET=28160`). Con solo 1 vida
+  (cambio de la ronda anterior), es esperable que la mayoría de intentos
+  no lleguen tan lejos; ver PENDIENTE.
+
 # PENDIENTE
 
-- **"Crea más animales"** — parcialmente atendido esta ronda (2 nuevos:
-  `CoralTrap` y `Seahorse`, ver EN PROGRESO), pero el pedido explícito
-  fue "MUCHOS MÁS" en mayúsculas, así que sigue abierto. El recuento de
-  animales reales pasó de 7 a 9. Quedan candidatas obvias sin convertir:
-  `sponge`, `barnacle`, `decor_pebble`, `decor_starfish` siguen siendo
-  piezas puramente decorativas/estáticas que podrían seguir el mismo
-  patrón "animal disfrazado de obstáculo" que ya demostraron la almeja y
-  el coral trampa. Preguntar al usuario si quiere continuar en esa línea
-  antes de generar más arte a ciegas.
+- **"Crea más animales"** — parcialmente atendido en rondas anteriores (2
+  nuevos: `CoralTrap` y `Seahorse`), pero el pedido explícito fue "MUCHOS
+  MÁS" en mayúsculas, así que sigue abierto. El recuento de animales
+  reales está en 9. Quedan candidatas obvias sin convertir: `sponge`,
+  `barnacle`, `decor_pebble`, `decor_starfish` siguen siendo piezas
+  puramente decorativas/estáticas que podrían seguir el mismo patrón
+  "animal disfrazado de obstáculo" que ya demostraron la almeja y el
+  coral trampa.
+- **"Mejora las animaciones de los animales... vuelvo y te digo"** —
+  pedido explícito de esta ronda, respondido parcialmente en la parte
+  concreta (la almeja: boca muy abierta + secuencia de mordisco de 3
+  fases con Gemini + arte nuevo de Lumi, ver EN PROGRESO). El resto de
+  animales (medusa, tiburón, calamar, erizo, cangrejo, pez grande,
+  caballito, coral trampa) siguen con su animación actual (breathe/sway/
+  patrulla por código, sin frames de sprite nuevos) — el usuario dijo
+  explícitamente que iba a probar esta ronda y volver con más detalle
+  antes de seguir, así que queda esperando esa reacción en vez de generar
+  arte a ciegas para las 8 restantes.
+- **Zona 1 sigue con `grandMaze` muy al final** (offset 25600 de 28160) —
+  esta ronda se rellenaron 2 huecos vacíos del tramo inicial (ver EN
+  PROGRESO), pero mover el laberinto de hojas a una posición más
+  temprana (para que se vea sin necesitar una carrera muy larga con 1
+  sola vida) sería un cambio de mayor alcance: requiere recalcular todos
+  los offsets posteriores del array, no solo insertar una entrada. No se
+  ha hecho todavía — si el usuario confirma que quiere verlo antes,
+  conviene hacerlo como tarea dedicada en vez de mezclado con otros
+  cambios.
 - "Mejora el movimiento... más elaborado" se aplicó a la almeja
   (balanceo) y se probó en el erizo (giro continuo), pero el usuario pidió
   revertir el del erizo explícitamente ("la gracia de ellos es que
@@ -1753,22 +1875,39 @@ funciona **hoy**, verificado en el código — no lo que el diseño aspira a ten
 # BUGS / PROBLEMAS
 
 (ninguno abierto conocido a fecha de esta ronda — ver EN PROGRESO para los
-que se cerraron)
+que se cerraron, incluido el bug real de esta ronda: la mordida de la
+almeja nunca llegaba a cerrarse porque `PondScene.update()` deja de
+llamarse en cuanto empieza `isDying`, así que cualquier lógica que
+dependiera de update(time) después de ese punto nunca se ejecutaba —
+solucionado moviendo la secuencia a Phaser.Tweens reales, que sí siguen
+avanzando)
 
 # PRÓXIMA TAREA
 
-Esperar la reacción del usuario a esta ronda (limpieza de obstáculos,
-`CoralTrap`, `Seahorse`, 1 vida, y el Zone1Level.ts repoblado) antes de
-seguir sumando animales a ciegas. Si quiere continuar con "muchos más
-animales", las candidatas más obvias para el patrón "animal disfrazado de
-obstáculo" (cero arte nuevo, mismo patrón Entity+Spawner+overlap que ya
-demostraron la almeja y el coral trampa) son `sponge`, `barnacle` y
-`decor_pebble`/`decor_starfish`. Si en cambio pide especies genuinamente
-nuevas, ya hay precedente fresco de generación de arte bajo demanda
-(`seahorse.png` + `seahorse_blink.png` esta misma ronda) para seguir el
-mismo flujo.
+Esperar la reacción del usuario a esta ronda (almeja con boca muy abierta
++ mordisco real + sprite de Lumi comida, limpieza de obstáculos pequeños
+en las 7 plantillas de arrecife, 2 variaciones nuevas de pinchos de
+piedra, y el relleno de huecos vacíos en Zona 1) antes de seguir. Tres
+líneas abiertas explícitas de esta ronda, en orden de lo que el usuario
+mismo señaló como pendiente:
+
+1. **"Mejora las animaciones de los animales... vuelvo y te digo"** — el
+   usuario dijo explícitamente que iba a probar y volver con feedback más
+   detallado. No generar arte nuevo para el resto de animales (medusa,
+   tiburón, calamar, erizo, cangrejo, pez grande, caballito, coral trampa)
+   hasta tener ese detalle — evita gastar generaciones en la dirección
+   equivocada.
+2. **"Crea más animales"** — sigue abierto ("MUCHOS MÁS"). Candidatas para
+   el patrón "animal disfrazado de obstáculo" (cero arte nuevo): `sponge`,
+   `barnacle`, `decor_pebble`, `decor_starfish`. Para especies genuinamente
+   nuevas, ya hay precedente fresco de generación bajo demanda.
+3. **Mover `grandMaze` a una posición más temprana** — el usuario preguntó
+   dónde estaba porque no lo había visto; con 1 sola vida y el laberinto
+   en offset 25600 (casi al final del tramo scripteado), es esperable que
+   la mayoría de intentos no lleguen. Si el usuario confirma que lo quiere
+   antes, es una tarea de mayor alcance (recalcular offsets posteriores)
+   que merece su propia ronda dedicada.
 
 Confirmar también con el usuario si 1 sola vida se siente bien en la
-práctica (antes de esta ronda había 3, con colchón de golpes) — al ser un
-cambio de dificultad tan directo, es el tipo de ajuste donde vale la pena
-una confirmación explícita tras probarlo, no asumir que ya quedó cerrado.
+práctica (cambio de la ronda anterior) — al ser un cambio de dificultad
+tan directo, vale la pena una confirmación explícita tras probarlo.

@@ -78,6 +78,13 @@ const HITBOX_FRACTION: Record<string, [number, number, number, number]> = {
   // de rocas puntiagudas, bbox medido programáticamente igual que las
   // otras dos rocas nuevas.
   reef_rock_spikes: [0.198, 0.222, 0.794, 0.793],
+  // Variaciones de la misma pieza (pedido explícito: "crea variaciones" de
+  // los pinchos de piedra) — bbox medido programáticamente igual que el
+  // resto. _b (picos altos y torcidos) es segura para un corredor de
+  // laberinto (ver CORRIDOR_WALL_POOL); _c (cresta baja y ancha) NO lo es
+  // por su proporción tan ancha, solo se usa en WALL_PIECE_POOL.
+  reef_rock_spikes_b: [0.244, 0.228, 0.698, 0.786],
+  reef_rock_spikes_c: [0.121, 0.359, 0.909, 0.657],
   // Pieza exclusiva del segundo laberinto (grandMaze). Segunda versión:
   // pedido explícito "la nueva pieza me la imagino totalmente diferente
   // que no sean rocas. Que sea como los laberintos reales pues de hojas,
@@ -247,6 +254,8 @@ const NO_BREATHE_KEYS = new Set([
   "reef_rock_slab",
   "reef_rock_smooth",
   "reef_rock_spikes",
+  "reef_rock_spikes_b",
+  "reef_rock_spikes_c",
   // Usada como pared del segundo laberinto (grandMaze) — mismo motivo que
   // el resto de rocas: una hitbox que cambia de tamaño en vivo podría, en
   // el peor caso, cerrar el paso.

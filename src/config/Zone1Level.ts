@@ -142,6 +142,14 @@ export const ZONE1_LEVEL_ENTRIES: Zone1LevelEntry[] = [
   { type: "urchin", offset: 6560, x: 500 },
   { type: "lilypad", offset: 6470, x: 200 },
 
+  // Pedido explícito: "mejores la primera zona que la veo muy suave" — este
+  // hueco (6560-7450, entre el combo de erizos y el siguiente cúmulo)
+  // estaba completamente vacío. Debut del cangrejo adelantado aquí (antes
+  // solo aparecía en el Tramo 2, offset 20740) para que se vea variedad de
+  // enemigos mucho antes — con 1 sola vida, la mayoría de intentos nunca
+  // llegan tan lejos como para conocerlo.
+  { type: "crab", offset: 7000, x: 350 },
+
   { type: "reef", offset: 7680, reefTemplate: 1 }, // centerTwoPaths — banda ~[7450,7910]
   // Hueco despejado (7910-9620) que antes solo tenía una medusa — pedido
   // explícito de rellenar más con animales.
@@ -150,6 +158,9 @@ export const ZONE1_LEVEL_ENTRIES: Zone1LevelEntry[] = [
   { type: "coraltrap", offset: 9260, x: 450 },
 
   { type: "reef", offset: 9920, reefTemplate: 2 }, // sCurveEdges — banda ~[9620,10220]
+  // Otro hueco vacío (10220-11040, entre este cúmulo y los tiburones) —
+  // misma limpieza de "muy suave".
+  { type: "coraltrap", offset: 10600, x: 250 },
   // Pedido explícito: "podemos poner dos tiburones seguidos en una zona con
   // pocos obstáculos y que los dos patrullen pero vayan a la inversa" —
   // este tramo (entre los cúmulos de 9920 y 12160) ya tenía un único
@@ -184,7 +195,7 @@ export const ZONE1_LEVEL_ENTRIES: Zone1LevelEntry[] = [
   { type: "urchin", offset: 19680, x: 490 },
   { type: "lilypad", offset: 19590, x: 345 },
   { type: "squid", offset: 20320, x: 420 },
-  { type: "crab", offset: 20740, x: 350 }, // debut del cangrejo
+  { type: "crab", offset: 20740, x: 350 },
 
   { type: "reef", offset: 21440, reefTemplate: 3 }, // lateralWall — banda ~[21140,21740]
   { type: "coraltrap", offset: 22100, x: 250 },

@@ -35,6 +35,13 @@ export const LUMI_FRAME_COUNT: Record<string, number> = {
   // lumi-asset-gen) no es una animación en bucle — se pone como textura
   // fija justo al empezar el giro/hundimiento (ver Lumi.showDeathFace).
   death: 1,
+  // Igual que death: un solo frame fijo, expresión de susto/sorpresa
+  // (ojos muy abiertos, boca en O, bracitos encogidos) generada con Gemini
+  // para el momento exacto en que la almeja gigante la atrapa — pedido
+  // explícito: "lumi haz otro Sprite de siendo comido por la almeja, que
+  // tenga relación" (no reutilizar el sprite de muerte genérico de ojos en
+  // X para este caso). Ver Lumi.prepareForDeath y PondScene.startDeathSequence.
+  eaten: 1,
 };
 
 export const LUMI_FPS = 8; // pedido en el ejemplo de STYLE_GUIDE.md

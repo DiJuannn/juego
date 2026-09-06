@@ -147,6 +147,16 @@ export class BootScene extends Phaser.Scene {
     // cúmulo de rocas puntiagudas, silueta bien distinta de las otras 3
     // (redondeadas/planas) para que se note como una pieza nueva de verdad.
     this.load.image("reef_rock_spikes", assetPath("/objects/reef/rock_spikes.png"));
+    // Pedido explícito: "en vez de esos obstáculos [ramas/coral] haya más
+    // obstáculos de los pinchos de piedra que son más bonitos... crea
+    // variaciones" — 2 siluetas nuevas del mismo pincho (picos altos y
+    // torcidos / cresta baja y ancha), ver WALL_PIECE_POOL en
+    // ReefTemplates.ts. rock_spikes_c (la cresta ancha) es solo para
+    // WALL_PIECE_POOL, nunca para un corredor de laberinto — su proporción
+    // tan ancha dispararía la extensión a lo largo de la pared muy por
+    // encima del margen ya calculado (ver CORRIDOR_WALL_POOL).
+    this.load.image("reef_rock_spikes_b", assetPath("/objects/reef/rock_spikes_b.png"));
+    this.load.image("reef_rock_spikes_c", assetPath("/objects/reef/rock_spikes_c.png"));
     // Parpadeo: arte de verdad (ojos cerrados) generado con Gemini a partir
     // de cada sprite base, ver systems/BlinkTimer — nunca un Graphics
     // dibujado por código.

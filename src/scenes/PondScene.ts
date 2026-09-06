@@ -30,6 +30,7 @@ import { CoralTrapSpawner } from "@/systems/CoralTrapSpawner";
 import { CrabSpawner } from "@/systems/CrabSpawner";
 import { CrossfadePlant } from "@/systems/CrossfadePlant";
 import { CurrentZoneSpawner } from "@/systems/CurrentZoneSpawner";
+import { GiantClam } from "@/entities/GiantClam";
 import { GiantClamSpawner } from "@/systems/GiantClamSpawner";
 import { InputController } from "@/systems/InputController";
 import { JellyfishSpawner } from "@/systems/JellyfishSpawner";
@@ -678,7 +679,11 @@ export class PondScene extends Phaser.Scene {
   private startDeathSequence(reason: DeathReason, sourceSprite?: Phaser.GameObjects.Components.Transform) {
     if (this.isDying || this.isGameOver) return;
     this.isDying = true;
-    this.lumi.prepareForDeath();
+    // Almeja: pose de susto propia (boca en O, ojos muy abiertos) en vez
+    // del sprite de muerte genérico de ojos en X — pedido explícito:
+    // "lumi haz otro Sprite de siendo comido por la almeja, que tenga
+    // relación". Ver Lumi.prepareForDeath / assets/characters/lumi/eaten/.
+    this.lumi.prepareForDeath(reason === "almeja" ? "eaten" : "death");
 
     const sprite = this.lumi.sprite;
     const body = sprite.body as Phaser.Physics.Arcade.Body;
@@ -690,12 +695,15 @@ export class PondScene extends Phaser.Scene {
       this.playElectricShock(sourceSprite.x, sourceSprite.y, sprite.x, sprite.y);
     }
 
-    // Almeja: se cierra de golpe (arte real, no un efecto de código) y
-    // arrastra a Lumi hacia su centro en vez del hundimiento genérico hacia
-    // abajo — pedido explícito: "que te coma" tiene que leerse como que la
-    // almeja se la traga, no como una caída normal.
+    // Almeja: dispara su propia secuencia de mordisco (boca muy abierta →
+    // se cierra de golpe con "squash", ver GiantClam.triggerBite) en vez de
+    // un setTexture instantáneo — pedido explícito: "no parece que haga la
+    // animación... al tocarla se cierre y coma a lumi". Además arrastra a
+    // Lumi hacia el centro de la almeja en vez del hundimiento genérico
+    // hacia abajo, para que se lea como que la almeja se la traga.
     if (reason === "almeja" && sourceSprite) {
-      (sourceSprite as Phaser.Physics.Arcade.Image).setTexture("giant_clam_closed");
+      const clamSprite = sourceSprite as Phaser.Physics.Arcade.Image;
+      (clamSprite.getData("entity") as GiantClam | undefined)?.triggerBite();
     }
     const sinkTargetX = reason === "almeja" && sourceSprite ? sourceSprite.x : sprite.x;
     const sinkTargetY = reason === "almeja" && sourceSprite ? sourceSprite.y : sprite.y + 40;
@@ -703,10 +711,13 @@ export class PondScene extends Phaser.Scene {
     // Los ojos en cruz ya no son un Graphics dibujado por código: son arte
     // de verdad generado con Gemini (ver assets/characters/lumi/death/ y
     // Lumi.prepareForDeath, que ya puso esa textura). Aquí solo queda el
-    // giro/hundimiento/encogido normal del sprite.
+    // giro/hundimiento/encogido normal del sprite. La almeja NO gira (un
+    // giro se lee como "cayendo", no como "siendo tragada") — solo se
+    // encoge, se acerca al centro de la concha y se desvanece, sincronizado
+    // con el cierre de la concha (ver duración del bite en GiantClam.ts).
     this.tweens.add({
       targets: sprite,
-      angle: sprite.flipX ? -360 : 360,
+      angle: reason === "almeja" ? sprite.angle : sprite.flipX ? -360 : 360,
       scaleX: sprite.scaleX * 0.15,
       scaleY: sprite.scaleY * 0.15,
       x: sinkTargetX,

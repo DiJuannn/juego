@@ -63,58 +63,20 @@ function bgAccent(key: string, x: number, y: number, scale: number): ReefPieceSp
 
 /**
  * Familia de "repisa/rama" (mismo ancla de estilo, generadas a partir de
- * `reef_coral_branch`) — pedido explícito del usuario: "necesito que
- * hagas muchos [obstáculos] e irlos poniendo de distintas formas". Cada
- * plantilla que usa una rama como columna vertebral elige una al azar en
- * vez de repetir siempre `reef_coral_branch`. Todas comparten la misma
- * convención: el coral está concentrado en su lado IZQUIERDO de fábrica,
- * así que al usarlas entrando por la derecha hay que espejarlas (flipX) —
- * salvo `reef_branch_straight`, que va exactamente al revés (ver
- * INVERT_FLIP_KEYS más abajo).
- *
- * `reef_branch_hook` retirada del pool (pedido explícito, con captura
- * real: "esto mejor quitarlo no me convence estos diseños, elimina esos
- * dos obstáculos" — el diseño "coral cerebro" de rayas onduladas no
- * convenció). `reef_coral_branch` retirada en la misma limpieza de una
- * ronda posterior ("quita tmb... este tmb", con captura real del cúmulo
- * de coral rosa redondo — "vamos a hacer limpieza de obstáculos que no
- * quedan bien solos"). Ambas siguen cargadas en BootScene.ts y con su
- * bbox en ReefCluster.ts por si hay que revertir, pero ya no se eligen en
- * ningún lado (ni aquí ni en WALL_PIECE_POOL).
+ * `reef_coral_branch`) — pedido explícito del usuario en su momento:
+ * "necesito que hagas muchos [obstáculos] e irlos poniendo de distintas
+ * formas". `reef_branch_hook` y `reef_coral_branch` se retiraron primero
+ * (pedido explícito, con capturas reales de piezas que no convencían).
+ * `reef_branch_straight`/`reef_branch_short` se retiraron en esta misma
+ * ronda ("Estos quítalos tmb"... con captura real de un branch — "en vez
+ * de esos obstáculos haya más obstáculos de los pinchos de piedra que son
+ * más bonitos"): las 4 plantillas que usaban una rama como pieza
+ * secundaria (`diagonalLeft`/`centerTwoPaths`/`sCurveEdges`/`lateralWall`)
+ * ahora usan una segunda `wallPiece()` (roca/pincho, ver más abajo) en su
+ * lugar. Los 4 assets de rama siguen cargados en BootScene.ts y con su
+ * bbox en ReefCluster.ts por si hay que revertir, pero ninguno se elige ya
+ * en ningún lado.
  */
-const BRANCH_VARIANTS = ["reef_branch_straight", "reef_branch_short"];
-
-function pickBranch(): string {
-  return Phaser.Utils.Array.GetRandom(BRANCH_VARIANTS);
-}
-
-// Las ramas "largas" dejan menos hueco libre que las demás piezas a igual
-// `scale` nominal — pedido explícito del usuario: "las que son largas que
-// sea un poco más pequeño para que dé más espacio". reef_coral_branch
-// queda fuera a propósito: "el de coral... ese así grandote me gustaba"
-// (pedido explícito de mantenerlo en su tamaño grande original tras ver
-// las 4 ya reducidas). branch_short ya es compacta de por sí.
-const LONG_BRANCH_KEYS = new Set(["reef_branch_straight", "reef_branch_hook"]);
-
-function branchScale(key: string, base: number): number {
-  return LONG_BRANCH_KEYS.has(key) ? base * 0.85 : base;
-}
-
-// reef_branch_straight es la excepción a "el coral está a la izquierda de
-// fábrica, espejar para el lado derecho": va EXACTAMENTE AL REVÉS —
-// pedido explícito del usuario viendo un par real en el juego (uno en
-// contexto izquierda, otro en contexto derecha): "DERECHA BIEN, izquierda
-// poner espejo. SOLO ESO" — o sea, sin espejar cuando el contexto general
-// pediría espejo (derecha) y espejada cuando el contexto general NO
-// pediría espejo (izquierda). reef_branch_hook y reef_branch_short se
-// probaron con la versión "nunca espejar" y se revirtieron (el usuario
-// indicó que no eran esos) — se quedan con la convención normal.
-const INVERT_FLIP_KEYS = new Set(["reef_branch_straight"]);
-
-function branchFlipX(key: string, wantFlip: boolean): boolean {
-  return INVERT_FLIP_KEYS.has(key) ? !wantFlip : wantFlip;
-}
-
 type Side = "left" | "right";
 
 // Pedido explícito: "las rocas esas solo que salgan en los laterales...
@@ -161,10 +123,14 @@ const WALL_PIECE_POOL: WallPieceOption[] = [
   { key: "reef_rock_smooth", sizeMul: 1.15 },
   { key: "reef_rock_slab", sizeMul: 0.6 },
   { key: "reef_rock_spikes", sizeMul: 1 },
-  { key: "reef_branch_straight", sizeMul: 0.85 },
-  // reef_branch_hook y reef_coral_branch retiradas (pedido explícito,
-  // "no me convence este diseño" — ver comentario junto a BRANCH_VARIANTS).
-  { key: "reef_branch_short", sizeMul: 1 },
+  // Pedido explícito: "en vez de esos obstáculos haya más obstáculos de
+  // los pinchos de piedra que son más bonitos... crea variaciones" — 2
+  // siluetas nuevas de la misma familia (ver docs junto a los loaders en
+  // BootScene.ts), duplicando de facto el peso de "pincho" en este pool
+  // frente a las 3 rocas clásicas. Las 4 piezas de rama (reef_branch_*)
+  // salieron del pool en la misma ronda.
+  { key: "reef_rock_spikes_b", sizeMul: 1 },
+  { key: "reef_rock_spikes_c", sizeMul: 1.1 },
 ];
 
 /** Pieza "de pared" pegada a ras del borde del mundo (ver `edgeFlush` en
@@ -197,13 +163,6 @@ function fromEdge(worldWidth: number, side: Side, relX: number): number {
   return side === "left" ? relX * worldWidth : worldWidth - relX * worldWidth;
 }
 
-// Para una rama pegada a un borde, el mismo criterio de "coral pegado al
-// lado, parte lisa hacia el interior" se traduce en: coral apuntando hacia
-// el borde al que está pegada.
-function towardsRightEdge(x: number, worldWidth: number): boolean {
-  return x >= worldWidth / 2;
-}
-
 /**
  * 1) Diagonal desde la izquierda: la masa de obstáculo crece en diagonal
  * de abajo-izquierda a arriba-derecha, dejando todo el lado derecho
@@ -213,19 +172,13 @@ function towardsRightEdge(x: number, worldWidth: number): boolean {
  * pieza "branch" (ya diagonal de por sí) hace de columna vertebral.
  */
 function diagonalLeft(worldWidth: number, centerY: number): ReefClusterSpec {
-  const branchKey1 = pickBranch();
-  const branchX = fromEdge(worldWidth, "left", 0.23);
   const pieces: ReefPieceSpec[] = [
     wallPiece("left", centerY + 160, 0.4),
-    piece({
-      key: branchKey1,
-      x: branchX,
-      y: centerY - 40,
-      scale: branchScale(branchKey1, 0.5),
-      rotation: -0.04,
-      flipX: branchFlipX(branchKey1, towardsRightEdge(branchX, worldWidth)),
-      role: "obstacle",
-    }),
+    // Segunda roca/pincho, más arriba, mismo lado — reemplaza a la rama
+    // que iba aquí (pedido explícito: "en vez de esos obstáculos haya más
+    // obstáculos de los pinchos de piedra", ver WALL_PIECE_POOL). Sigue
+    // pegada al borde de verdad (edgeFlush), como la principal.
+    wallPiece("left", centerY - 40, 0.28),
     // La anémona que iba aquí se retiró (pedido explícito, con captura
     // real: "esto mejor quitarlo no me convence estos diseños, elimina
     // esos dos obstáculos" — la combinación anémona+reef_branch_hook no
@@ -255,35 +208,23 @@ function diagonalLeft(worldWidth: number, centerY: number): ReefClusterSpec {
  * del usuario: los obstáculos laterales van pegados al límite.
  */
 function centerTwoPaths(worldWidth: number, centerY: number): ReefClusterSpec {
-  const branchKey1 = pickBranch();
-  const branchX = fromEdge(worldWidth, "right", 0.22);
   const pieces: ReefPieceSpec[] = [
     wallPiece("left", centerY + 50, 0.42),
-    piece({
-      key: branchKey1,
-      x: branchX,
-      y: centerY - 130,
-      scale: branchScale(branchKey1, 0.36),
-      rotation: 0.08,
-      flipX: branchFlipX(branchKey1, towardsRightEdge(branchX, worldWidth)),
-      role: "obstacle",
-    }),
-    // Piedra suelta a mitad de camino, como pequeño obstáculo puntual en
-    // el tramo abierto (no pegado a ningún borde) — a diferencia de las
-    // demás piezas de esta lista, deliberadamente NO está pegada a un
-    // lateral: el hueco libre a su alrededor sigue siendo amplio de sobra.
-    piece({ key: "decor_pebble", x: worldWidth * 0.5, y: centerY + 200, scale: 0.3, role: "obstacle" }),
-    // La concha (decor_shell) que iba aquí se retiró (pedido explícito:
-    // "quita tmb todos los caracoles, no me gustan").
+    // Reemplaza a la rama que iba aquí (ver diagonalLeft) — segunda
+    // roca/pincho, pegada al borde derecho.
+    wallPiece("right", centerY - 130, 0.3),
+    // La piedra suelta de mitad de camino (decor_pebble) y la concha
+    // (decor_shell) que iban aquí se retiraron (pedido explícito: "solo
+    // con las rocas grandes, los pequeñitos sobran" / "quita tmb todos los
+    // caracoles").
     // Acento de fondo: esquina inferior derecha, la más despejada de esta
-    // composición (la roca queda a la izquierda, la rama arriba a la
-    // derecha).
-    bgAccent("reef_branch_short", worldWidth * 0.88, centerY + 180, 0.14),
+    // composición.
+    bgAccent("reef_rock_spikes", worldWidth * 0.88, centerY + 180, 0.14),
   ];
 
   // Serpentea por el centro: abajo se aparta hacia la derecha (huyendo de
   // la roca de la izquierda), arriba hacia la izquierda (huyendo de la
-  // rama de la derecha).
+  // roca de la derecha).
   const path = [
     { x: worldWidth * 0.68, y: centerY + 185 },
     { x: worldWidth * 0.52, y: centerY },
@@ -303,38 +244,19 @@ function sCurveEdges(worldWidth: number, centerY: number): ReefClusterSpec {
   const topY = centerY - 170;
   const midY = centerY;
   const bottomY = centerY + 170;
-  const sCurveBranchKey = pickBranch();
 
   const pieces: ReefPieceSpec[] = [
     // Banda superior: entra por la izquierda.
     wallPiece("left", topY, 0.38),
-
-    // Banda media: entra por la derecha — espejada (ver BRANCH_VARIANTS),
-    // para que la parte con coral quede pegada al borde.
-    piece({
-      key: sCurveBranchKey,
-      x: fromEdge(worldWidth, "right", 0.2),
-      y: midY - 30,
-      scale: branchScale(sCurveBranchKey, 0.4),
-      rotation: -0.1,
-      flipX: branchFlipX(sCurveBranchKey, true),
-      role: "obstacle",
-    }),
-    // Pedido explícito: "piensa dónde poner cada uno" — esponja pegada al
-    // techo de la banda, lejos de la rama media (midY-30) y del cúmulo
-    // superior (topY, lado contrario).
-    piece({ key: "sponge", x: fromEdge(worldWidth, "right", 0.1), y: topY - 100, scale: 0.24, role: "obstacle" }),
-
-    // Banda inferior: entra por la izquierda otra vez — el "distinto
-    // alcance" respecto a la superior ahora lo da la decoración (la pieza
-    // de pared en sí va pegada al borde en ambas, ver wallPiece/edgeFlush).
+    // Banda media: entra por la derecha — reemplaza a la rama que iba
+    // aquí (ver diagonalLeft/centerTwoPaths).
+    wallPiece("right", midY - 30, 0.32),
+    // Banda inferior: entra por la izquierda otra vez.
     wallPiece("left", bottomY, 0.34),
-    // Balanos pegados al fondo de la banda — mismo lado que el cúmulo
-    // inferior pero bien por debajo, no encima.
-    piece({ key: "barnacle", x: fromEdge(worldWidth, "left", 0.3), y: bottomY + 110, scale: 0.22, role: "obstacle" }),
-    // Acento de fondo: esquina inferior derecha, la única sin ninguna otra
-    // pieza de esta banda (rock+barnacle quedan a la izquierda).
-    bgAccent("decor_starfish", fromEdge(worldWidth, "right", 0.06), bottomY + 90, 0.14),
+    // La esponja/balano sueltos que iban junto a las bandas se retiraron
+    // (pedido explícito: "solo con las rocas grandes, los pequeñitos
+    // sobran") — el acento de fondo, sin colisión, se queda.
+    bgAccent("reef_rock_spikes", fromEdge(worldWidth, "right", 0.06), bottomY + 90, 0.14),
   ];
 
   // La ruta serpentea: derecha (abajo) -> izquierda (medio) -> derecha
@@ -363,37 +285,26 @@ function sCurveEdges(worldWidth: number, centerY: number): ReefClusterSpec {
  */
 function lateralWall(worldWidth: number, centerY: number): ReefClusterSpec {
   const side: "left" | "right" = Math.random() < 0.5 ? "left" : "right";
-  const wallBranchKey = pickBranch();
 
   const pieces: ReefPieceSpec[] = [
     // Pedido explícito del usuario: girar la pieza 90º según el lado para
     // que su base quede pegada al lateral, a ras del borde real sin hueco
     // (ver edgeFlushX en ReefCluster.ts) — y variedad de estilo/tamaño
-    // entre rocas y corales (ver wallPiece/WALL_PIECE_POOL).
+    // entre rocas y pinchos (ver wallPiece/WALL_PIECE_POOL).
     wallPiece(side, centerY + 150, 0.46),
-    // Pedido explícito del usuario: al salir por la derecha hay que
-    // espejar la rama (flipX) para que la parte con coral quede pegada al
-    // borde y la parte lisa apunte hacia el interior, igual que por la
-    // izquierda sin espejar (ver BRANCH_VARIANTS para la convención).
-    piece({
-      key: wallBranchKey,
-      x: fromEdge(worldWidth, side, 0.18),
-      y: centerY - 60,
-      scale: branchScale(wallBranchKey, 0.5),
-      rotation: 0.02,
-      flipX: branchFlipX(wallBranchKey, side === "right"),
-      role: "obstacle",
-    }),
+    // Segunda roca/pincho, más arriba, mismo lado — reemplaza a la rama
+    // que iba aquí (ver diagonalLeft/centerTwoPaths/sCurveEdges).
+    wallPiece(side, centerY - 60, 0.32),
     // El abanico de coral (coral_fan) que iba aquí se retiró como pieza
     // estática: ahora es un animal real (ver entities/CoralTrap.ts,
     // pedido explícito de "animales que parezcan obstáculos como la
-    // concha" — el mismo criterio que ya se usó con la almeja gigante).
-    piece({ key: "decor_starfish", x: fromEdge(worldWidth, side, 0.13), y: centerY + 210, scale: 0.28, role: "obstacle" }),
+    // concha"). La estrella suelta (decor_starfish) que acompañaba a la
+    // rama se retiró en la misma limpieza ("los pequeñitos sobran").
     // Acento de fondo: en el lado abierto (el contrario a la pared), lejos
     // de la ruta guía que serpentea por `openCenterX` — sugiere más
     // arrecife sin invadir el carril libre.
     bgAccent(
-      "reef_boulder_rock",
+      "reef_rock_spikes",
       side === "left" ? worldWidth * 0.94 : worldWidth * 0.06,
       centerY - 100,
       0.16,
@@ -438,7 +349,16 @@ function lateralWall(worldWidth: number, centerY: number): ReefClusterSpec {
  * Usando solo piezas sin animación de escala el hueco de cada banda es
  * SIEMPRE exactamente el calculado aquí.
  */
-const CORRIDOR_WALL_POOL = ["reef_boulder_rock", "reef_rock_smooth", "reef_rock_spikes"];
+// reef_rock_spikes_b se suma sin recalcular CORRIDOR_BAND_SPACING: medido
+// con la misma trigonometría que ReefCluster.ts (rotatedAABB a
+// reach=CORRIDOR_REACH_PX+5%), su extensión a lo largo de la pared
+// (~342px) queda por debajo del peor caso ya cubierto por
+// reef_boulder_rock (~538px) — el margen existente lo sigue determinando
+// boulder_rock, no esta pieza nueva. reef_rock_spikes_c (la cresta ancha)
+// se queda FUERA a propósito: a igual reach su proporción tan ancha la
+// dispara a ~1111px, muy por encima del margen calculado — solo se usa en
+// WALL_PIECE_POOL, donde el ancho no está atado a un hueco exacto.
+const CORRIDOR_WALL_POOL = ["reef_boulder_rock", "reef_rock_smooth", "reef_rock_spikes", "reef_rock_spikes_b"];
 // Con margen real: aun en el peor caso (reef_boulder_rock, la pieza con
 // más "ancho a lo largo de la pared" por unidad de penetración, y el
 // jitter de reach al +5%) el hueco libre de cada banda nunca baja de
@@ -499,44 +419,15 @@ function reefLabyrinth(worldWidth: number, centerY: number): ReefClusterSpec {
   const gapMid = corridorGapCenterX(worldWidth, sideMid, reachMid);
   const gapTop = corridorGapCenterX(worldWidth, sideTop, reachTop);
 
-  // Acentos junto a cada hueco (sin colisión, role:"decoration") — pegados
-  // a la punta de la pared, nunca dentro del carril libre, para que el
-  // paso se lea como un pasadizo cuidado en vez de piedras sueltas.
-  const wallTipBottom = sideBottom === "left" ? reachBottom : worldWidth - reachBottom;
-  const wallTipMid = sideMid === "left" ? reachMid : worldWidth - reachMid;
-  const wallTipTop = sideTop === "left" ? reachTop : worldWidth - reachTop;
-  const inward = (side: Side) => (side === "left" ? 1 : -1);
-
+  // Las decoraciones que iban pegadas a la punta de cada pared (estrella/
+  // esponja/balano) se retiraron (pedido explícito: "la roca en zigzag del
+  // inicio... solo con las rocas grandes, los pequeñitos sobran") — el
+  // mecanismo del laberinto en sí (las 3 paredes) no se toca, solo se
+  // limpiaron los acentos sueltos junto a ellas.
   const pieces: ReefPieceSpec[] = [
     corridorWall(sideBottom, bottomY, reachBottom),
     corridorWall(sideMid, midY, reachMid),
     corridorWall(sideTop, topY, reachTop),
-    piece({
-      key: "decor_starfish",
-      x: wallTipBottom + inward(sideBottom) * 35,
-      y: bottomY - 70,
-      scale: 0.22,
-      role: "decoration",
-    }),
-    // coral_fan y decor_shell (junto a las bandas media/superior) se
-    // retiraron en la limpieza de obstáculos sueltos (pedido explícito:
-    // "quita tmb todos los caracoles... este tmb") — sustituidas por
-    // esponja/balano, ya aprobados, sin tocar el mecanismo del laberinto
-    // en sí (el usuario pidió explícitamente no tocar este diseño).
-    piece({
-      key: "sponge",
-      x: wallTipMid + inward(sideMid) * 35,
-      y: midY + 70,
-      scale: 0.2,
-      role: "decoration",
-    }),
-    piece({
-      key: "barnacle",
-      x: wallTipTop + inward(sideTop) * 35,
-      y: topY + 70,
-      scale: 0.2,
-      role: "decoration",
-    }),
     // Acento de fondo único (mismo criterio que las otras 4 plantillas):
     // pegado al mismo lado que la banda superior, sugiriendo que esa masa
     // sigue más allá del borde — nunca suelto en mitad del carril libre.
@@ -606,30 +497,13 @@ function miniLabyrinth(worldWidth: number, centerY: number): ReefClusterSpec {
   const gapMid = corridorGapCenterX(worldWidth, sideMid, reachMid);
   const gapTop = corridorGapCenterX(worldWidth, sideTop, reachTop);
 
-  const wallTipBottom = sideBottom === "left" ? reachBottom : worldWidth - reachBottom;
-  const wallTipTop = sideTop === "left" ? reachTop : worldWidth - reachTop;
-  const inward = (side: Side) => (side === "left" ? 1 : -1);
-
+  // Las decoraciones de punta (estrella/balano) se retiraron, mismo
+  // criterio que reefLabyrinth ("solo con las rocas grandes, los
+  // pequeñitos sobran") — el mecanismo (3 paredes) no se toca.
   const pieces: ReefPieceSpec[] = [
     corridorWall(sideBottom, bottomY, reachBottom),
     corridorWall(sideMid, midY, reachMid),
     corridorWall(sideTop, topY, reachTop),
-    // Un único acento por punta (vs. 3 en el laberinto grande) — a esta
-    // escala más chica, más decoración se vería apeñuzcada.
-    piece({
-      key: "decor_starfish",
-      x: wallTipBottom + inward(sideBottom) * 30,
-      y: bottomY - 60,
-      scale: 0.2,
-      role: "decoration",
-    }),
-    piece({
-      key: "barnacle",
-      x: wallTipTop + inward(sideTop) * 30,
-      y: topY + 60,
-      scale: 0.18,
-      role: "decoration",
-    }),
     bgAccent(
       "reef_rock_spikes",
       sideTop === "left" ? worldWidth * 0.1 : worldWidth * 0.9,
@@ -742,11 +616,6 @@ function grandMaze(worldWidth: number, centerY: number): ReefClusterSpec {
   const gapCorridor = corridorGapCenterX(worldWidth, sideCorridor, reachCorridor);
   const gapExit = corridorGapCenterX(worldWidth, sideExit, reachExit);
 
-  const inward = (side: Side) => (side === "left" ? 1 : -1);
-  const wallTipEntrance = sideEntrance === "left" ? reachEntrance : worldWidth - reachEntrance;
-  const wallTipCorridor = sideCorridor === "left" ? reachCorridor : worldWidth - reachCorridor;
-  const wallTipExit = sideExit === "left" ? reachExit : worldWidth - reachExit;
-
   const gate = mazeGate(yGate, GRAND_MAZE_GATE_GAP_PX, worldWidth);
   // Hornacina decorativa junto a la puerta: un "camino falso" que no lleva
   // a ningún sitio (role: "background", sin colisión) — pegada al lado
@@ -755,41 +624,22 @@ function grandMaze(worldWidth: number, centerY: number): ReefClusterSpec {
   const nookSide: Side = otherSide(sideEntrance);
   const nookX = nookSide === "left" ? worldWidth * 0.1 : worldWidth * 0.9;
 
+  // Las decoraciones de punta (estrella/balano/guijarro junto a cada
+  // pared) se retiraron, mismo criterio que reefLabyrinth/miniLabyrinth
+  // ("solo con las rocas grandes, los pequeñitos sobran") — el mecanismo
+  // (4 bandas + puerta) no se toca. La hornacina del "camino falso" junto
+  // a la puerta se queda: no es un acento pegado a una pared, es parte de
+  // la idea de "laberinto de verdad" del propio diseño.
   const pieces: ReefPieceSpec[] = [
     corridorWall(sideEntrance, yEntrance, reachEntrance, GRAND_MAZE_WALL_POOL),
-    piece({
-      key: "decor_starfish",
-      x: wallTipEntrance + inward(sideEntrance) * 35,
-      y: yEntrance - 80,
-      scale: 0.24,
-      role: "decoration",
-    }),
 
     ...gate.pieces,
-    // reef_coral_branch y coral_fan/decor_shell (más abajo) retirados en
-    // la limpieza de obstáculos sueltos (pedido explícito: "quita
-    // tmb... este tmb") — sustituidos por esponja/balano/guijarro, ya
-    // aprobados, sin tocar el mecanismo del laberinto en sí.
     piece({ key: "sponge", x: nookX, y: yGate + 60, scale: 0.16, alpha: 0.55, role: "background" }),
     piece({ key: "barnacle", x: nookX, y: yGate - 40, scale: 0.14, alpha: 0.55, role: "background" }),
 
     corridorWall(sideCorridor, yCorridor, reachCorridor, GRAND_MAZE_WALL_POOL),
-    piece({
-      key: "barnacle",
-      x: wallTipCorridor + inward(sideCorridor) * 35,
-      y: yCorridor + 80,
-      scale: 0.22,
-      role: "decoration",
-    }),
 
     corridorWall(sideExit, yExit, reachExit, GRAND_MAZE_WALL_POOL),
-    piece({
-      key: "decor_pebble",
-      x: wallTipExit + inward(sideExit) * 35,
-      y: yExit + 80,
-      scale: 0.22,
-      role: "decoration",
-    }),
 
     bgAccent(
       "reef_maze_wall",

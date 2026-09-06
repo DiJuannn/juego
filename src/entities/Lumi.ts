@@ -70,16 +70,18 @@ export class Lumi {
   }
 
   /** Antes de la secuencia de muerte: asegura que el sprite físico esté
-   * visible (por si acaso) y le pone la pose de muerte (ojos en X, arte de
-   * verdad generado con Gemini — ver assets/characters/lumi/death/ y
+   * visible (por si acaso) y le pone la pose fija correspondiente (arte de
+   * verdad generado con Gemini — ver assets/characters/lumi/ y
    * lumi-asset-gen), pase lo que pase con el estado de nado en el momento
    * del golpe. Un solo frame fijo, no una animación en bucle: hay que
    * parar cualquier animación en curso o el siguiente tick la
-   * sobrescribiría. */
-  prepareForDeath() {
+   * sobrescribiría. Variante "eaten" (susto/boca en O, no las X de
+   * "death"): pedido explícito para el caso concreto de la almeja gigante,
+   * que tiene su propia secuencia — ver PondScene.startDeathSequence. */
+  prepareForDeath(variant: "death" | "eaten" = "death") {
     this.sprite.setVisible(true);
     this.sprite.anims.stop();
-    this.sprite.setTexture(frameKey("death", 1));
+    this.sprite.setTexture(frameKey(variant, 1));
   }
 
   /** Empujón involuntario (p.ej. el pez grande): anula el control del

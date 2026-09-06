@@ -43,6 +43,10 @@ export class GiantClamSpawner {
     const finalX = x ?? Phaser.Math.Between(120, this.worldWidth - 120);
     const scale = GIANT_CLAM_SCALE * Phaser.Math.FloatBetween(0.9, 1.1);
     const clam = new GiantClam(this.scene, finalX, y, scale);
+    // PondScene necesita recuperar la instancia (no solo el sprite) desde
+    // el callback de overlap para poder llamar triggerBite() — mismo
+    // patrón que BigFish/CoralTrap.
+    clam.sprite.setData("entity", clam);
     this.group.add(clam.sprite);
     this.clams.push(clam);
     if (y < this.highestY) this.highestY = y;
