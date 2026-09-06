@@ -144,6 +144,44 @@ funciona **hoy**, verificado en el código — no lo que el diseño aspira a ten
   que el juego real) + `LilyPadSpawner.update()` sobre todo ese rango —
   cero nenúfares solapando ningún obstáculo real, comprobado con la misma
   `overlapsObstacle` contra la caja física de cada pieza.
+- **Segunda vuelta de feedback (con captura real) sobre la ronda
+  anterior**: dos pedidos explícitos más.
+  - "Las monedas... tienen que estar separadas todas la misma distancia
+    una de la otra, MATEMÁTICAMENTE la misma": el paso recto (70) y el
+    paso diagonal (hipotenusa ≈83.2, con 45 de paso horizontal fijo sobre
+    el mismo paso vertical) no coincidían entre sí NI con
+    `REEF_COIN_SPACING` (90, la separación real de los cúmulos de
+    arrecife y del rastro de un nenúfar) — tres distancias distintas según
+    qué sistema hubiera colocado la moneda. Unificado todo a la misma
+    hipotenusa: recto usa paso vertical completo (90), diagonal reescala
+    su vector al mismo ángulo de antes pero con longitud exactamente 90
+    (`COIN_GROUP_DIAGONAL_DX/DY` en GameConfig.ts). Además, el balanceo
+    vertical de cada moneda tenía una fase aleatoria por instancia —no
+    afectaba dónde spawneaban, pero hacía que en cualquier captura
+    congelada la distancia VISIBLE entre monedas vecinas pareciera variar
+    (cada una en un punto distinto de su vaivén); quitada la fase, ahora
+    todas comparten el mismo `sin(t)` y se mueven en bloque. Verificado
+    programáticamente: distancia entre monedas consecutivas siempre 90.00
+    exacto, tanto en grupos rectos como diagonales como en el rastro de un
+    nenúfar.
+  - "Los laberintos aún falta pulirlos más, parecen cuadrados todavía
+    pegados. Que sea mucho mejor recortados": el arreglo de la ronda
+    anterior (festonear los 3 bordes expuestos con un perfil fino) no fue
+    suficiente — a la escala real en juego seguía leyéndose como un
+    cuadrado con un mordisco pequeño. Encargadas piezas nuevas de cero:
+    ya no son un mosaico cuadrado con las esquinas recortadas, son un
+    MONTÍCULO de 3-4 lóbulos grandes y redondeados (mismo lenguaje visual
+    que `reef_boulder_rock`), con margen transparente real de sobra
+    alrededor — mismas conchas/esponjas, mismo estilo, solo la silueta
+    exterior cambia. Como la silueta real ya no ocupa casi todo el lienzo
+    (a diferencia de antes), `HITBOX_FRACTION` de ambas piezas en
+    ReefCluster.ts se remidió sobre el contenido opaco real (antes
+    asumía casi todo el lienzo) — necesario para que `edgeReach`/
+    `edgeFlush` sigan calculando el alcance sobre la silueta
+    redondeada de verdad y no dejen un hueco en el borde del mundo.
+    Verificado en el propio juego: ya no se lee ningún cuadrado, y el
+    body físico sigue llegando exactamente al borde del mundo (offset
+    -10px de solape, igual que el resto de piezas `edgeFlush`).
 
 # EN PROGRESO
 
@@ -2246,11 +2284,15 @@ avanzando)
 
 # PRÓXIMA TAREA
 
-Esperar la reacción del usuario a esta ronda (borde festoneado en las
-paredes de laberinto de conchas/esponjas en vez del corte cuadrado, moneda
-dorada con la cara de Lumi en relieve y tamaño fijo, nenúfares que ya no
-se colocan encima de un obstáculo). Líneas abiertas explícitas (rondas
-anteriores, sin resolver todavía):
+Esperar la reacción del usuario a esta ronda (paredes de laberinto de
+conchas/esponjas rehechas como montículo de lóbulos redondeados en vez de
+festoneado fino, monedas con distancia matemáticamente idéntica siempre).
+Si el usuario sigue viendo algo "cuadrado" en las paredes de laberinto tras
+esto, probablemente haga falta ver la captura exacta para saber si es una
+plantilla concreta (`reef_maze_wall` de hojas, que sigue siendo casi a
+sangre completa por diseño) o un ángulo/escala donde el montículo nuevo
+aún no convence. Líneas abiertas explícitas (rondas anteriores, sin
+resolver todavía):
 
 0. **Confirmar que la "zona en paralelo" de erizos se lee bien en el
    móvil** — el pasillo libre entre las 2 columnas (offset 18950-19350)

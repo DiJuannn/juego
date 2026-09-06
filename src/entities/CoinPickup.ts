@@ -12,7 +12,6 @@ const BOB_SPEED = 1.4;
 export class CoinPickup {
   readonly sprite: Phaser.Physics.Arcade.Image;
   private baseY: number;
-  private phase: number;
 
   constructor(scene: Phaser.Scene, x: number, y: number) {
     this.sprite = scene.physics.add.staticImage(x, y, "coin");
@@ -21,17 +20,27 @@ export class CoinPickup {
     this.sprite.refreshBody();
 
     this.baseY = y;
-    this.phase = Phaser.Math.FloatBetween(0, Math.PI * 2);
   }
 
   /** Solo balanceo vertical — pedido explícito: "que sean todas del mismo
    * tamaño". El "destello" de giro anterior escalaba solo el eje X para
    * simular un spin, pero eso hacía que dos monedas vistas en el mismo
    * instante (cada una con su propia fase aleatoria) se leyeran de
-   * tamaño distinto. Todas quedan siempre a COIN_SCALE fijo. */
+   * tamaño distinto. Todas quedan siempre a COIN_SCALE fijo.
+   *
+   * Pedido explícito, segunda vuelta: "tienen que estar separadas todas
+   * la misma distancia... matemáticamente la misma". El balanceo SÍ tenía
+   * una fase aleatoria por instancia — eso no cambia dónde SPAWNEAN (ya
+   * eran matemáticamente exactas), pero hacía que en cualquier captura
+   * congelada cada moneda estuviera en un punto distinto de su propio
+   * vaivén, así que la distancia visible entre dos monedas vecinas
+   * parecía variar de un instante a otro. Sin fase (todas comparten
+   * exactamente el mismo `sin(t)`), se mueven en bloque: la distancia
+   * entre cualquier par de monedas es constante en todo momento, no solo
+   * en su posición base. */
   update(time: number) {
     const t = time / 1000;
-    this.sprite.y = this.baseY + Math.sin(t * BOB_SPEED + this.phase) * BOB_AMPLITUDE;
+    this.sprite.y = this.baseY + Math.sin(t * BOB_SPEED) * BOB_AMPLITUDE;
   }
 
   playPickupAndDestroy(scene: Phaser.Scene, onComplete: () => void) {

@@ -95,11 +95,21 @@ const HITBOX_FRACTION: Record<string, [number, number, number, number]> = {
   reef_maze_wall: [0.001, 0.008, 0.997, 0.999],
   // Pedido explícito: "crea con Gemini distintos laberintos... que sean
   // así como los que tenemos pero diferentes" — 2 estilos de muro nuevos
-  // para laberintos (ver shellMaze/spongeMaze en ReefTemplates.ts), ambos
-  // a sangre completa igual que reef_maze_wall, bbox medido
-  // programáticamente sobre cada PNG real.
-  reef_maze_wall_shell: [0, 0, 0.999, 0.999],
-  reef_maze_wall_sponge: [0, 0.01, 0.999, 0.999],
+  // para laberintos (ver shellMaze/spongeMaze en ReefTemplates.ts).
+  // Segunda vuelta (pedido explícito, con captura real: "los laberintos
+  // aún falta pulirlos más, parecen cuadrados todavía pegados... que sea
+  // mucho mejor recortados"): el primer intento solo festoneaba un borde
+  // fino, insuficiente a este tamaño — rehechos por completo como un
+  // MONTÍCULO de lóbulos grandes y redondeados (mismo lenguaje visual que
+  // reef_boulder_rock), sin ninguna esquina recta, con mucho margen
+  // transparente real alrededor. Por eso el bbox aquí YA NO es
+  // prácticamente el lienzo entero (a diferencia de reef_maze_wall) — es
+  // el recorte real medido programáticamente sobre el contenido opaco de
+  // cada PNG nuevo, imprescindible para que edgeReach/edgeFlush calculen
+  // el alcance real sobre la silueta redondeada y no sobre el lienzo
+  // vacío de sobra.
+  reef_maze_wall_shell: [0.121, 0.241, 0.88, 0.815],
+  reef_maze_wall_sponge: [0.106, 0.182, 0.884, 0.81],
 };
 
 /**

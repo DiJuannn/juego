@@ -793,13 +793,16 @@ function doubleZigzagMaze(worldWidth: number, centerY: number): ReefClusterSpec 
  * variedad aquí es visual (un "laberinto de conchas" y un "laberinto de
  * esponjas", en vez de siempre las mismas rocas), no de recorrido — ya hay
  * plantillas con recorridos distintos (`doubleZigzagMaze`, `grandMaze`).
- * `reef_maze_wall_shell`/`reef_maze_wall_sponge` son piezas a sangre
- * completa (canvas cuadrado 1024×1024, casi sin margen transparente,
- * mismo criterio que `reef_maze_wall`) — con `CORRIDOR_REACH_PX` la
- * extensión a lo largo de la pared ronda los ~400px (canvas cuadrado, a
- * diferencia del 1344×768 de `reef_maze_wall`), muy por debajo de
- * `CORRIDOR_BAND_SPACING` (700), así que reutilizan las mismas constantes
- * de reefLabyrinth sin necesitar un espaciado especial.
+ * `reef_maze_wall_shell`/`reef_maze_wall_sponge` (canvas cuadrado
+ * 1024×1024) son un montículo de lóbulos redondeados con bastante margen
+ * transparente real alrededor (a diferencia de `reef_maze_wall`, que es
+ * casi a sangre completa) — pedido explícito tras dos rondas de feedback
+ * con captura real ("parecen cuadrados todavía pegados"). Su
+ * `HITBOX_FRACTION` (ver ReefCluster.ts) es el recorte real medido sobre
+ * el contenido opaco, no el lienzo entero, así que `edgeReach` sigue
+ * calculando el alcance sobre la silueta redondeada de verdad. Reutilizan
+ * las mismas constantes de `reefLabyrinth` (`CORRIDOR_REACH_PX`/
+ * `CORRIDOR_BAND_SPACING`) sin necesitar un espaciado especial.
  */
 function alternatingWallMaze(worldWidth: number, centerY: number, pool: string[]): ReefClusterSpec {
   const bottomY = centerY + CORRIDOR_BAND_SPACING;

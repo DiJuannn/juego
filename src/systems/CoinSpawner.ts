@@ -1,7 +1,8 @@
 import Phaser from "phaser";
 import { CoinPickup } from "@/entities/CoinPickup";
 import {
-  COIN_GROUP_DIAGONAL_STEP,
+  COIN_GROUP_DIAGONAL_DX,
+  COIN_GROUP_DIAGONAL_DY,
   COIN_GROUP_MAX_GAP,
   COIN_GROUP_MIN_GAP,
   COIN_GROUP_SIZE_MAX,
@@ -54,24 +55,28 @@ export class CoinSpawner {
     }
 
     const size = Phaser.Math.Between(COIN_GROUP_SIZE_MIN, COIN_GROUP_SIZE_MAX);
-    // Línea recta de verdad (pedido explícito: "en fila o diagonal", misma
-    // separación entre moneda y moneda) — un paso horizontal CONSTANTE por
-    // moneda, no un arco. 1/3 de los grupos salen en fila recta (paso 0);
-    // el resto en diagonal, siempre hacia el centro del mundo (nunca hacia
-    // el borde más cercano) para que ninguna moneda del grupo termine
-    // recortada contra el límite del mundo angosto.
+    // Línea recta de verdad (pedido explícito: "en fila o diagonal, misma
+    // distancia, MATEMÁTICAMENTE la misma") — 1/3 de los grupos salen en
+    // fila recta (paso horizontal 0, paso vertical completo
+    // COIN_GROUP_SPACING); el resto en diagonal (paso horizontal/vertical
+    // COIN_GROUP_DIAGONAL_DX/DY, ya reescalados para que su hipotenusa sea
+    // exactamente la misma distancia), siempre hacia el centro del mundo
+    // (nunca hacia el borde más cercano) para que ninguna moneda del grupo
+    // termine recortada contra el límite del mundo angosto.
     const towardCenter = centerX < this.worldWidth / 2 ? 1 : -1;
-    const stepX = Math.random() < 1 / 3 ? 0 : COIN_GROUP_DIAGONAL_STEP * towardCenter;
+    const diagonal = Math.random() >= 1 / 3;
+    const stepX = diagonal ? COIN_GROUP_DIAGONAL_DX * towardCenter : 0;
+    const stepY = diagonal ? COIN_GROUP_DIAGONAL_DY : COIN_GROUP_SPACING;
 
     for (let i = 0; i < size; i++) {
-      const y = centerY - i * COIN_GROUP_SPACING;
+      const y = centerY - i * stepY;
       const x = Phaser.Math.Clamp(centerX + i * stepX, 60, this.worldWidth - 60);
       const pickup = new CoinPickup(this.scene, x, y);
       this.group.add(pickup.sprite);
       this.pickups.push(pickup);
     }
 
-    const groupTopY = centerY - (size - 1) * COIN_GROUP_SPACING;
+    const groupTopY = centerY - (size - 1) * stepY;
     if (groupTopY < this.highestY) this.highestY = groupTopY;
   }
 

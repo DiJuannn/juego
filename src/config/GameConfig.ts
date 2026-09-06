@@ -396,13 +396,27 @@ export const SHIELD_AURA_ALPHA = 0.55;
 // desordenado. Ahora cada grupo es una línea recta de verdad: recta
 // vertical (misma X) o diagonal con el mismo paso de X entre moneda y
 // moneda — en ambos casos la distancia moneda-a-moneda es constante.
+// Segunda vuelta (pedido explícito, con captura real): "tienen que estar
+// separadas todas la misma distancia una de la otra, MATEMÁTICAMENTE la
+// misma" — el paso recto (antes 70) y el paso diagonal (antes hipotenusa
+// de 70 vertical + 45 horizontal ≈ 83.2) no coincidían entre sí, NI con
+// REEF_COIN_SPACING (90, la separación real a lo largo de la ruta guía de
+// un cúmulo de arrecife o del rastro de un nenúfar) — tres distancias
+// distintas según qué sistema hubiera colocado la moneda. Ahora todo usa
+// la MISMA hipotenusa (REEF_COIN_SPACING, ya definida arriba y reutilizada
+// aquí en vez de duplicarla): recto es un caso particular con paso
+// horizontal 0, diagonal mantiene el mismo ángulo de antes (atan(45/70))
+// pero con el vector reescalado para que su longitud sea exactamente
+// REEF_COIN_SPACING, nunca más.
 export const COIN_SCALE = 0.08;
 export const COIN_GROUP_MIN_GAP = 500;
 export const COIN_GROUP_MAX_GAP = 850;
 export const COIN_GROUP_SIZE_MIN = 3;
 export const COIN_GROUP_SIZE_MAX = 5;
-export const COIN_GROUP_SPACING = 70; // separación vertical entre monedas de un mismo grupo
-export const COIN_GROUP_DIAGONAL_STEP = 45; // paso horizontal constante por moneda en un grupo diagonal
+export const COIN_GROUP_SPACING = REEF_COIN_SPACING; // paso vertical de un grupo en línea recta
+const COIN_GROUP_DIAGONAL_ANGLE = Math.atan2(45, 70); // mismo ángulo que la versión anterior
+export const COIN_GROUP_DIAGONAL_DX = REEF_COIN_SPACING * Math.sin(COIN_GROUP_DIAGONAL_ANGLE);
+export const COIN_GROUP_DIAGONAL_DY = REEF_COIN_SPACING * Math.cos(COIN_GROUP_DIAGONAL_ANGLE);
 export const COIN_RISKY_GROUP_CHANCE = 0.25;
 
 // El power-up de impulso vertical (burbuja pequeña independiente del
