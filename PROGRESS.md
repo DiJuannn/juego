@@ -2574,17 +2574,20 @@ funciona **hoy**, verificado en el código — no lo que el diseño aspira a ten
     además de detectar el squash&stretch (`scaleX !== scaleY` durante el
     salto) y el desplazamiento de reposo aplicado; build de producción
     limpio.
-- **Escudo: 3 segundos de inmunidad real al reventar** (pedido explícito:
-  "al quitarla [la burbuja] de 3 segundos inmunidad" — antes el respiro
-  tras consumir el escudo era de solo 400ms, pensado únicamente como
-  margen técnico anti-doble-golpe del mismo peligro en el mismo
-  solapamiento, no como una ventana de escape real). Nueva constante
-  `SHIELD_BREAK_INVULNERABILITY_MS = 3000` en `GameConfig.ts`;
-  `consumeShield()` ahora también dispara el mismo parpadeo de alpha que
-  ya usa la invulnerabilidad tras un golpe normal (`playInvulnerabilityBlink`),
-  para que se lea claramente que Lumi es intocable durante esos 3 segundos.
-  Verificado con Playwright: la ventana mide exactamente 3000ms y un golpe
-  de peligro disparado justo después de reventar el escudo no resta vida.
+- **Escudo: inmunidad real al reventar** (pedido explícito: "al quitarla
+  [la burbuja] de 3 segundos inmunidad" — antes el respiro tras consumir
+  el escudo era de solo 400ms, pensado únicamente como margen técnico
+  anti-doble-golpe del mismo peligro en el mismo solapamiento, no como una
+  ventana de escape real). Nueva constante
+  `SHIELD_BREAK_INVULNERABILITY_MS` en `GameConfig.ts`; `consumeShield()`
+  ahora también dispara el mismo parpadeo de alpha que ya usa la
+  invulnerabilidad tras un golpe normal (`playInvulnerabilityBlink`), para
+  que se lea claramente que Lumi es intocable durante esa ventana. Probado
+  primero en 3000ms; pedido explícito de ajuste tras probarlo ("que sea
+  segundo y medio mejor") — bajado a **1500ms**, valor final. Verificado
+  con Playwright en ambos valores: la ventana mide exactamente lo
+  configurado y un golpe de peligro disparado justo después de reventar el
+  escudo no resta vida.
   **Pendiente, bloqueado por el entorno**: el resto de lo pedido en esta
   misma ronda (rediseñar la burbuja del escudo más pequeña/mejor,
   animaciones de sprite más largas para los animales, arreglar que el pez
