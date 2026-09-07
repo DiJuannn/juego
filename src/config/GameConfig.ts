@@ -452,6 +452,12 @@ export const SHIELD_MAX_GAP = 3400;
 export const SHIELD_PICKUP_SCALE = 0.22;
 export const SHIELD_AURA_SCALE = 0.55;
 export const SHIELD_AURA_ALPHA = 0.55;
+// Pedido explícito: al reventar el escudo, en vez de un respiro casi
+// imperceptible (400ms, solo pensado para no comerse dos golpes del mismo
+// peligro en el mismo solapamiento) ahora da una ventana real de 3
+// segundos de inmunidad total — tiempo real para alejarse del peligro que
+// lo hizo estallar, no solo un margen técnico anti-doble-golpe.
+export const SHIELD_BREAK_INVULNERABILITY_MS = 3000;
 
 // Monedas: recompensa + guía visual de ruta. Se generan en pequeños grupos
 // (arco/línea, ver CoinSpawner) en vez de puntos sueltos al azar, para que

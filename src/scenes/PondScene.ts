@@ -13,6 +13,7 @@ import {
   LUMI_SCREEN_ANCHOR_Y,
   SHIELD_AURA_ALPHA,
   SHIELD_AURA_SCALE,
+  SHIELD_BREAK_INVULNERABILITY_MS,
   SHIELD_START_OFFSET,
   START_Y,
   WORLD_HEIGHT,
@@ -747,10 +748,20 @@ export class PondScene extends Phaser.Scene {
    * desvanece (efecto "reventar"), junto con el estallido de burbujas ya
    * existente, en vez de simplemente desaparecer — misma idea de "ruptura
    * visible" que pide la revisión de Zona 1. El juego sigue: no hay
-   * secuencia de muerte. */
+   * secuencia de muerte.
+   *
+   * Pedido explícito: al reventar, en vez del respiro casi imperceptible
+   * de antes (400ms, solo pensado para no comerse dos golpes del mismo
+   * peligro en el mismo solapamiento) da 3 segundos reales de inmunidad
+   * total (ver SHIELD_BREAK_INVULNERABILITY_MS) — tiempo real para
+   * alejarse del peligro que lo hizo estallar. Reutiliza el mismo parpadeo
+   * de alpha que ya marca la invulnerabilidad tras un golpe normal (ver
+   * playInvulnerabilityBlink), para que se lea igual de claro que "ahora
+   * mismo nada te puede tocar". */
   private consumeShield() {
     this.hasShield = false;
-    this.shieldGraceUntil = this.time.now + 400;
+    this.shieldGraceUntil = this.time.now + SHIELD_BREAK_INVULNERABILITY_MS;
+    this.playInvulnerabilityBlink(SHIELD_BREAK_INVULNERABILITY_MS);
     this.tweens.killTweensOf(this.shieldAura);
     const aura = this.shieldAura;
     this.tweens.add({
