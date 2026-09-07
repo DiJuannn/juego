@@ -89,7 +89,7 @@ export class ReefClusterSpawner {
   private spawnAt(y: number) {
     // Progresión de Zona 1 en tramos (ver Zone1Segments) — mismo umbral
     // que usaba el coral estrecho antes.
-    if (!isHazardAllowed(START_Y - y)) return;
+    if (!isHazardAllowed(START_Y - y, "reef")) return;
     this.place(y, this.pickTemplateIndex());
   }
 

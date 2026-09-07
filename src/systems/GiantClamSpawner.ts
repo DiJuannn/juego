@@ -28,7 +28,7 @@ export class GiantClamSpawner {
     // un cúmulo de arrecife — ahí el carril libre tiene que quedar
     // garantizado sin nada encima.
     if (this.isWithinCoralBand?.(y)) return;
-    if (!isHazardAllowed(START_Y - y)) return;
+    if (!isHazardAllowed(START_Y - y, "clam")) return;
     this.place(y);
   }
 

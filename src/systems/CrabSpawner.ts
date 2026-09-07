@@ -28,7 +28,7 @@ export class CrabSpawner {
     // Pedido explícito: nunca dejar un animal parado justo en la banda de
     // un cúmulo de arrecife — mismo criterio que el resto de peligros.
     if (this.isWithinCoralBand?.(y)) return;
-    if (!isHazardAllowed(START_Y - y)) return;
+    if (!isHazardAllowed(START_Y - y, "crab")) return;
     this.place(y);
   }
 

@@ -182,10 +182,22 @@ export const CAMERA_RISE_SPEED_MAX = 76 * 1.15;
 // contenido que existe hoy. Si/cuando se construyan las Zonas 2-8, este
 // valor debería revisarse otra vez para que la rampa cubra todo el juego
 // más largo, no solo la Zona 1. Reescalado ×1.6, y de nuevo ×2 sobre eso
-// ("mucho mucho más separado") junto con el resto de distancias — el
-// final de la Zona 1 se movió otra vez (ver ZONE1_LEVEL_END_OFFSET), así
-// que la rampa tiene que llegar igual de lejos que antes.
-export const CAMERA_RISE_RAMP_ALTITUDE = 650 * 1.6 * 2;
+// ("mucho mucho más separado") junto con el resto de distancias.
+//
+// Pedido explícito posterior ("a los 5k se vuelve muy duro... que se vaya
+// poniendo difícil pero no tan duro"): con el valor fijo de antes (2080)
+// la cámara llegaba a su tope de velocidad en Altura ~2080, mucho antes de
+// terminar siquiera el nivel scripteado (que ahora llega hasta Altura
+// ~4806, ver ZONE1_LEVEL_END_OFFSET) — toda la subida de intensidad de la
+// cámara quedaba concentrada al principio, sin dejar nada de rampa para
+// que "se fuera notando" más arriba. Derivado directamente de
+// ZONE1_LEVEL_END_OFFSET (igual que CURRENT_ZONE_START_OFFSET más abajo,
+// mismo motivo: para que los dos no se puedan volver a desincronizar) para
+// que el tope de velocidad se alcance justo cuando termina el nivel
+// scripteado, no muy por debajo — de ahí en adelante la propia progresión
+// de enemigos (ver Zone1Segments.ts) sigue subiendo la dificultad sin que
+// la cámara tenga que cargar con todo el peso desde el principio.
+export const CAMERA_RISE_RAMP_ALTITUDE = ZONE1_LEVEL_END_OFFSET / 10;
 
 // Tiburones: segundo enemigo, "poco a poco" tras la medusa — patrullan de
 // lado a lado en vez de solo derivar como la medusa. Patrullan un radio

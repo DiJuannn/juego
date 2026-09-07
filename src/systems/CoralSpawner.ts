@@ -31,7 +31,7 @@ export class CoralSpawner {
 
   private spawnAt(y: number) {
     // Progresión de Zona 1 en tramos (ver Zone1Segments).
-    if (!isHazardAllowed(START_Y - y)) return;
+    if (!isHazardAllowed(START_Y - y, "coral")) return;
     const gapSide = Math.random() < 0.5 ? "left" : "right";
     const wall = new CoralWall(this.scene, this.worldWidth, y, gapSide);
     for (const chunk of wall.sprites) this.group.add(chunk);

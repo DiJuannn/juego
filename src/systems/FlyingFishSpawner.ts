@@ -6,6 +6,14 @@ import { isHazardAllowed } from "@/config/Zone1Segments";
 const SPAWN_LOOKAHEAD = 900;
 const DESPAWN_MARGIN = 1200;
 const MARGIN_X = 140;
+// Pedido explícito ("mejorar su animación, que esté más arriba"): antes
+// reposaba exactamente en el mismo carril que el resto de peligros
+// flotantes — se sentía como si saliera de la nada justo en el camino de
+// Lumi. Ahora su punto de reposo real queda un poco más arriba (Y menor)
+// que la altura que le asigna el spawner (scripteada o aleatoria), dando
+// más margen real de reacción antes de que el aviso/salto lleguen a la
+// altura donde nada Lumi.
+const REST_Y_LIFT = 55;
 
 /** Duodécimo enemigo: peces voladores, reposo+salto en arco en vez de
  * movimiento continuo (ver entities/FlyingFish.ts). Mismo patrón de
@@ -27,7 +35,7 @@ export class FlyingFishSpawner {
 
   private spawnAt(y: number) {
     if (this.isWithinCoralBand?.(y)) return;
-    if (!isHazardAllowed(START_Y - y)) return;
+    if (!isHazardAllowed(START_Y - y, "flyingfish")) return;
     this.place(y);
   }
 
@@ -39,7 +47,7 @@ export class FlyingFishSpawner {
   private place(y: number, x?: number) {
     const finalX = x ?? Phaser.Math.Between(MARGIN_X, this.worldWidth - MARGIN_X);
     const scale = FLYING_FISH_SCALE * Phaser.Math.FloatBetween(0.9, 1.1);
-    const fish = new FlyingFish(this.scene, finalX, y, scale, this.worldWidth);
+    const fish = new FlyingFish(this.scene, finalX, y - REST_Y_LIFT, scale, this.worldWidth);
     this.group.add(fish.sprite);
     this.fishes.push(fish);
     if (y < this.highestY) this.highestY = y;
@@ -54,6 +62,7 @@ export class FlyingFishSpawner {
     this.fishes = this.fishes.filter((fish) => {
       if (fish.sprite.y > cameraBottomY + DESPAWN_MARGIN) {
         this.group.remove(fish.sprite, true, true);
+        fish.destroy();
         return false;
       }
       fish.update(time);

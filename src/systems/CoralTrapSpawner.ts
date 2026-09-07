@@ -27,7 +27,7 @@ export class CoralTrapSpawner {
 
   private spawnAt(y: number) {
     if (this.isWithinCoralBand?.(y)) return;
-    if (!isHazardAllowed(START_Y - y)) return;
+    if (!isHazardAllowed(START_Y - y, "coraltrap")) return;
     this.place(y);
   }
 

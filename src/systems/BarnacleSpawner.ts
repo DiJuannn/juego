@@ -27,7 +27,7 @@ export class BarnacleSpawner {
 
   private spawnAt(y: number) {
     if (this.isWithinCoralBand?.(y)) return;
-    if (!isHazardAllowed(START_Y - y)) return;
+    if (!isHazardAllowed(START_Y - y, "barnacle")) return;
     this.place(y);
   }
 

@@ -27,7 +27,7 @@ export class MantaRaySpawner {
 
   private spawnAt(y: number) {
     if (this.isWithinCoralBand?.(y)) return;
-    if (!isHazardAllowed(START_Y - y)) return;
+    if (!isHazardAllowed(START_Y - y, "mantaray")) return;
     this.place(y);
   }
 

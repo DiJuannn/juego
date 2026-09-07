@@ -29,7 +29,7 @@ export class BigFishSpawner {
     // banda de un cúmulo de arrecife — mismo criterio que medusa/erizo.
     if (this.isWithinCoralBand?.(y)) return;
     // Progresión de Zona 1 en tramos (ver Zone1Segments).
-    if (!isHazardAllowed(START_Y - y)) return;
+    if (!isHazardAllowed(START_Y - y, "bigfish")) return;
     this.place(y);
   }
 

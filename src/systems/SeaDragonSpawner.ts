@@ -29,7 +29,7 @@ export class SeaDragonSpawner {
 
   private spawnAt(y: number) {
     if (this.isWithinCoralBand?.(y)) return;
-    if (!isHazardAllowed(START_Y - y)) return;
+    if (!isHazardAllowed(START_Y - y, "seadragon")) return;
     this.place(y);
   }
 

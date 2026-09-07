@@ -82,12 +82,26 @@ import type { UrchinVariant } from "@/entities/Urchin";
 // 34010 ocupa [34010-950,34010+950]=[33060,34960] (margen de 400 tras el
 // final de doubleZigzagMaze en 32660); `spongeMaze` (índice 9, muro de
 // esponjas) centrado en 36310 ocupa [36310-950,36310+950]=[35360,37260]
-// (margen de 400 tras el final de shellMaze en 34960). El nivel scripteado
-// ya no termina en 32660 sino después de esta banda + el mismo margen de
-// siempre para que Lumi tenga agua abierta para recuperarse antes de que
-// arranque la corriente (ver CURRENT_ZONE_START_OFFSET en GameConfig.ts,
-// que se deriva de este valor).
-export const ZONE1_LEVEL_END_OFFSET = 37260 + 800;
+// (margen de 400 tras el final de shellMaze en 34960).
+//
+// Tramo 6 (38060-48060): pedido explícito ("reestructura la dificultad,
+// a los 5k se vuelve muy duro... que se vaya poniendo difícil pero no tan
+// duro"). Causa real: justo aquí (offset 38060, Altura ~3806 — muy cerca
+// de la "5k" reportada, la densidad seguía subiendo un poco más mientras
+// se activaban todos los tipos) el nivel scripteado terminaba de golpe y
+// los ~13 spawners de peligro retomaban TODOS su cadencia aleatoria a la
+// vez, sin ninguna introducción escalonada — de un momento a otro había 13
+// tipos de peligro compitiendo por el mismo espacio en vez de la
+// progresión cuidada de los Tramos 0-5. Dos cambios juntos arreglan esto:
+// (1) este Tramo 6, un puente scripteado más que sigue el mismo criterio
+// de siempre (nunca un peligro solo, combos deliberados) en vez de cortar
+// en seco hacia lo aleatorio; (2) más allá de este punto, la generación
+// aleatoria ya no activa los 13 tipos de golpe — cada uno tiene su propia
+// altura de desbloqueo y una rampa de aparición gradual (ver
+// Zone1Segments.ts) que termina de desbloquear el último tipo bastante más
+// arriba (~Altura 6600), así que la dificultad sigue subiendo de forma
+// continua camino a Altura 10000 en vez de picar de golpe aquí.
+export const ZONE1_LEVEL_END_OFFSET = 37260 + 800 + 10000;
 
 export type Zone1LevelEntryType =
   | "jellyfish"
@@ -354,4 +368,42 @@ export const ZONE1_LEVEL_ENTRIES: Zone1LevelEntry[] = [
   { type: "reef", offset: 34010, reefTemplate: 8 }, // shellMaze — banda ~[33060,34960]
   { type: "barnacle", offset: 35160, x: 300 },
   { type: "reef", offset: 36310, reefTemplate: 9 }, // spongeMaze — banda ~[35360,37260]
+
+  // --- Tramo 6 (38060-48060): puente hacia la generación aleatoria (ver
+  // comentario grande junto a ZONE1_LEVEL_END_OFFSET) — combos deliberados
+  // de varios tipos a la vez, mismo criterio de siempre (nunca un peligro
+  // solo, huecos ×3.2 sobre el valor original para LUMI_SWIM_SPEED=403).
+  { type: "reef", offset: 39200, reefTemplate: 1 }, // centerTwoPaths — banda ~[38970,39430]
+  { type: "jellyfish", offset: 39800, x: 150 },
+  { type: "seahorse", offset: 39950, x: 420 },
+  { type: "flyingfish", offset: 40200, x: 300 },
+  { type: "crab", offset: 40650, x: 350 },
+
+  { type: "reef", offset: 41440, reefTemplate: 3 }, // lateralWall — banda ~[41140,41740]
+  // Primer combo denso del tramo: erizos en paralelo + tiburón + calamar,
+  // mismo espíritu que los combos "más arriba, más animales" del Tramo 2.
+  { type: "urchin", offset: 42100, x: 150, variant: "round" },
+  { type: "urchin", offset: 42100, x: 480, variant: "round" },
+  { type: "shark", offset: 42450, x: 300 },
+  { type: "squid", offset: 42800, x: 430 },
+  { type: "coraltrap", offset: 43150, x: 250 },
+
+  // Cuarto uso de miniLabyrinth — tier automático por altura (ver
+  // labyrinthAnimalTier en ReefTemplates.ts, ya en tier 2 por encima de
+  // Altura 1800). Banda ~[43810,44510].
+  { type: "reef", offset: 44160, reefTemplate: 5 }, // miniLabyrinth (tier 2)
+  { type: "barnacle", offset: 45000, x: 300 },
+  { type: "clam", offset: 45350, x: 450 },
+  { type: "bigfish", offset: 45700, x: 350 },
+  { type: "mantaray", offset: 46100, x: 250 },
+  // Combo de cierre del tramo, denso a propósito (pedido explícito:
+  // "más arriba las combinaciones de animales puestos estratégicamente
+  // para que Lumi los esquive pero que tengan patrones divertidos") — dos
+  // medusas a los lados abren un pasillo central, justo antes del último
+  // laberinto de este tramo.
+  { type: "jellyfish", offset: 46450, x: 150 },
+  { type: "seahorse", offset: 46450, x: 480 },
+
+  { type: "reef", offset: 47360, reefTemplate: 2 }, // sCurveEdges — banda ~[47060,47660]
+  { type: "flyingfish", offset: 48000, x: 300 },
 ];

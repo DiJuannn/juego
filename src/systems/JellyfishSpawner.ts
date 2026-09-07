@@ -46,7 +46,7 @@ export class JellyfishSpawner {
     if (this.isWithinCoralBand?.(y)) return;
     // Progresión de Zona 1 en tramos (ver Zone1Segments): la medusa no
     // aparece en los tramos de descanso ni antes de su propia introducción.
-    if (!isHazardAllowed(START_Y - y)) return;
+    if (!isHazardAllowed(START_Y - y, "jellyfish")) return;
     const x = Phaser.Math.Between(MARGIN_X, this.worldWidth - MARGIN_X);
     this.place(y, x);
 
@@ -58,7 +58,7 @@ export class JellyfishSpawner {
         MARGIN_X,
         this.worldWidth - MARGIN_X,
       );
-      if (!this.isWithinCoralBand?.(buddyY) && isHazardAllowed(START_Y - buddyY)) {
+      if (!this.isWithinCoralBand?.(buddyY) && isHazardAllowed(START_Y - buddyY, "jellyfish")) {
         this.place(buddyY, buddyX);
       }
     }

@@ -2493,6 +2493,87 @@ funciona **hoy**, verificado en el código — no lo que el diseño aspira a ten
     `idle`, 4 frames/8 FPS para `swim_right`/`swim_up`/`swim_diagonal`, y
     `dash` sin cambios (3 frames/20 FPS); `npx tsc --noEmit` y build de
     producción limpios con el recuento de archivos correcto por carpeta.
+- **Reestructuración de dificultad + pez volador + introducción progresiva
+  de enemigos** (pedido explícito: "a los 5k se vuelve muy duro. Que se
+  vaya poniendo difícil pero no tan duro. Tipo hasta los 10k crea un
+  mapeo... el pez volador es muy duro, habría que poner como una flecha
+  por donde va a saltar y mejorar su animación, que esté más arriba. Los
+  enemigos que vayan apareciendo poco a poco, tipo primero las medusas
+  luego caballitos m varios y así y ya luego más arriba las combinaciones
+  de animales puestos estratégicamente").
+  - **Causa real del pico de dificultad, confirmada leyendo el código**:
+    justo al pasar `ZONE1_LEVEL_END_OFFSET` (antes 38060, Altura ~3806 —
+    muy cerca de la "5k" reportada), los ~13 spawners de peligro
+    (medusa/erizo/tiburón/calamar/cangrejo/almeja/coral trampa/caballito/
+    balano/pez grande/mantarraya/pez volador/dragón marino) retomaban
+    TODOS su cadencia aleatoria a la vez, sin ninguna introducción
+    escalonada — de golpe había 13 tipos compitiendo por el mismo espacio
+    en vez de la progresión cuidada del nivel scripteado. Las "bandas de
+    descanso" que existían en `Zone1Segments.ts` (offset [4700,5000] y
+    [5700,6000]) eran en la práctica código muerto: caían muy por debajo
+    de `ZONE1_LEVEL_END_OFFSET`, así que nunca se activaban para la zona
+    aleatoria (la scripteada usa `spawnExact`, que no las consulta).
+  - **`Zone1Segments.ts` reescrito**: `isHazardAllowed(offsetFromStart,
+    kind)` ahora recibe el tipo de peligro (antes solo la altura) y aplica
+    dos cosas por tipo: (1) una altura de desbloqueo — por debajo de eso
+    ese tipo NUNCA aparece en la zona aleatoria (medusa/caballito/reef/
+    coral desde el principio; erizo/cangrejo +2500; tiburón/calamar +5000;
+    coral trampa/balano +8000; pez grande/almeja +11000; mantarraya/pez
+    volador +14000; dragón marino +18000, todo relativo al nuevo final del
+    guion) — y (2) una "rampa" de 4000 unidades tras desbloquearse durante
+    la que no todo intento de colocarlo tiene éxito (probabilidad sube de
+    20% a 100% de forma lineal), para que un tipo nuevo se sienta "poco a
+    poco" en vez de "ya está aquí a cadencia completa". Los 17 puntos de
+    llamada a `isHazardAllowed` en los 13 spawners de peligro (incluidos
+    los dos "buddy" de medusa/erizo) se actualizaron para pasar su tipo.
+  - **Tramo 6 nuevo en `Zone1Level.ts`** (offset 38060-48060, Altura
+    ~3806-4806): puente scripteado más, mismo criterio de siempre (nunca
+    un peligro solo, combos deliberados: medusa+caballito+pez volador+
+    cangrejo, erizos en paralelo+tiburón+calamar+coral trampa, balano+
+    almeja+pez grande+mantarraya+medusa+caballito, cerrando con un cuarto
+    uso de `miniLabyrinth`, que ya escala su tier automáticamente por
+    altura) en vez de cortar en seco hacia lo aleatorio justo donde antes
+    picaba la dificultad. `ZONE1_LEVEL_END_OFFSET` sube de 38060 a 48060.
+    `CAMERA_RISE_RAMP_ALTITUDE` (antes fijo en 2080, alcanzaba el tope de
+    velocidad muy por debajo del final del guion) ahora se deriva de
+    `ZONE1_LEVEL_END_OFFSET` (igual que `CURRENT_ZONE_START_OFFSET`, para
+    que no se puedan desincronizar), así que la cámara ya no llega a su
+    tope de golpe al principio sino justo cuando termina el nivel
+    scripteado — más presión repartida, no toda al principio.
+  - **Nota honesta de alcance**: no se hand-escripteó cada offset hasta
+    100000 (Altura 10000) al estilo "Mario Maker" completo del resto del
+    nivel — habría sido ~1.6× el tamaño de todo lo ya scripteado. En su
+    lugar, el Tramo 6 arregla el punto exacto donde picaba la dificultad, y
+    de ahí en adelante la introducción progresiva + rampa por tipo sigue
+    subiendo la dificultad de forma continua camino a Altura 10000 (último
+    tipo desbloqueado del todo en ~Altura 6600). Si tras jugarlo el usuario
+    quiere más combos scripteados "estratégicos" en tramos concretos más
+    arriba, es la línea abierta más clara para la próxima ronda.
+  - **Pez volador (`FlyingFish.ts`/`FlyingFishSpawner.ts`)**: la
+    dirección/distancia del PRÓXIMO salto ahora se sortean al EMPEZAR el
+    reposo (antes se sorteaban justo al arrancar el salto, sin ningún
+    aviso posible) — eso permite mostrar una flecha real (triángulo con
+    relleno pastel y contorno lavanda, mismo lenguaje visual que el resto
+    del juego, nunca negro) que aparece en el último medio segundo del
+    reposo, apuntando hacia el lado exacto por el que va a saltar, con
+    fundido de entrada y un pulso sutil. Reposa 55px más arriba de la
+    altura que le asigna el spawner (`REST_Y_LIFT`), dando más margen real
+    de reacción. Animación mejorada: aleteo sutil de escala durante el
+    reposo, y squash&stretch (se estira al despegar, se achata al
+    aterrizar) durante el salto — sin generar ningún frame de arte nuevo,
+    solo animación por código sobre la textura existente.
+  - Verificado: `npx tsc --noEmit` limpio; Playwright confirma que la
+    puerta por tipo bloquea correctamente shark/squid/coraltrap/barnacle/
+    bigfish/clam/mantaray/seadragon justo tras el nuevo final del guion
+    (todos en 0 apariciones a esa altura) mientras que jellyfish/seahorse
+    (desbloqueados desde el principio) y urchin (su propio hueco aleatorio
+    ya supera su umbral en el primer intento) sí aparecen; para el pez
+    volador, simulación con `scene.update()` en el Tramo 1 confirma que la
+    flecha se vuelve visible antes del salto y que su rotación coincide
+    exactamente con la dirección real que toma el salto (`facingRight`),
+    además de detectar el squash&stretch (`scaleX !== scaleY` durante el
+    salto) y el desplazamiento de reposo aplicado; build de producción
+    limpio.
 
 # PENDIENTE
 
@@ -2595,6 +2676,27 @@ Esperar la reacción del usuario a las otras rondas recientes:
    nota raro, la solución es un frame dedicado para el eje vertical en
    vez de compartir por rotación.
 
+**Reestructuración de dificultad (ronda más reciente)** — esperar la
+reacción real del usuario jugando, es la parte más subjetiva de esta
+sesión:
+1. **¿El pico "a los 5k" ya no se siente?** El Tramo 6 nuevo + la
+   introducción progresiva por tipo (ver EN PROGRESO) atacan la causa real
+   encontrada en el código, pero solo el usuario puede confirmar si la
+   curva de dificultad completa "se siente bien" hasta Altura 10000 —
+   pedir feedback concreto de EN QUÉ ALTURA (si alguna) se vuelve a sentir
+   muy duro, para poder ajustar los umbrales de desbloqueo/rampa de
+   `Zone1Segments.ts` con datos reales en vez de otra vuelta a ciegas.
+2. **No hay contenido hand-scripteado más allá de Altura ~4806** — el
+   pedido de un "mapeo" completo hasta Altura 10000 se cubrió solo
+   parcialmente (ver la nota de alcance en EN PROGRESO). Si el usuario
+   quiere más combos "estratégicos" diseñados a mano en tramos concretos
+   más arriba (no solo la introducción progresiva aleatoria), es la
+   candidata más clara para la próxima ronda de contenido.
+3. **Pez volador**: confirmar en juego real (no solo Playwright) que la
+   flecha se lee bien a tamaño de pantalla móvil y que 55px de más altura
+   en el reposo es suficiente margen — son dos números fáciles de subir
+   más si el usuario lo sigue viendo difícil de leer/esquivar.
+
 Si el usuario sigue viendo algo "cuadrado" en las paredes de laberinto de
 una ronda anterior,
 probablemente haga falta ver la captura exacta para saber si es una
@@ -2608,14 +2710,14 @@ resolver todavía):
    mide ~260-320px verificado por hitbox real, pero solo se probó en el
    viewport de escritorio de este entorno de test; pedir confirmación real
    en pantalla táctil antes de repetir el patrón en más sitios.
-0b. **La partida completa ya es bastante larga** — dos rondas seguidas
-   extendieron la cola del nivel scripteado de forma puramente aditiva
-   (Tramo 4: 27560-32660; Tramo 5: 32960-37260; `ZONE1_LEVEL_END_OFFSET`
-   pasó de 28160 a 38060 en total). Cada extensión por separado es segura
-   (nada anterior se movió), pero convendría preguntar al usuario si el
-   ritmo de la partida completa hasta el final se sigue sintiendo bien, en
-   vez de seguir alargando la cola sin más en la próxima ronda de
-   contenido nuevo.
+0b. **La partida completa ya es bastante larga** — varias rondas seguidas
+   extendieron la cola del nivel scripteado de forma aditiva (Tramo 4:
+   27560-32660; Tramo 5: 32960-37260; Tramo 6: 38060-48060 — este último
+   ya no es solo más contenido sino un arreglo real de un pico de
+   dificultad reportado, ver EN PROGRESO). `ZONE1_LEVEL_END_OFFSET` pasó
+   de 28160 a 48060 en total. Sigue siendo cierto que convendría preguntar
+   al usuario si el ritmo de la partida completa hasta Altura 10000 se
+   siente bien, en vez de seguir alargando/ajustando a ciegas.
 1. **"Mejora las animaciones de los animales"** — atendido para el
    caballito en la ronda anterior; el resto (medusa aparte del rastro de
    burbujas, tiburón, calamar, erizo, cangrejo, pez grande, coral trampa,
